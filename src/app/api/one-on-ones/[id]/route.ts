@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getOneOnOne, updateOneOnOne } from '@/lib/services/one-on-ones'
+import { getOneOnOne, updateOneOnOne, deleteOneOnOne } from '@/lib/services/one-on-ones'
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -16,5 +16,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ data: record })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+  }
+}
+
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  try {
+    await deleteOneOnOne(id)
+    return NextResponse.json({ message: 'Deleted' })
+  } catch (e) {
+    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 })
   }
 }

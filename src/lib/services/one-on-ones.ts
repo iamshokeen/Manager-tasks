@@ -28,6 +28,10 @@ export async function updateOneOnOne(id: string, data: Prisma.OneOnOneUpdateInpu
   return prisma.oneOnOne.update({ where: { id }, data })
 }
 
+export async function deleteOneOnOne(id: string) {
+  return prisma.oneOnOne.delete({ where: { id } })
+}
+
 export async function updateActionItem(id: string, completed: boolean) {
   return prisma.oneOnOneAction.update({
     where: { id },

@@ -31,6 +31,10 @@ export async function updateCadence(id: string, data: Prisma.CadenceUpdateInput)
   return prisma.cadence.update({ where: { id }, data })
 }
 
+export async function deleteCadence(id: string) {
+  return prisma.cadence.delete({ where: { id } })
+}
+
 export async function generatePrepTasks(cadenceId: string): Promise<number> {
   const cadence = await prisma.cadence.findUnique({
     where: { id: cadenceId },
@@ -67,6 +71,19 @@ export async function generatePrepTasks(cadenceId: string): Promise<number> {
   return created
 }
 
+const DAY_MAP: Record<string, number> = {
+  Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
+  Thursday: 4, Friday: 5, Saturday: 6,
+}
+
+function daysUntilNext(dayName: string): number {
+  const today = new Date().getDay()
+  const target = DAY_MAP[dayName]
+  if (target === undefined) return 0 // non-standard day names like "Last Friday" — always include
+  const diff = (target - today + 7) % 7
+  return diff === 0 ? 7 : diff // if it's today, next occurrence is in 7 days
+}
+
 export async function generateAllDuePrepTasks(): Promise<number> {
   const cadences = await prisma.cadence.findMany({
     where: { isActive: true },
@@ -74,7 +91,11 @@ export async function generateAllDuePrepTasks(): Promise<number> {
   })
   let total = 0
   for (const cadence of cadences) {
-    total += await generatePrepTasks(cadence.id)
+    const maxLeadTime = cadence.prepItems.reduce((max, item) => Math.max(max, item.leadTimeDays), 0)
+    const daysAway = daysUntilNext(cadence.day)
+    if (daysAway <= maxLeadTime) {
+      total += await generatePrepTasks(cadence.id)
+    }
   }
   return total
 }

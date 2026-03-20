@@ -53,10 +53,24 @@ export async function updateTask(id: string, data: Prisma.TaskUpdateInput, actor
 
   const task = await prisma.task.update({ where: { id }, data })
 
+  // Log status change
   if (data.status && data.status !== existing.status) {
     await logActivity(id, 'status_change', existing.status, data.status as string)
     if (data.status === 'done') {
       await logActivity(id, 'completion', undefined, undefined, actorNote)
+    }
+  }
+
+  // Log assignment change
+  if ('assigneeId' in data && data.assigneeId !== existing.assigneeId) {
+    await logActivity(id, 'assignment', existing.assigneeId ?? undefined, data.assigneeId as string ?? undefined)
+  }
+
+  // Log field edits (title, description, dueDate, priority, tags)
+  const editableFields: Array<keyof typeof existing> = ['title', 'description', 'dueDate', 'priority', 'tags']
+  for (const field of editableFields) {
+    if (field in data && String(data[field as keyof Prisma.TaskUpdateInput]) !== String(existing[field])) {
+      await logActivity(id, 'edit', field, String(data[field as keyof Prisma.TaskUpdateInput]))
     }
   }
 

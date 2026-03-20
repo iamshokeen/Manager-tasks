@@ -12,7 +12,7 @@ export async function generateWeeklyReport() {
   const { startOfWeek } = await import('date-fns')
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
 
-  const [openTaskCount, completedTasks, overdueCount, teamMembers, metrics] = await Promise.all([
+  const [openTaskCount, completedTasks, overdueCount, teamMembers, metrics, tasksCreated] = await Promise.all([
     prisma.task.count({ where: { status: { not: 'done' } } }),
     prisma.task.findMany({
       where: { status: 'done', completedAt: { gte: weekStart } },
@@ -21,6 +21,7 @@ export async function generateWeeklyReport() {
     prisma.task.count({ where: { status: { not: 'done' }, dueDate: { lt: new Date() } } }),
     prisma.teamMember.findMany({ where: { status: 'active' } }),
     prisma.numberEntry.findMany({ where: { period: getCurrentMonthPeriod() } }),
+    prisma.task.count({ where: { createdAt: { gte: weekStart } } }),
   ])
 
   const data = {
@@ -31,6 +32,7 @@ export async function generateWeeklyReport() {
     overdueTasks: overdueCount,
     activeTeamCount: teamMembers.length,
     metrics: metrics.reduce((acc, m) => ({ ...acc, [m.metric]: m.value }), {} as Record<string, number>),
+    tasksCreated,
   }
 
   return prisma.report.upsert({
