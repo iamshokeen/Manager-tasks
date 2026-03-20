@@ -1,13 +1,204 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
+// prisma/schema.prisma
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model TeamMember {
+  id              String       @id @default(cuid())
+  name            String
+  role            String
+  department      String
+  status          String       @default("active")
+  skills          String?
+  oneOnOneDay     String?
+  oneOnOneTime    String?
+  coachingNotes   String?      @db.Text
+  hireDate        DateTime?
+  delegationLevel Int          @default(1)
+  tasks           Task[]
+  oneOnOnes       OneOnOne[]
+  emailThreads    EmailThread[]
+  projects        Project[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model Project {
+  id            String       @id @default(cuid())
+  title         String
+  description   String?      @db.Text
+  department    String
+  stage         String       @default("planning")
+  ownerId       String?
+  owner         TeamMember?  @relation(fields: [ownerId], references: [id])
+  stakeholderId String?
+  stakeholder   Stakeholder? @relation(fields: [stakeholderId], references: [id])
+  dueDate       DateTime?
+  tasks         Task[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Task {
+  id            String          @id @default(cuid())
+  title         String
+  description   String?         @db.Text
+  assigneeId    String?
+  assignee      TeamMember?     @relation(fields: [assigneeId], references: [id])
+  isSelfTask    Boolean         @default(false)
+  projectId     String?
+  project       Project?        @relation(fields: [projectId], references: [id])
+  department    String
+  priority      String          @default("medium")
+  status        String          @default("todo")
+  dueDate       DateTime?
+  completedAt   DateTime?
+  stakeholderId String?
+  stakeholder   Stakeholder?    @relation(fields: [stakeholderId], references: [id])
+  cadenceId     String?
+  cadence       Cadence?        @relation(fields: [cadenceId], references: [id])
+  emailThreads  TaskEmailLink[]
+  activities    TaskActivity[]
+  source        String          @default("manual")
+  tags          String[]        @default([])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model TaskActivity {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  type      String
+  from      String?
+  to        String?
+  note      String?  @db.Text
+  source    String   @default("user")
+  createdAt DateTime @default(now())
+}
+
+model Stakeholder {
+  id        String    @id @default(cuid())
+  name      String
+  title     String?
+  frequency String
+  channel   String
+  priority  String    @default("high")
+  context   String?   @db.Text
+  strategy  String?   @db.Text
+  email     String?
+  tasks     Task[]
+  projects  Project[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model OneOnOne {
+  id               String           @id @default(cuid())
+  memberId         String
+  member           TeamMember       @relation(fields: [memberId], references: [id])
+  date             DateTime
+  mood             String           @default("neutral")
+  theirUpdates     String?          @db.Text
+  myUpdates        String?          @db.Text
+  feedbackGiven    String?          @db.Text
+  developmentNotes String?          @db.Text
+  actionItems      OneOnOneAction[]
+  createdAt        DateTime         @default(now())
+}
+
+model OneOnOneAction {
+  id          String    @id @default(cuid())
+  oneOnOneId  String
+  oneOnOne    OneOnOne  @relation(fields: [oneOnOneId], references: [id], onDelete: Cascade)
+  action      String
+  owner       String
+  dueDate     DateTime?
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model Cadence {
+  id          String            @id @default(cuid())
+  name        String
+  type        String
+  day         String
+  time        String
+  duration    Int               @default(30)
+  scope       String
+  description String?           @db.Text
+  prepItems   CadencePrepItem[]
+  tasks       Task[]
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model CadencePrepItem {
+  id           String   @id @default(cuid())
+  cadenceId    String
+  cadence      Cadence  @relation(fields: [cadenceId], references: [id], onDelete: Cascade)
+  title        String
+  assigneeId   String?
+  department   String?
+  leadTimeDays Int      @default(1)
+  createdAt    DateTime @default(now())
+}
+
+model EmailThread {
+  id            String          @id @default(cuid())
+  gmailThreadId String          @unique
+  subject       String
+  from          String
+  to            String[]
+  lastMessageAt DateTime
+  snippet       String?         @db.Text
+  status        String          @default("open")
+  priority      String          @default("medium")
+  assigneeId    String?
+  assignee      TeamMember?     @relation(fields: [assigneeId], references: [id])
+  tasks         TaskEmailLink[]
+  labels        String[]        @default([])
+  isStarred     Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model TaskEmailLink {
+  id            String      @id @default(cuid())
+  taskId        String
+  task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  emailThreadId String
+  emailThread   EmailThread @relation(fields: [emailThreadId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([taskId, emailThreadId])
+}
+
+model NumberEntry {
+  id        String    @id @default(cuid())
+  metric    String
+  value     Float
+  period    String
+  source    String    @default("sheets")
+  syncedAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([metric, period])
+}
+
+model Report {
+  id        String    @id @default(cuid())
+  type      String
+  period    String
+  data      Json
+  emailedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([type, period])
 }
