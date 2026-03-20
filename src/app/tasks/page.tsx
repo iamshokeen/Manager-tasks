@@ -1,3 +1,352 @@
+'use client'
+
+import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Plus, Search, Calendar, ClipboardList } from 'lucide-react'
+import { toast } from 'sonner'
+
+import { useTasks } from '@/hooks/use-tasks'
+import { useTeam } from '@/hooks/use-team'
+import { PageHeader } from '@/components/ui/page-header'
+import { PriorityBadge } from '@/components/ui/priority-badge'
+import { DepartmentBadge } from '@/components/ui/department-badge'
+import { MemberAvatar } from '@/components/ui/member-avatar'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+import { cn, DEPARTMENTS, PRIORITIES, STATUS_LABELS, formatDate, isOverdue, isDueToday } from '@/lib/utils'
+import type { TaskFilters, Priority } from '@/types'
+
+const KANBAN_COLUMNS: Array<{ key: 'todo' | 'in_progress' | 'review' | 'done'; label: string; color: string }> = [
+  { key: 'todo', label: 'To Do', color: 'border-t-[#6B7280]' },
+  { key: 'in_progress', label: 'In Progress', color: 'border-t-[#3B82F6]' },
+  { key: 'review', label: 'Review', color: 'border-t-[#F59E0B]' },
+  { key: 'done', label: 'Done', color: 'border-t-[#10B981]' },
+]
+
+interface TaskCardProps {
+  task: {
+    id: string
+    title: string
+    priority: string
+    status?: string
+    department?: string
+    dueDate?: string | null
+    assignee?: { id: string; name: string } | null
+  }
+  onClick: () => void
+}
+
+function TaskCard({ task, onClick }: TaskCardProps) {
+  const overdue = isOverdue(task.dueDate ?? null)
+  const today = isDueToday(task.dueDate ?? null)
+  const dueDateColor = overdue
+    ? 'text-[#EF4444]'
+    : today
+    ? 'text-[#C9A84C]'
+    : 'text-muted-foreground'
+
+  return (
+    <div
+      onClick={onClick}
+      className="bg-card border border-border rounded-lg p-3 cursor-pointer hover:border-ring/40 transition-colors group"
+    >
+      <p className="text-sm font-medium text-foreground line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+        {task.title}
+      </p>
+      <div className="flex flex-wrap gap-1.5 mb-2">
+        <PriorityBadge priority={task.priority} />
+        {task.department && <DepartmentBadge department={task.department} />}
+      </div>
+      <div className="flex items-center justify-between mt-2">
+        <div className="flex items-center gap-1.5">
+          {task.assignee ? (
+            <>
+              <MemberAvatar name={task.assignee.name} size="sm" />
+              <span className="text-xs text-muted-foreground truncate max-w-[80px]">{task.assignee.name}</span>
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground">Unassigned</span>
+          )}
+        </div>
+        {task.dueDate && (
+          <div className={cn('flex items-center gap-1 text-xs', dueDateColor)}>
+            <Calendar className="h-3 w-3" />
+            <span>{formatDate(task.dueDate)}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+interface CreateTaskForm {
+  title: string
+  department: string
+  priority: string
+  assigneeId: string
+  dueDate: string
+  description: string
+  isSelfTask: boolean
+}
+
+const EMPTY_FORM: CreateTaskForm = {
+  title: '',
+  department: '',
+  priority: 'medium',
+  assigneeId: '',
+  dueDate: '',
+  description: '',
+  isSelfTask: false,
+}
+
 export default function TasksPage() {
-  return <div className="text-muted-foreground text-sm">Tasks — building in Plan 2</div>
+  const router = useRouter()
+
+  const [search, setSearch] = useState('')
+  const [deptFilter, setDeptFilter] = useState<string>('all')
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [form, setForm] = useState<CreateTaskForm>(EMPTY_FORM)
+  const [submitting, setSubmitting] = useState(false)
+
+  const filters: TaskFilters = {}
+  if (search) filters.search = search
+  if (deptFilter && deptFilter !== 'all') filters.department = deptFilter
+
+  const { tasks, mutate, isLoading } = useTasks(filters)
+  const { members } = useTeam()
+
+  const columns = {
+    todo: (tasks as TaskCardProps['task'][]).filter((t: { status?: string }) => t.status === 'todo'),
+    in_progress: (tasks as TaskCardProps['task'][]).filter((t: { status?: string }) => t.status === 'in_progress'),
+    review: (tasks as TaskCardProps['task'][]).filter((t: { status?: string }) => t.status === 'review'),
+    done: (tasks as TaskCardProps['task'][]).filter((t: { status?: string }) => t.status === 'done'),
+  }
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.title.trim()) {
+      toast.error('Title is required')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const body: Record<string, unknown> = {
+        title: form.title.trim(),
+        priority: form.priority || 'medium',
+        isSelfTask: form.isSelfTask,
+      }
+      if (form.department) body.department = form.department
+      if (form.assigneeId) body.assigneeId = form.assigneeId
+      if (form.dueDate) body.dueDate = new Date(form.dueDate).toISOString()
+      if (form.description) body.description = form.description
+
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) throw new Error('Failed to create task')
+      await mutate()
+      setDialogOpen(false)
+      setForm(EMPTY_FORM)
+      toast.success('Task created')
+    } catch {
+      toast.error('Failed to create task')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      <PageHeader
+        title="Tasks"
+        action={
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4" />
+            New Task
+          </Button>
+        }
+      />
+
+      {/* Filter bar */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Search tasks…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Select value={deptFilter} onValueChange={(v: string | null) => setDeptFilter(v ?? 'all')}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="All departments" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All departments</SelectItem>
+            {DEPARTMENTS.map(d => (
+              <SelectItem key={d} value={d}>{d}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Kanban board */}
+      <div className="grid grid-cols-4 gap-4 flex-1 min-h-0">
+        {KANBAN_COLUMNS.map(col => {
+          const colTasks = columns[col.key]
+          return (
+            <div key={col.key} className="flex flex-col min-h-0">
+              {/* Column header */}
+              <div className={cn('bg-card border border-border border-t-2 rounded-lg px-3 py-2 mb-3 flex items-center justify-between', col.color)}>
+                <span className="text-sm font-medium text-foreground">{col.label}</span>
+                <span className="text-xs font-semibold bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+                  {isLoading ? '…' : colTasks.length}
+                </span>
+              </div>
+
+              {/* Cards */}
+              <div className="flex flex-col gap-2 overflow-y-auto max-h-[calc(100vh-280px)] pr-0.5">
+                {colTasks.length === 0 && !isLoading ? (
+                  <EmptyState
+                    icon={<ClipboardList className="h-8 w-8" />}
+                    title="No tasks"
+                    description={`No ${col.label.toLowerCase()} tasks`}
+                  />
+                ) : (
+                  colTasks.map(task => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onClick={() => router.push(`/tasks/${task.id}`)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Create Task Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-card border-border max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New Task</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreate} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Title *</label>
+              <Input
+                placeholder="Task title"
+                value={form.title}
+                onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Department</label>
+                <Select value={form.department} onValueChange={(v: string | null) => setForm(f => ({ ...f, department: v ?? '' }))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map(d => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Priority</label>
+                <Select value={form.priority} onValueChange={(v: string | null) => setForm(f => ({ ...f, priority: v ?? 'medium' }))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRIORITIES.map(p => (
+                      <SelectItem key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Assignee</label>
+                <Select value={form.assigneeId} onValueChange={(v: string | null) => setForm(f => ({ ...f, assigneeId: v ?? '' }))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(members as Array<{ id: string; name: string }>).map(m => (
+                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Due Date</label>
+                <Input
+                  type="date"
+                  value={form.dueDate}
+                  onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Description</label>
+              <Textarea
+                placeholder="Task description…"
+                rows={3}
+                value={form.description}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              />
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={form.isSelfTask}
+                onCheckedChange={(checked: boolean) => setForm(f => ({ ...f, isSelfTask: checked }))}
+              />
+              <span className="text-sm text-foreground">Personal task</span>
+            </label>
+
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)} disabled={submitting}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? 'Creating…' : 'Create Task'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
 }
