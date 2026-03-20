@@ -3,7 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { Resend } from 'resend'
 import { getCurrentWeekPeriod, getCurrentMonthPeriod, formatPeriod, formatCrore } from '@/lib/format'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY)
+}
 
 export async function generateWeeklyReport() {
   const period = getCurrentWeekPeriod()
@@ -47,6 +49,7 @@ export async function emailReport(reportId: string, to?: string) {
 
   const data = report.data as any
 
+  const resend = getResend()
   await resend.emails.send({
     from: 'Lohono CMD <noreply@yourdomain.com>',
     to: recipient,

@@ -4,7 +4,9 @@ import { Resend } from 'resend'
 import { getTask, logActivity } from '@/lib/services/tasks'
 import { formatDate } from '@/lib/utils'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY)
+}
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -17,6 +19,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 })
 
   try {
+    const resend = getResend()
     await resend.emails.send({
       from: 'Lohono CMD <noreply@yourdomain.com>',
       to,
