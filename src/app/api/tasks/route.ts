@@ -1,14 +1,15 @@
 // src/app/api/tasks/route.ts
 import { NextResponse } from 'next/server'
 import { getTasks, createTask } from '@/lib/services/tasks'
+import type { TaskFilters } from '@/types'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const filters = {
+  const filters: TaskFilters = {
     assigneeId: searchParams.get('assigneeId') ?? undefined,
     department: searchParams.get('department') ?? undefined,
-    status: searchParams.get('status') as any ?? undefined,
-    priority: searchParams.get('priority') as any ?? undefined,
+    status: (searchParams.get('status') as TaskFilters['status']) ?? undefined,
+    priority: (searchParams.get('priority') as TaskFilters['priority']) ?? undefined,
     isSelfTask: searchParams.has('isSelfTask') ? searchParams.get('isSelfTask') === 'true' : undefined,
     projectId: searchParams.get('projectId') ?? undefined,
     stakeholderId: searchParams.get('stakeholderId') ?? undefined,

@@ -76,12 +76,19 @@ const DAY_MAP: Record<string, number> = {
   Thursday: 4, Friday: 5, Saturday: 6,
 }
 
+const MONTHLY_PATTERN = /last\s+\w+/i  // matches "Last Friday", "Last Monday", etc.
+
 function daysUntilNext(dayName: string): number {
   const today = new Date().getDay()
   const target = DAY_MAP[dayName]
-  if (target === undefined) return 0 // non-standard day names like "Last Friday" — always include
-  const diff = (target - today + 7) % 7
-  return diff === 0 ? 7 : diff // if it's today, next occurrence is in 7 days
+  if (target !== undefined) {
+    const diff = (target - today + 7) % 7
+    return diff === 0 ? 7 : diff
+  }
+  // Monthly cadences like "Last Friday" — assume next occurrence is within ~31 days
+  if (MONTHLY_PATTERN.test(dayName)) return 28
+  // Non-weekly/irregular cadences ("Quarter End", etc.) — never auto-generate
+  return 999
 }
 
 export async function generateAllDuePrepTasks(): Promise<number> {

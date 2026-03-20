@@ -2,10 +2,14 @@ import { NextResponse } from 'next/server'
 import { getOneOnOne, updateOneOnOne, deleteOneOnOne } from '@/lib/services/one-on-ones'
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const record = await getOneOnOne(id)
-  if (!record) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json({ data: record })
+  try {
+    const { id } = await params
+    const record = await getOneOnOne(id)
+    if (!record) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ data: record })
+  } catch (e) {
+    return NextResponse.json({ error: 'Failed to fetch one-on-one' }, { status: 500 })
+  }
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {

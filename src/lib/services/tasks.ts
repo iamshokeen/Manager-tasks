@@ -66,11 +66,33 @@ export async function updateTask(id: string, data: Prisma.TaskUpdateInput, actor
     await logActivity(id, 'assignment', existing.assigneeId ?? undefined, data.assigneeId as string ?? undefined)
   }
 
-  // Log field edits (title, description, dueDate, priority, tags)
-  const editableFields: Array<keyof typeof existing> = ['title', 'description', 'dueDate', 'priority', 'tags']
-  for (const field of editableFields) {
-    if (field in data && String(data[field as keyof Prisma.TaskUpdateInput]) !== String(existing[field])) {
-      await logActivity(id, 'edit', field, String(data[field as keyof Prisma.TaskUpdateInput]))
+  // Log simple string field edits
+  const stringFields: Array<{ key: string; dataKey: keyof Prisma.TaskUpdateInput }> = [
+    { key: 'title', dataKey: 'title' },
+    { key: 'description', dataKey: 'description' },
+    { key: 'priority', dataKey: 'priority' },
+  ]
+  for (const { key, dataKey } of stringFields) {
+    if (dataKey in data && data[dataKey] !== undefined && String(data[dataKey]) !== String(existing[key as keyof typeof existing])) {
+      await logActivity(id, 'edit', key, String(data[dataKey]))
+    }
+  }
+
+  // Log dueDate change — compare ISO strings to avoid timezone format mismatch
+  if ('dueDate' in data && data.dueDate !== undefined) {
+    const newDate = data.dueDate ? new Date(data.dueDate as string).toISOString() : null
+    const oldDate = existing.dueDate ? existing.dueDate.toISOString() : null
+    if (newDate !== oldDate) {
+      await logActivity(id, 'edit', 'dueDate', newDate ?? 'cleared')
+    }
+  }
+
+  // Log tags change — only if plain array (not Prisma relational update object)
+  if ('tags' in data && Array.isArray(data.tags)) {
+    const newTags = JSON.stringify(data.tags)
+    const oldTags = JSON.stringify(existing.tags)
+    if (newTags !== oldTags) {
+      await logActivity(id, 'edit', 'tags', newTags)
     }
   }
 
