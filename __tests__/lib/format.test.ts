@@ -1,5 +1,5 @@
 // __tests__/lib/format.test.ts
-import { formatCrore, formatLakh, formatIndianCurrency, formatPeriod, getCurrentWeekPeriod, getCurrentMonthPeriod } from '@/lib/format'
+import { formatCrore, formatLakh, formatIndianNumber, formatPeriod, getCurrentWeekPeriod, getCurrentMonthPeriod } from '@/lib/format'
 
 describe('formatCrore', () => {
   it('formats a crore value', () => {
@@ -19,9 +19,9 @@ describe('formatLakh', () => {
   })
 })
 
-describe('formatIndianCurrency', () => {
+describe('formatIndianNumber', () => {
   it('formats a large number in Indian notation', () => {
-    const result = formatIndianCurrency(10000000)
+    const result = formatIndianNumber(10000000)
     expect(result).toBe('1,00,00,000')
   })
 })

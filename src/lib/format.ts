@@ -13,10 +13,10 @@ export function formatCrore(value: number): string {
 
 export function formatLakh(value: number): string {
   const lakhs = value / LAKH
-  return `₹${lakhs % 1 === 0 ? lakhs : lakhs.toFixed(2)} L`
+  return `₹${lakhs % 1 === 0 ? lakhs : lakhs.toFixed(1)} L`
 }
 
-export function formatIndianCurrency(value: number): string {
+export function formatIndianNumber(value: number): string {
   const str = Math.floor(value).toString()
   if (str.length <= 3) return str
   const last3 = str.slice(-3)

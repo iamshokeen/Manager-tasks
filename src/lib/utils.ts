@@ -32,14 +32,13 @@ export function formatRelative(date: Date | string): string {
 export function isOverdue(dueDate: Date | string | null): boolean {
   if (!dueDate) return false
   const d = typeof dueDate === 'string' ? new Date(dueDate) : dueDate
-  return isBefore(startOfDay(d), startOfDay(new Date()))
+  return isBefore(startOfDay(toIST(d)), startOfDay(toIST(new Date())))
 }
 
 export function isDueToday(dueDate: Date | string | null): boolean {
   if (!dueDate) return false
   const d = typeof dueDate === 'string' ? new Date(dueDate) : dueDate
-  const today = startOfDay(new Date())
-  return format(d, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
+  return format(toIST(d), 'yyyy-MM-dd') === format(toIST(new Date()), 'yyyy-MM-dd')
 }
 
 export function isDueSoon(dueDate: Date | string | null, hours = 24): boolean {
