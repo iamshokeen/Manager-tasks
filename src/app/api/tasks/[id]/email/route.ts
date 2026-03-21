@@ -21,7 +21,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   try {
     const resend = getResend()
     await resend.emails.send({
-      from: 'Lohono CMD <noreply@yourdomain.com>',
+      from: 'Lohono CMD <onboarding@resend.dev>',
       to,
       subject,
       html: buildTaskEmailHtml(task, body),

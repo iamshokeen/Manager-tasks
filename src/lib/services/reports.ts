@@ -53,7 +53,7 @@ export async function emailReport(reportId: string, to?: string) {
 
   const resend = getResend()
   await resend.emails.send({
-    from: 'Lohono CMD <noreply@yourdomain.com>',
+    from: 'Lohono CMD <onboarding@resend.dev>',
     to: recipient,
     subject: `Weekly Report — ${formatPeriod(report.period)}`,
     html: buildReportHtml(data),

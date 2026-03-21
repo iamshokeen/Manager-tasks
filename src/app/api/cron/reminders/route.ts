@@ -28,7 +28,7 @@ export async function GET(req: Request) {
   if (overdue.length > 0 || dueSoon.length > 0) {
     const resend = getResend()
     await resend.emails.send({
-      from: 'Lohono CMD <noreply@yourdomain.com>',
+      from: 'Lohono CMD <onboarding@resend.dev>',
       to,
       subject: `Task Alert — ${overdue.length} overdue, ${dueSoon.length} due soon`,
       html: buildReminderHtml(overdue, dueSoon),
