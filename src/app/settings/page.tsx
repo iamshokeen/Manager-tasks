@@ -7,6 +7,43 @@ import { toast } from 'sonner'
 import { formatDate } from '@/lib/utils'
 import { RefreshCw, Download, Send } from 'lucide-react'
 
+function TargetsUpload() {
+  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<string | null>(null)
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setLoading(true)
+    setStatus(null)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch('/api/targets/upload', { method: 'POST', body: form })
+      const json = await res.json()
+      if (json.ok) setStatus('Targets uploaded successfully')
+      else setStatus(`Error: ${json.error}`)
+    } catch {
+      setStatus('Upload failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">Upload Targets CSV to update OTA and Check-in GMV targets.</p>
+      <label className="flex items-center gap-3 cursor-pointer">
+        <span className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90">
+          {loading ? 'Uploading...' : 'Upload Targets CSV'}
+        </span>
+        <input type="file" accept=".csv" onChange={handleUpload} className="hidden" disabled={loading} />
+      </label>
+      {status && <p className="text-sm text-muted-foreground">{status}</p>}
+    </div>
+  )
+}
+
 interface NumberEntry {
   syncedAt?: string | null
 }
@@ -135,24 +172,12 @@ export default function SettingsPage() {
     <div>
       <PageHeader title="Settings" description="Configuration, sync, and automation controls" />
 
-      {/* Revenue Targets */}
+      {/* Revenue Targets Upload */}
       <div className="bg-card border border-border rounded-lg p-5 mb-4">
         <h2 className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wider">
           Revenue Targets (FY27)
         </h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-background border border-border rounded p-3">
-            <div className="text-xs text-muted-foreground mb-1">Check-in Revenue</div>
-            <div className="text-xl font-bold font-mono text-[#C9A84C]">₹85 Cr</div>
-          </div>
-          <div className="bg-background border border-border rounded p-3">
-            <div className="text-xs text-muted-foreground mb-1">OTA Gross Bookings</div>
-            <div className="text-xl font-bold font-mono text-[#C9A84C]">₹5 Cr</div>
-          </div>
-        </div>
-        <p className="text-xs text-muted-foreground mt-3">
-          To update targets, edit environment configuration.
-        </p>
+        <TargetsUpload />
       </div>
 
       {/* Sheets Sync */}

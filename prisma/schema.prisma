@@ -202,3 +202,10 @@ model Report {
 
   @@unique([type, period])
 }
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}

@@ -24,6 +24,13 @@ const NAV_ITEMS = [
     ],
   },
   {
+    group: 'Assessment',
+    items: [
+      { href: '/assessment/ota', label: 'OTA Assessment', icon: '◎' },
+      { href: '/assessment/checkin', label: 'Check-in GMV', icon: '◑' },
+    ],
+  },
+  {
     group: 'Reports',
     items: [{ href: '/reports', label: 'Reports', icon: '📊' }],
   },
