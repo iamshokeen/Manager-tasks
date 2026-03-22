@@ -8,6 +8,7 @@ import { useCadences } from '@/hooks/use-cadences'
 import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
+import { AgentPlan } from '@/components/ui/agent-plan'
 
 import { cn } from '@/lib/utils'
 
@@ -34,10 +35,11 @@ interface Cadence {
   name: string
   type: string
   isActive: boolean
-  schedule?: string | null
-  durationMinutes?: number | null
-  audience?: string | null
-  prepItems: string[]
+  day?: string | null
+  time?: string | null
+  duration?: number | null
+  scope?: string | null
+  prepItems: Array<{ id: string; title: string; leadTimeDays?: number | null }>
 }
 
 interface CadenceCardProps {
@@ -84,22 +86,22 @@ function CadenceCard({ cadence }: CadenceCardProps) {
               <CadenceTypeBadge type={cadence.type} />
             </div>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
-              {cadence.schedule && (
+              {(cadence.day || cadence.time) && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Calendar className="h-3 w-3" />
-                  {cadence.schedule}
+                  {cadence.day}{cadence.time ? ` at ${cadence.time}` : ''}
                 </span>
               )}
-              {cadence.durationMinutes && (
+              {cadence.duration && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" />
-                  {cadence.durationMinutes} min
+                  {cadence.duration} min
                 </span>
               )}
-              {cadence.audience && (
+              {cadence.scope && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Users className="h-3 w-3" />
-                  {cadence.audience}
+                  {cadence.scope}
                 </span>
               )}
             </div>
@@ -126,16 +128,18 @@ function CadenceCard({ cadence }: CadenceCardProps) {
 
       {/* Prep Items */}
       {cadence.prepItems && cadence.prepItems.length > 0 && (
-        <div className="mt-4 ml-5">
-          <p className="text-xs font-medium text-muted-foreground mb-2">Prep Items:</p>
-          <ul className="flex flex-col gap-1.5">
-            {cadence.prepItems.map((item, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-sm text-foreground">
-                <span className="mt-1 w-2 h-2 rounded-full border border-muted-foreground shrink-0" />
-                {item}
-              </li>
-            ))}
-          </ul>
+        <div className="mt-4">
+          <AgentPlan
+            title="Prep Items"
+            items={cadence.prepItems.map((item) => ({
+              id: item.id,
+              title: item.title,
+              description: item.leadTimeDays != null
+                ? `Due ${item.leadTimeDays} day${item.leadTimeDays !== 1 ? 's' : ''} before meeting`
+                : undefined,
+              status: 'pending' as const,
+            }))}
+          />
         </div>
       )}
     </div>

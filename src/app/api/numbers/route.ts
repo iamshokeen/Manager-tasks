@@ -4,7 +4,9 @@ import { getCurrentMetrics, upsertMetric } from '@/lib/services/numbers'
 export async function GET() {
   try {
     const metrics = await getCurrentMetrics()
-    return NextResponse.json({ data: metrics })
+    return NextResponse.json({ data: metrics }, {
+      headers: { 'Cache-Control': 'public, max-age=0, stale-while-revalidate=3600' },
+    })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to fetch metrics' }, { status: 500 })
   }

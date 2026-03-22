@@ -33,14 +33,14 @@ export async function syncFromSheets(): Promise<number> {
   const json = await res.json()
   if (!Array.isArray(json.metrics)) throw new Error('Sheets sync: invalid response — expected metrics array')
 
-  let synced = 0
-  for (const entry of json.metrics) {
+  const valid = json.metrics.filter((entry: any) => {
     if (typeof entry.metric !== 'string' || typeof entry.value !== 'number' || typeof entry.period !== 'string') {
       console.warn('Sheets sync: skipping malformed entry', entry)
-      continue
+      return false
     }
-    await upsertMetric(entry.metric, entry.value, entry.period, 'sheets')
-    synced++
-  }
-  return synced
+    return true
+  })
+
+  await Promise.all(valid.map((entry: any) => upsertMetric(entry.metric, entry.value, entry.period, 'sheets')))
+  return valid.length
 }

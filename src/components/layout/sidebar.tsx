@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   {
     group: 'Assessment',
     items: [
+      { href: '/metrics', label: 'Metrics', icon: '▲' },
       { href: '/assessment/ota', label: 'OTA Assessment', icon: '◎' },
       { href: '/assessment/checkin', label: 'Check-in GMV', icon: '◑' },
     ],
@@ -47,7 +48,7 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[220px] border-r border-border bg-[#0D0E13] flex flex-col z-40">
+    <aside className="fixed left-0 top-0 h-screen w-[220px] border-r border-border bg-[#0D0E13] flex flex-col z-40 print:hidden">
       <div className="px-4 py-4 border-b border-border">
         <div className="text-xs font-bold tracking-widest uppercase" style={{ color: 'var(--color-gold)' }}>
           Lohono <span className="text-muted-foreground font-normal">CMD</span>

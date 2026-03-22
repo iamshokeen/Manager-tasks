@@ -2,29 +2,40 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import useSWR from 'swr'
 import { useTasks } from '@/hooks/use-tasks'
 import { useTeam } from '@/hooks/use-team'
-import { useNumbers } from '@/hooks/use-numbers'
 import { useCadences } from '@/hooks/use-cadences'
 import { StatCard } from '@/components/ui/stat-card'
 import { PriorityBadge } from '@/components/ui/priority-badge'
 import { MemberAvatar } from '@/components/ui/member-avatar'
-import { PageHeader } from '@/components/ui/page-header'
 import { Button } from '@/components/ui/button'
+import { TextShimmer } from '@/components/ui/text-shimmer'
+import { BentoGrid, BentoCard } from '@/components/ui/bento-grid'
 import { isOverdue, isDueToday, isDueSoon, formatDate } from '@/lib/utils'
 import { formatCrore } from '@/lib/format'
-import { RefreshCw, Zap, Mail, ChevronDown, ChevronUp } from 'lucide-react'
+import { RefreshCw, Zap, Mail, ChevronDown, ChevronUp, BarChart3, TrendingUp, Hotel, Users, FileText, BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
 
-const CHECKIN_TARGET = 85_000_000  // ₹85 Cr
-const OTA_TARGET = 5_000_000       // ₹5 Cr
+const fetcher = (url: string) => fetch(url).then(r => r.json())
+
+const BENTO_FEATURES = [
+  { name: 'Metrics', description: 'FY27 KPIs — funnel, revenue, OTA attainment', href: '/metrics', cta: 'View metrics', Icon: BarChart3, className: 'col-span-1' },
+  { name: 'OTA Assessment', description: 'Gross GMV, channel mix, region split vs targets', href: '/assessment/ota', cta: 'View OTA', Icon: TrendingUp, className: 'col-span-1' },
+  { name: 'Check-in GMV', description: 'CI revenue, ARR, weekday vs weekend breakdown', href: '/assessment/checkin', cta: 'View check-in', Icon: Hotel, className: 'col-span-1' },
+  { name: 'Team', description: 'Member profiles, roles, and open task counts', href: '/team', cta: 'View team', Icon: Users, className: 'col-span-1' },
+  { name: 'Reports', description: 'Weekly snapshots and stakeholder summaries', href: '/reports', cta: 'View reports', Icon: FileText, className: 'col-span-1' },
+  { name: 'Playbook', description: 'SOPs, onboarding guides, and team references', href: '/playbook', cta: 'View playbook', Icon: BookOpen, className: 'col-span-1' },
+]
+
 
 const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
 
 export default function DashboardPage() {
   const { tasks, isLoading: tasksLoading } = useTasks()
   const { members, isLoading: teamLoading } = useTeam()
-  const { numbers, isLoading: numbersLoading } = useNumbers()
+  const { data: metricsData, isLoading: numbersLoading } = useSWR('/api/metrics', fetcher)
+  const { data: targetsData } = useSWR('/api/targets', fetcher)
   const { cadences, isLoading: cadencesLoading } = useCadences()
 
   const [automationOpen, setAutomationOpen] = useState(false)
@@ -46,20 +57,13 @@ export default function DashboardPage() {
   )
 
   // ── Revenue KPI ───────────────────────────────────────────────────────────
-  const allEntries = [
-    ...(numbers?.weekly ?? []),
-    ...(numbers?.monthly ?? []),
-  ] as Array<{ metric: string; value: number; syncedAt?: string | null }>
-
-  const checkinEntry = allEntries.find((e) => e.metric === 'checkin_revenue')
-  const otaEntry = allEntries.find((e) => e.metric === 'ota_bookings')
-  const hasRevenue = !!(checkinEntry || otaEntry)
-
-  const latestSyncedAt = allEntries
-    .map((e) => e.syncedAt)
-    .filter(Boolean)
-    .sort()
-    .at(-1) as string | undefined
+  const metrics: Record<string, number> = metricsData?.data ?? {}
+  const checkinValue = metrics['ci_revenue_ytd'] ?? null
+  const otaValue = metrics['ota_gross_gmv_ytd'] ?? null
+  const hasRevenue = !!(checkinValue || otaValue)
+  const latestSyncedAt: string | undefined = undefined
+  const CHECKIN_TARGET: number = targetsData?.targets?.checkin?.ytd?.total ?? 851_910_648
+  const OTA_TARGET: number = targetsData?.targets?.ota?.ytd?.revenue ?? 34_319_608
 
   // ── Priority tasks (top 5 open by priority) ────────────────────────────
   const priorityTasks = [...openTasks]
@@ -154,10 +158,21 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Command Center"
-        description="Lohono Revenue &amp; Team Dashboard"
-      />
+      <div>
+        <TextShimmer as="h1" className="text-2xl font-bold" duration={3}>
+          Command Center
+        </TextShimmer>
+        <p className="text-muted-foreground text-sm mt-1">Lohono Revenue &amp; Team Dashboard</p>
+      </div>
+
+      {/* ── 0. Quick Nav ─────────────────────────────────────────────────── */}
+      <section>
+        <BentoGrid className="grid-cols-3 auto-rows-[9rem]">
+          {BENTO_FEATURES.map((f) => (
+            <BentoCard key={f.href} {...f} background={null} />
+          ))}
+        </BentoGrid>
+      </section>
 
       {/* ── 1. Stat Row ──────────────────────────────────────────────────── */}
       <section>
@@ -212,21 +227,21 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="text-2xl font-bold font-mono text-primary mb-2">
-                  {checkinEntry ? formatCrore(checkinEntry.value) : '—'}
+                  {checkinValue !== null ? formatCrore(checkinValue) : '—'}
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full bg-primary transition-all duration-500"
                     style={{
-                      width: checkinEntry
-                        ? `${Math.min(100, (checkinEntry.value / CHECKIN_TARGET) * 100).toFixed(1)}%`
+                      width: checkinValue !== null
+                        ? `${Math.min(100, (checkinValue / CHECKIN_TARGET) * 100).toFixed(1)}%`
                         : '0%',
                     }}
                   />
                 </div>
-                {checkinEntry && (
+                {checkinValue !== null && (
                   <div className="text-xs text-muted-foreground mt-1">
-                    {((checkinEntry.value / CHECKIN_TARGET) * 100).toFixed(1)}% of target
+                    {((checkinValue / CHECKIN_TARGET) * 100).toFixed(1)}% of target
                   </div>
                 )}
               </div>
@@ -234,27 +249,27 @@ export default function DashboardPage() {
               {/* OTA Bookings */}
               <div>
                 <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">OTA Bookings</span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">OTA Gross GMV</span>
                   <span className="text-xs text-muted-foreground">
                     Target {formatCrore(OTA_TARGET)}
                   </span>
                 </div>
                 <div className="text-2xl font-bold font-mono text-primary mb-2">
-                  {otaEntry ? formatCrore(otaEntry.value) : '—'}
+                  {otaValue !== null ? formatCrore(otaValue) : '—'}
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full bg-primary transition-all duration-500"
                     style={{
-                      width: otaEntry
-                        ? `${Math.min(100, (otaEntry.value / OTA_TARGET) * 100).toFixed(1)}%`
+                      width: otaValue !== null
+                        ? `${Math.min(100, (otaValue / OTA_TARGET) * 100).toFixed(1)}%`
                         : '0%',
                     }}
                   />
                 </div>
-                {otaEntry && (
+                {otaValue !== null && (
                   <div className="text-xs text-muted-foreground mt-1">
-                    {((otaEntry.value / OTA_TARGET) * 100).toFixed(1)}% of target
+                    {((otaValue / OTA_TARGET) * 100).toFixed(1)}% of target
                   </div>
                 )}
               </div>

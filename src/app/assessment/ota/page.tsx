@@ -23,16 +23,14 @@ function ProgressBar({ value }: { value: number }) {
 
 export default function OTAAssessmentPage() {
   const { data: tData } = useSWR('/api/targets', fetcher)
-  const { data: nData } = useSWR('/api/numbers', fetcher)
+  const { data: mData } = useSWR('/api/metrics', fetcher)
 
   const targets = tData?.targets?.ota
-  const numbers: Record<string, number> = {}
-  if (nData?.weekly) for (const e of nData.weekly) numbers[e.metric] = e.value
-  if (nData?.monthly) for (const e of nData.monthly) numbers[e.metric] = e.value
+  const metrics: Record<string, number> = mData?.data || {}
 
-  const actualRevYtd   = numbers['ota_revenue_ytd']   || 0
-  const actualGrossYtd = numbers['ota_gross_gmv_ytd']  || 0
-  const actualMmtYtd   = numbers['mmt_revenue_ytd']    || 0
+  const actualGrossYtd = metrics['ota_gross_gmv_ytd']  || 0
+  const actualRevYtd   = metrics['ota_net_gmv_ytd']    || 0
+  const actualMmtYtd   = metrics['ota_channel_mmt']    || 0
 
   return (
     <div className="p-6 space-y-8">

@@ -21,19 +21,17 @@ function ProgressBar({ value }: { value: number }) {
 
 export default function CheckinAssessmentPage() {
   const { data: tData } = useSWR('/api/targets', fetcher)
-  const { data: nData } = useSWR('/api/numbers', fetcher)
+  const { data: mData } = useSWR('/api/metrics', fetcher)
 
   const targets = tData?.targets?.checkin
-  const numbers: Record<string, number> = {}
-  if (nData?.weekly) for (const e of nData.weekly) numbers[e.metric] = e.value
-  if (nData?.monthly) for (const e of nData.monthly) numbers[e.metric] = e.value
+  const metrics: Record<string, number> = mData?.data || {}
 
-  const actualTotal = numbers['checkin_revenue_ytd']  || 0
-  const actualGoa   = numbers['checkin_goa_ytd']      || 0
-  const actualMaha  = numbers['checkin_maha_ytd']     || 0
-  const actualNorth = numbers['checkin_north_ytd']    || 0
-  const actualWkday = numbers['checkin_weekday_ytd']  || 0
-  const actualWkend = numbers['checkin_weekend_ytd']  || 0
+  const actualTotal = metrics['ci_revenue_ytd']          || 0
+  const actualGoa   = metrics['ci_goa_ytd']              || 0
+  const actualMaha  = metrics['ci_maha_ytd']             || 0
+  const actualNorth = metrics['ci_north_ytd']            || 0
+  const actualWkday = metrics['ci_revenue_weekday_ytd']  || 0
+  const actualWkend = metrics['ci_revenue_weekend_ytd']  || 0
 
   return (
     <div className="p-6 space-y-8">

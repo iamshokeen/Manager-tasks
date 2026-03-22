@@ -14,6 +14,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/reports': 'Reports',
   '/playbook': 'Playbook',
   '/settings': 'Settings',
+  '/metrics': 'Metrics',
+  '/assessment': 'Assessment',
 }
 
 export function Topbar() {
@@ -30,7 +32,7 @@ export function Topbar() {
   })
 
   return (
-    <header className="fixed top-0 left-[220px] right-0 h-14 border-b border-border bg-background/80 backdrop-blur-sm z-30 flex items-center px-6 justify-between">
+    <header className="fixed top-0 left-[220px] right-0 h-14 border-b border-border bg-background/80 backdrop-blur-sm z-30 flex items-center px-6 justify-between print:hidden">
       <h1 className="text-sm font-semibold">{title}</h1>
       <div className="flex items-center gap-3">
         <span className="text-xs font-mono text-muted-foreground">{today}</span>
@@ -40,6 +42,13 @@ export function Topbar() {
         >
           FY27 Q4
         </span>
+        <button
+          onClick={() => window.print()}
+          className="text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:border-[var(--color-gold)] transition-colors"
+          title="Download as PDF"
+        >
+          ↓ PDF
+        </button>
       </div>
     </header>
   )

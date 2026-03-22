@@ -7,7 +7,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       <Sidebar />
       <Topbar />
-      <main className="ml-[220px] pt-14 min-h-screen">
+      <main className="ml-[220px] pt-14 min-h-screen print:ml-0 print:pt-0">
         <div className="p-6">{children}</div>
       </main>
     </div>
