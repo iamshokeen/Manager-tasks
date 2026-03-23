@@ -33,7 +33,7 @@ export function Topbar() {
   })
 
   return (
-    <header className="fixed top-0 left-0 lg:left-64 right-0 h-14 z-30 flex items-center justify-between px-5 lg:px-8 bg-white/80 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] print:hidden">
+    <header className="fixed top-0 left-0 lg:left-64 right-0 h-14 z-30 flex items-center justify-between px-5 lg:px-8 bg-white/80 backdrop-blur-xl shadow-[var(--shadow-glass)] print:hidden">
       {/* Left: brand on mobile, page title on desktop */}
       <div className="flex items-center gap-4">
         <span className="text-base font-black tracking-tight text-foreground lg:hidden">
@@ -48,7 +48,11 @@ export function Topbar() {
         <span className="hidden md:inline-flex text-[10px] px-2 py-0.5 rounded-full font-bold bg-primary/10 text-primary">
           FY27 Q4
         </span>
-        <button className="w-8 h-8 flex items-center justify-center text-[var(--outline)] hover:text-primary transition-colors rounded-lg hover:bg-primary/5">
+        <button
+          onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
+          className="w-8 h-8 flex items-center justify-center text-[var(--outline)] hover:text-primary transition-colors rounded-lg hover:bg-primary/5"
+          title="Search (⌘K)"
+        >
           <Search size={16} />
         </button>
         <button className="w-8 h-8 flex items-center justify-center text-[var(--outline)] hover:text-primary transition-colors rounded-lg hover:bg-primary/5">
