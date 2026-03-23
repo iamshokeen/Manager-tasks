@@ -15,10 +15,10 @@ export function StatCard({ label, value, sub, accent, className }: {
   }[accent ?? 'gold']
 
   return (
-    <div className={cn('bg-card border border-border rounded-lg p-4', className)}>
-      <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{label}</div>
-      <div className={cn('text-2xl font-bold font-mono', accentColor)}>{value}</div>
-      {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
+    <div className={cn('bg-white rounded-xl p-5 shadow-[0_20px_40px_rgba(0,74,198,0.06)] hover:-translate-y-0.5 transition-all', className)}>
+      <div className="text-xs text-[var(--outline)] uppercase tracking-wider mb-2">{label}</div>
+      <div className={cn('text-2xl font-bold text-foreground', accentColor)}>{value}</div>
+      {sub && <div className="text-xs text-[var(--outline)] mt-1">{sub}</div>}
     </div>
   )
 }

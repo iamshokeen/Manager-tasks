@@ -10,15 +10,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        default:
+          "bg-gradient-to-br from-[var(--primary-container)] to-primary text-white shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all",
         outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border border-[var(--outline-variant)]/40 bg-transparent text-foreground hover:bg-[var(--surface-container-low)] transition-colors",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "bg-[var(--surface-container-high)] text-foreground hover:bg-[var(--surface-container-highest)] transition-colors",
         ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+          "hover:bg-[var(--surface-container-low)] text-foreground transition-colors",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+          "bg-destructive text-white hover:bg-destructive/90 transition-colors",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
