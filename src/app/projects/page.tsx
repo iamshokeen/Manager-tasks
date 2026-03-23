@@ -81,7 +81,7 @@ function ProjectCard({ project, onClick }: { project: ProjectData; onClick: () =
   return (
     <div
       onClick={onClick}
-      className="bg-card border border-border rounded-lg p-3 cursor-pointer hover:border-ring/40 transition-colors group flex flex-col gap-2"
+      className="bg-white rounded-xl p-5 shadow-[0_20px_40px_rgba(0,74,198,0.06)] hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col gap-2"
     >
       {/* Top row: dept badge + due date */}
       <div className="flex items-center justify-between">
@@ -91,7 +91,7 @@ function ProjectCard({ project, onClick }: { project: ProjectData; onClick: () =
           <span />
         )}
         {project.dueDate && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-[var(--outline)]">
             <Calendar className="h-3 w-3" />
             <span>{formatDate(project.dueDate)}</span>
           </div>
@@ -106,9 +106,9 @@ function ProjectCard({ project, onClick }: { project: ProjectData; onClick: () =
       {/* Owner */}
       {project.owner && (
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">Owner:</span>
+          <span className="text-xs text-[var(--outline)]">Owner:</span>
           <MemberAvatar name={project.owner.name} size="sm" />
-          <span className="text-xs text-muted-foreground truncate">{project.owner.name}</span>
+          <span className="text-xs text-[var(--outline)] truncate">{project.owner.name}</span>
         </div>
       )}
 
@@ -116,12 +116,12 @@ function ProjectCard({ project, onClick }: { project: ProjectData; onClick: () =
       {total > 0 && (
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Tasks</span>
-            <span className="text-xs text-muted-foreground">{done}/{total} done</span>
+            <span className="text-xs text-[var(--outline)]">Tasks</span>
+            <span className="text-xs text-[var(--outline)]">{done}/{total} done</span>
           </div>
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+          <div className="h-1.5 bg-[var(--surface-container-high)] rounded-full overflow-hidden">
             <div
-              className="h-full bg-[#C9A84C] rounded-full transition-all"
+              className="h-full bg-primary rounded-full transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -130,7 +130,7 @@ function ProjectCard({ project, onClick }: { project: ProjectData; onClick: () =
 
       {/* Stakeholder */}
       {project.stakeholder && (
-        <p className="text-xs text-muted-foreground truncate">{project.stakeholder.name}</p>
+        <p className="text-xs text-[var(--outline)] truncate">{project.stakeholder.name}</p>
       )}
     </div>
   )
@@ -214,13 +214,13 @@ export default function ProjectsPage() {
               {/* Column header */}
               <div
                 className={cn(
-                  'bg-card border border-border border-t-2 rounded-lg px-3 py-2 mb-3 flex items-center justify-between',
+                  'bg-white border-t-2 rounded-xl px-3 py-2 mb-3 flex items-center justify-between shadow-[0_20px_40px_rgba(0,74,198,0.06)]',
                   col.color
                 )}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground">{col.label}</span>
-                  <span className="text-xs font-semibold bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+                  <span className="text-xs font-semibold bg-[var(--surface-container-low)] text-[var(--outline)] rounded-full px-2 py-0.5">
                     {isLoading ? '…' : colProjects.length}
                   </span>
                 </div>
@@ -258,7 +258,7 @@ export default function ProjectsPage() {
 
       {/* Create Project Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-lg">
+        <DialogContent className="bg-white max-w-lg">
           <DialogHeader>
             <DialogTitle>New Project</DialogTitle>
           </DialogHeader>

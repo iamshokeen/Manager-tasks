@@ -158,20 +158,20 @@ export default function MyTasksPage() {
           }
         />
       ) : (
-        <div className="flex flex-col">
+        <div className="flex flex-col bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] px-5 py-4">
           {PRIORITY_ORDER.map(priority => {
             const items = grouped[priority]
             if (items.length === 0) return null
             return (
               <div key={priority}>
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 mt-4">
+                <div className="text-[10px] font-bold text-[var(--outline)] uppercase tracking-widest mb-2 mt-4">
                   {PRIORITY_GROUP_LABELS[priority]} Priority
                 </div>
                 <div className="flex flex-col gap-2">
                   {items.map(task => (
                     <div
                       key={task.id}
-                      className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg group"
+                      className="flex items-center gap-3 p-4 rounded-lg hover:bg-[var(--surface-container-low)] transition-colors group"
                     >
                       <button
                         onClick={() => toggleDone(task)}
@@ -180,13 +180,13 @@ export default function MyTasksPage() {
                       >
                         {task.status === 'done'
                           ? <CheckCircle2 className="h-5 w-5 text-[#10B981]" />
-                          : <Circle className="h-5 w-5 text-muted-foreground hover:text-[#C9A84C] transition-colors" />
+                          : <Circle className="h-5 w-5 text-[var(--outline)] hover:text-primary transition-colors" />
                         }
                       </button>
                       <div className="flex-1 min-w-0">
                         <Link
                           href={`/tasks/${task.id}`}
-                          className={`text-sm font-medium ${task.status === 'done' ? 'line-through text-muted-foreground' : 'text-foreground hover:text-[#C9A84C] transition-colors'}`}
+                          className={`text-sm font-medium ${task.status === 'done' ? 'line-through text-[var(--outline)]' : 'text-foreground hover:text-primary transition-colors'}`}
                         >
                           {task.title}
                         </Link>
@@ -196,8 +196,8 @@ export default function MyTasksPage() {
                               isOverdue(task.dueDate) && task.status !== 'done'
                                 ? 'text-[#EF4444]'
                                 : isDueToday(task.dueDate) && task.status !== 'done'
-                                ? 'text-[#C9A84C]'
-                                : 'text-muted-foreground'
+                                ? 'text-primary'
+                                : 'text-[var(--outline)]'
                             }`}
                           >
                             Due {formatDate(task.dueDate)}
@@ -219,7 +219,7 @@ export default function MyTasksPage() {
 
       {/* New Task Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-md">
+        <DialogContent className="bg-white max-w-md">
           <DialogHeader>
             <DialogTitle>New Personal Task</DialogTitle>
           </DialogHeader>

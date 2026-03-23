@@ -35,7 +35,7 @@ const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as
 const MEMBER_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   active: { label: 'Active', className: 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/20' },
   hiring: { label: 'Hiring', className: 'bg-[#C9A84C]/10 text-[#C9A84C] border-[#C9A84C]/20' },
-  inactive: { label: 'Inactive', className: 'bg-[#1E2028] text-[#6B7280] border-[#1E2028]' },
+  inactive: { label: 'Inactive', className: 'bg-[var(--surface-container-low)] text-[var(--outline)] border-transparent' },
   on_leave: { label: 'On Leave', className: 'bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/20' },
   exited: { label: 'Exited', className: 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/20' },
 }
@@ -94,7 +94,7 @@ function MemberCard({ member, onClick }: { member: MemberSummary; onClick: () =>
   return (
     <div
       onClick={onClick}
-      className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:border-ring/40 transition-colors group flex flex-col gap-3"
+      className="bg-white rounded-xl p-5 shadow-[0_20px_40px_rgba(0,74,198,0.06)] hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col gap-3"
     >
       {/* Top: avatar + name/role */}
       <div className="flex items-center gap-3">
@@ -103,7 +103,7 @@ function MemberCard({ member, onClick }: { member: MemberSummary; onClick: () =>
           <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
             {member.name}
           </p>
-          <p className="text-xs text-muted-foreground truncate">{member.role}</p>
+          <p className="text-xs text-[var(--outline)] truncate">{member.role}</p>
         </div>
       </div>
 
@@ -114,10 +114,10 @@ function MemberCard({ member, onClick }: { member: MemberSummary; onClick: () =>
       </div>
 
       {/* Divider */}
-      <div className="border-t border-border" />
+      <div className="h-px bg-[var(--surface-container-low)]" />
 
       {/* Stats row */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+      <div className="flex items-center gap-4 text-xs text-[var(--outline)]">
         <div>
           <span className="text-foreground font-medium">Delegation:</span>{' '}
           {delegLabel}
@@ -130,7 +130,7 @@ function MemberCard({ member, onClick }: { member: MemberSummary; onClick: () =>
 
       {/* 1:1 */}
       {oneOnOne && (
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-[var(--outline)]">
           <span className="text-foreground font-medium">1:1:</span> {oneOnOne}
         </div>
       )}
@@ -207,7 +207,7 @@ export default function TeamPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-card border border-border rounded-lg p-4 h-48 animate-pulse" />
+            <div key={i} className="bg-white rounded-xl p-5 h-48 animate-pulse shadow-[0_20px_40px_rgba(0,74,198,0.06)]" />
           ))}
         </div>
       ) : (members as MemberSummary[]).length === 0 ? (
@@ -236,7 +236,7 @@ export default function TeamPage() {
 
       {/* Add Member Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-white max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Team Member</DialogTitle>
           </DialogHeader>
