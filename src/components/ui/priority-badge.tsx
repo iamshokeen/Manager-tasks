@@ -1,10 +1,10 @@
 import { cn } from '@/lib/utils'
 
 const CONFIG = {
-  critical: { label: 'Critical', className: 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/20' },
-  high: { label: 'High', className: 'bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20' },
-  medium: { label: 'Medium', className: 'bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/20' },
-  low: { label: 'Low', className: 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/20' },
+  critical: { label: 'Critical', className: 'bg-red-50 text-red-700 border-red-200' },
+  high: { label: 'High', className: 'bg-orange-50 text-orange-700 border-orange-200' },
+  medium: { label: 'Medium', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  low: { label: 'Low', className: 'bg-green-50 text-green-700 border-green-200' },
 }
 
 export function PriorityBadge({ priority }: { priority: string }) {
