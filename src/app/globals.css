@@ -56,6 +56,10 @@
 
   /* Glass shadow */
   --shadow-glass: 0 20px 40px rgba(0, 74, 198, 0.06);
+
+  /* Temporary shims — remove when consuming components are updated (Tasks 4–9) */
+  --color-gold: var(--primary);
+  --color-navy: var(--secondary);
 }
 
 /* ─── Dark override (future use) ─── */
@@ -76,7 +80,7 @@
   --accent-foreground: #e3e2e8;
   --destructive: #ffb4ab;
   --destructive-foreground: #690005;
-  --border: rgba(77, 70, 55, 0.3);
+  --border: rgba(100, 108, 130, 0.25);
   --input: #2a2b30;
   --ring: #b4c5ff;
   --surface-container-lowest: #0d0e12;
@@ -85,7 +89,7 @@
   --surface-container-high: #282930;
   --surface-container-highest: #343439;
   --outline: #958d7d;
-  --outline-variant: #4d4637;
+  --outline-variant: #49454f;
   --primary-container: #003ea8;
 }
 
@@ -116,6 +120,15 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-surface-dim: var(--surface-dim);
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+  --color-destructive-foreground: var(--destructive-foreground);
 }
 
 * {
