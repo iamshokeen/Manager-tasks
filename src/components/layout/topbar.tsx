@@ -1,6 +1,7 @@
 // src/components/layout/topbar.tsx
 'use client'
 import { usePathname } from 'next/navigation'
+import { Search, Bell } from 'lucide-react'
 
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Dashboard',
@@ -32,19 +33,30 @@ export function Topbar() {
   })
 
   return (
-    <header className="fixed top-0 left-[220px] right-0 h-14 border-b border-border bg-background/80 backdrop-blur-sm z-30 flex items-center px-6 justify-between print:hidden">
-      <h1 className="text-sm font-semibold">{title}</h1>
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-mono text-muted-foreground">{today}</span>
-        <span
-          className="text-xs px-2 py-0.5 rounded-full font-medium"
-          style={{ background: 'var(--color-navy)', color: '#93C5FD' }}
-        >
+    <header className="fixed top-0 left-0 lg:left-64 right-0 h-14 z-30 flex items-center justify-between px-5 lg:px-8 bg-white/80 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] print:hidden">
+      {/* Left: brand on mobile, page title on desktop */}
+      <div className="flex items-center gap-4">
+        <span className="text-base font-black tracking-tight text-foreground lg:hidden">
+          Lohono Stays
+        </span>
+        <h1 className="hidden lg:block text-sm font-semibold text-foreground">{title}</h1>
+      </div>
+
+      {/* Right: date + badge + search + notifications + PDF */}
+      <div className="flex items-center gap-2 lg:gap-3">
+        <span className="hidden lg:block text-xs font-medium text-muted-foreground">{today}</span>
+        <span className="hidden md:inline-flex text-[10px] px-2 py-0.5 rounded-full font-bold bg-primary/10 text-primary">
           FY27 Q4
         </span>
+        <button className="w-8 h-8 flex items-center justify-center text-[var(--outline)] hover:text-primary transition-colors rounded-lg hover:bg-primary/5">
+          <Search size={16} />
+        </button>
+        <button className="w-8 h-8 flex items-center justify-center text-[var(--outline)] hover:text-primary transition-colors rounded-lg hover:bg-primary/5">
+          <Bell size={16} />
+        </button>
         <button
           onClick={() => window.print()}
-          className="text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:border-[var(--color-gold)] transition-colors"
+          className="hidden md:flex text-xs px-2.5 py-1 rounded-lg border border-[var(--outline-variant)]/40 text-muted-foreground hover:text-primary hover:border-primary/30 transition-all"
           title="Download as PDF"
         >
           ↓ PDF

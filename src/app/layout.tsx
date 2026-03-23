@@ -5,7 +5,7 @@ import { AppShell } from '@/components/layout/app-shell'
 import { Toaster } from '@/components/ui/sonner'
 
 export const viewport: Viewport = {
-  themeColor: '#C9A84C',
+  themeColor: '#004ac6',
 }
 
 export const metadata: Metadata = {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body className="min-h-screen bg-background text-foreground antialiased">
         <AppShell>{children}</AppShell>
         <Toaster />
