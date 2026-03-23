@@ -5,6 +5,23 @@ import { useRouter } from 'next/navigation'
 import { Plus, Search, Calendar, ClipboardList } from 'lucide-react'
 import { toast } from 'sonner'
 
+import {
+  DndContext,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+
 import { useTasks } from '@/hooks/use-tasks'
 import { useTeam } from '@/hooks/use-team'
 import { PageHeader } from '@/components/ui/page-header'
@@ -31,26 +48,42 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-import { cn, DEPARTMENTS, PRIORITIES, STATUS_LABELS, formatDate, isOverdue, isDueToday } from '@/lib/utils'
-import type { TaskFilters, Priority } from '@/types'
+import { cn, DEPARTMENTS, PRIORITIES, formatDate, isOverdue, isDueToday } from '@/lib/utils'
+import type { TaskFilters } from '@/types'
 
-const KANBAN_COLUMNS: Array<{ key: 'todo' | 'in_progress' | 'review' | 'done'; label: string; color: string }> = [
-  { key: 'todo', label: 'To Do', color: 'border-t-[#6B7280]' },
-  { key: 'in_progress', label: 'In Progress', color: 'border-t-[#3B82F6]' },
-  { key: 'review', label: 'Review', color: 'border-t-[#F59E0B]' },
-  { key: 'done', label: 'Done', color: 'border-t-[#10B981]' },
+// ---------------------------------------------------------------------------
+// Kanban column definitions
+// ---------------------------------------------------------------------------
+
+const KANBAN_COLUMNS: Array<{ key: 'todo' | 'in_progress' | 'review' | 'done'; label: string; color: string; dotColor: string }> = [
+  { key: 'todo',        label: 'To Do',       color: 'border-t-[#6B7280]', dotColor: '#6B7280' },
+  { key: 'in_progress', label: 'In Progress', color: 'border-t-[#3B82F6]', dotColor: '#3B82F6' },
+  { key: 'review',      label: 'Review',      color: 'border-t-[#F59E0B]', dotColor: '#F59E0B' },
+  { key: 'done',        label: 'Done',        color: 'border-t-[#10B981]', dotColor: '#10B981' },
 ]
 
+type ColumnKey = 'todo' | 'in_progress' | 'review' | 'done'
+
+// ---------------------------------------------------------------------------
+// Task type used on this page
+// ---------------------------------------------------------------------------
+
+interface TaskShape {
+  id: string
+  title: string
+  priority: string
+  status?: string
+  department?: string
+  dueDate?: string | null
+  assignee?: { id: string; name: string } | null
+}
+
+// ---------------------------------------------------------------------------
+// Static TaskCard (used for the non-draggable detail-click scenario)
+// ---------------------------------------------------------------------------
+
 interface TaskCardProps {
-  task: {
-    id: string
-    title: string
-    priority: string
-    status?: string
-    department?: string
-    dueDate?: string | null
-    assignee?: { id: string; name: string } | null
-  }
+  task: TaskShape
   onClick: () => void
 }
 
@@ -97,6 +130,48 @@ function TaskCard({ task, onClick }: TaskCardProps) {
   )
 }
 
+// ---------------------------------------------------------------------------
+// SortableTaskCard — wraps TaskCard with dnd-kit drag handles
+// ---------------------------------------------------------------------------
+
+interface SortableTaskCardProps {
+  task: TaskShape
+  onClick: () => void
+}
+
+function SortableTaskCard({ task, onClick }: SortableTaskCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="cursor-grab active:cursor-grabbing select-none"
+    >
+      <TaskCard task={task} onClick={onClick} />
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Create-task form type
+// ---------------------------------------------------------------------------
+
 interface CreateTaskForm {
   title: string
   department: string
@@ -117,6 +192,10 @@ const EMPTY_FORM: CreateTaskForm = {
   isSelfTask: false,
 }
 
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function TasksPage() {
   const router = useRouter()
 
@@ -133,13 +212,69 @@ export default function TasksPage() {
   const { tasks, mutate, isLoading } = useTasks(filters)
   const { members } = useTeam()
 
-  const columns = {
-    todo: (tasks as TaskCardProps['task'][]).filter((t: { status?: string }) => t.status === 'todo'),
-    in_progress: (tasks as TaskCardProps['task'][]).filter((t: { status?: string }) => t.status === 'in_progress'),
-    review: (tasks as TaskCardProps['task'][]).filter((t: { status?: string }) => t.status === 'review'),
-    done: (tasks as TaskCardProps['task'][]).filter((t: { status?: string }) => t.status === 'done'),
+  // Group tasks by column
+  const columns: Record<ColumnKey, TaskShape[]> = {
+    todo:        (tasks as TaskShape[]).filter(t => t.status === 'todo'),
+    in_progress: (tasks as TaskShape[]).filter(t => t.status === 'in_progress'),
+    review:      (tasks as TaskShape[]).filter(t => t.status === 'review'),
+    done:        (tasks as TaskShape[]).filter(t => t.status === 'done'),
   }
 
+  // -------------------------------------------------------------------------
+  // dnd-kit sensors
+  // -------------------------------------------------------------------------
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  // -------------------------------------------------------------------------
+  // Drag-end: PATCH the task status when dropped on a new column
+  // -------------------------------------------------------------------------
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over) return
+
+    const overId = String(over.id)
+    // The SortableContext ids are ColumnKey strings; card ids are UUIDs.
+    // If dropped directly on the column droppable (id === ColumnKey), move there.
+    // If dropped on another card, find which column that card belongs to.
+    let targetColumn: ColumnKey | undefined = KANBAN_COLUMNS.find(c => c.key === overId)?.key as ColumnKey | undefined
+
+    if (!targetColumn) {
+      // Dropped on a card — find which column owns that card
+      for (const col of KANBAN_COLUMNS) {
+        if (columns[col.key].some(t => t.id === overId)) {
+          targetColumn = col.key
+          break
+        }
+      }
+    }
+
+    if (!targetColumn) return
+
+    const task = (tasks as TaskShape[]).find(t => t.id === String(active.id))
+    if (!task || task.status === targetColumn) return
+
+    // Optimistic revalidate then PATCH
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: targetColumn }),
+      })
+      if (!res.ok) throw new Error('Failed to update task status')
+      await mutate()
+      toast.success('Task moved')
+    } catch {
+      toast.error('Failed to move task')
+      await mutate()
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Create task
+  // -------------------------------------------------------------------------
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (!form.title.trim()) {
@@ -175,6 +310,9 @@ export default function TasksPage() {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -211,42 +349,65 @@ export default function TasksPage() {
         </Select>
       </div>
 
-      {/* Kanban board */}
-      <div className="grid grid-cols-4 gap-4 flex-1 min-h-0">
-        {KANBAN_COLUMNS.map(col => {
-          const colTasks = columns[col.key]
-          return (
-            <div key={col.key} className="flex flex-col min-h-0">
-              {/* Column header */}
-              <div className={cn('bg-card border border-border border-t-2 rounded-lg px-3 py-2 mb-3 flex items-center justify-between', col.color)}>
-                <span className="text-sm font-medium text-foreground">{col.label}</span>
-                <span className="text-xs font-semibold bg-muted text-muted-foreground rounded-full px-2 py-0.5">
-                  {isLoading ? '…' : colTasks.length}
-                </span>
-              </div>
-
-              {/* Cards */}
-              <div className="flex flex-col gap-2 overflow-y-auto max-h-[calc(100vh-280px)] pr-0.5">
-                {colTasks.length === 0 && !isLoading ? (
-                  <EmptyState
-                    icon={<ClipboardList className="h-8 w-8" />}
-                    title="No tasks"
-                    description={`No ${col.label.toLowerCase()} tasks`}
-                  />
-                ) : (
-                  colTasks.map(task => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onClick={() => router.push(`/tasks/${task.id}`)}
+      {/* Kanban board — drag-and-drop */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-4 gap-4 flex-1 min-h-0">
+          {KANBAN_COLUMNS.map(col => {
+            const colTasks = columns[col.key]
+            return (
+              <div key={col.key} className="flex flex-col min-h-0">
+                {/* Column header */}
+                <div
+                  className={cn(
+                    'bg-card border border-border border-t-2 rounded-lg px-3 py-2 mb-3 flex items-center justify-between',
+                    col.color
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ background: col.dotColor }}
                     />
-                  ))
-                )}
+                    <span className="text-sm font-medium text-foreground">{col.label}</span>
+                  </div>
+                  <span className="text-xs font-semibold bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+                    {isLoading ? '…' : colTasks.length}
+                  </span>
+                </div>
+
+                {/* Sortable drop zone */}
+                <SortableContext
+                  id={col.key}
+                  items={colTasks.map(t => t.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="flex flex-col gap-2 overflow-y-auto max-h-[calc(100vh-280px)] pr-0.5 min-h-[80px]">
+                    {colTasks.length === 0 && !isLoading ? (
+                      <EmptyState
+                        icon={<ClipboardList className="h-8 w-8" />}
+                        title="No tasks"
+                        description={`No ${col.label.toLowerCase()} tasks`}
+                      />
+                    ) : (
+                      colTasks.map(task => (
+                        <SortableTaskCard
+                          key={task.id}
+                          task={task}
+                          onClick={() => router.push(`/tasks/${task.id}`)}
+                        />
+                      ))
+                    )}
+                  </div>
+                </SortableContext>
               </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      </DndContext>
 
       {/* Create Task Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
