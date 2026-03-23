@@ -94,7 +94,7 @@ function MemberCard({ member, onClick }: { member: MemberSummary; onClick: () =>
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-xl p-5 shadow-[0_20px_40px_rgba(0,74,198,0.06)] hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col gap-3"
+      className="bg-card rounded-xl p-5 shadow-[var(--shadow-glass)] hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col gap-3"
     >
       {/* Top: avatar + name/role */}
       <div className="flex items-center gap-3">
@@ -207,7 +207,7 @@ export default function TeamPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl p-5 h-48 animate-pulse shadow-[0_20px_40px_rgba(0,74,198,0.06)]" />
+            <div key={i} className="bg-card rounded-xl p-5 h-48 animate-pulse shadow-[var(--shadow-glass)]" />
           ))}
         </div>
       ) : (members as MemberSummary[]).length === 0 ? (
@@ -236,7 +236,7 @@ export default function TeamPage() {
 
       {/* Add Member Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-white max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-card max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Team Member</DialogTitle>
           </DialogHeader>

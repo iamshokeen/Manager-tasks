@@ -81,7 +81,7 @@ function ProjectCard({ project, onClick }: { project: ProjectData; onClick: () =
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-xl p-5 shadow-[0_20px_40px_rgba(0,74,198,0.06)] hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col gap-2"
+      className="bg-card rounded-xl p-5 shadow-[var(--shadow-glass)] hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col gap-2"
     >
       {/* Top row: dept badge + due date */}
       <div className="flex items-center justify-between">
@@ -214,7 +214,7 @@ export default function ProjectsPage() {
               {/* Column header */}
               <div
                 className={cn(
-                  'bg-white border-t-2 rounded-xl px-3 py-2 mb-3 flex items-center justify-between shadow-[0_20px_40px_rgba(0,74,198,0.06)]',
+                  'bg-card border-t-2 rounded-xl px-3 py-2 mb-3 flex items-center justify-between shadow-[var(--shadow-glass)]',
                   col.color
                 )}
               >
@@ -258,7 +258,7 @@ export default function ProjectsPage() {
 
       {/* Create Project Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-white max-w-lg">
+        <DialogContent className="bg-card max-w-lg">
           <DialogHeader>
             <DialogTitle>New Project</DialogTitle>
           </DialogHeader>

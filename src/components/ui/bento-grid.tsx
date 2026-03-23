@@ -34,7 +34,7 @@ export const BentoCard = ({
   <div
     className={cn(
       'group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl',
-      'bg-white shadow-[0_20px_40px_rgba(0,74,198,0.06)] hover:-translate-y-0.5 transition-all cursor-pointer',
+      'bg-card shadow-[var(--shadow-glass)] hover:-translate-y-0.5 transition-all cursor-pointer',
       className
     )}
   >

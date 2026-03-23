@@ -158,7 +158,7 @@ export default function MyTasksPage() {
           }
         />
       ) : (
-        <div className="flex flex-col bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] px-5 py-4">
+        <div className="flex flex-col bg-card rounded-xl shadow-[var(--shadow-glass)] px-5 py-4">
           {PRIORITY_ORDER.map(priority => {
             const items = grouped[priority]
             if (items.length === 0) return null
@@ -219,7 +219,7 @@ export default function MyTasksPage() {
 
       {/* New Task Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-white max-w-md">
+        <DialogContent className="bg-card max-w-md">
           <DialogHeader>
             <DialogTitle>New Personal Task</DialogTitle>
           </DialogHeader>

@@ -39,7 +39,7 @@ function AttainmentBar({ value, label }: { value: number; label: string }) {
 
 function KpiCard({ label, value, sub }: { label: string; value: React.ReactNode; sub?: string }) {
   return (
-    <div className="bg-white rounded-xl p-6 shadow-[0_20px_40px_rgba(0,74,198,0.06)] space-y-1">
+    <div className="bg-card rounded-xl p-6 shadow-[var(--shadow-glass)] space-y-1">
       <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--outline)] mb-1">{label}</p>
       <p className="text-3xl font-extrabold tracking-tight text-foreground">{value}</p>
       {sub && <p className="text-xs text-[var(--outline)]">{sub}</p>}
@@ -87,7 +87,7 @@ export default function MetricsDashboard() {
     return (
       <div className="p-6 space-y-4">
         <h1 className="text-2xl font-bold">Metrics Dashboard</h1>
-        <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] p-8 text-center space-y-3">
+        <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-8 text-center space-y-3">
           <p className="text-muted-foreground">No metrics synced yet.</p>
           <ol className="text-sm text-muted-foreground text-left inline-block space-y-1 list-decimal list-inside">
             <li>Open your Google Sheet → Extensions → Apps Script</li>
@@ -194,11 +194,11 @@ export default function MetricsDashboard() {
 
         {/* Growth */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] p-4 flex items-center justify-between">
+          <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-4 flex items-center justify-between">
             <span className="text-sm text-muted-foreground">MoM Gross GMV Growth</span>
             <span className="text-lg font-semibold">{delta(momGrowth)}</span>
           </div>
-          <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] p-4 flex items-center justify-between">
+          <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-4 flex items-center justify-between">
             <span className="text-sm text-muted-foreground">YoY Gross GMV Growth</span>
             <span className="text-lg font-semibold">{delta(yoyGrowth)}</span>
           </div>
@@ -206,13 +206,13 @@ export default function MetricsDashboard() {
 
         {/* Channel + Region Mix */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] p-5 space-y-3">
+          <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-5 space-y-3">
             <p className="text-[10px] font-bold text-[var(--outline)] uppercase tracking-widest">Channel Mix (Gross GMV)</p>
             {channels.map(c => (
               <MixBar key={c.label} label={c.label} value={c.value} total={grossGmv} color={c.color} />
             ))}
           </div>
-          <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] p-5 space-y-3">
+          <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-5 space-y-3">
             <p className="text-[10px] font-bold text-[var(--outline)] uppercase tracking-widest">Region Mix (Gross GMV)</p>
             {regions.map(r => (
               <MixBar key={r.label} label={r.label} value={r.value} total={grossGmv} color={r.color} />
@@ -235,14 +235,14 @@ export default function MetricsDashboard() {
         {/* ARR Premiums */}
         {(weekendArrPremium > 0 || peakArrPremium > 0) && (
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] p-4 flex items-center justify-between">
+            <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-4 flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Weekend ARR Premium</p>
                 <p className="text-xs text-muted-foreground">vs Weekday</p>
               </div>
               <span className="text-xl font-semibold text-green-400">{weekendArrPremium.toFixed(2)}x</span>
             </div>
-            <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] p-4 flex items-center justify-between">
+            <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-4 flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Peak ARR Premium</p>
                 <p className="text-xs text-muted-foreground">vs Weekday</p>
@@ -253,7 +253,7 @@ export default function MetricsDashboard() {
         )}
 
         {/* Weekday / Weekend / Peak breakdown */}
-        <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] overflow-hidden">
+        <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-[var(--surface-container-low)]">
               <tr>
@@ -288,7 +288,7 @@ export default function MetricsDashboard() {
             { stage: 'Prospects',  count: prospects, conv: `L2P: ${pct(l2pPct)}` },
             { stage: 'Bookings',   count: bookings,  conv: `P2B: ${pct(p2bPct)}` },
           ].map(({ stage, count, conv }) => (
-            <div key={stage} className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] p-4 text-center space-y-1">
+            <div key={stage} className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-4 text-center space-y-1">
               <p className="text-[10px] font-bold text-[var(--outline)] uppercase tracking-widest">{stage}</p>
               <p className="text-2xl font-bold text-foreground">{formatIndianNumber(count)}</p>
               {conv && <p className="text-xs text-muted-foreground">{conv}</p>}
@@ -298,7 +298,7 @@ export default function MetricsDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Conversion rates */}
-          <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] p-5 space-y-4">
+          <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-5 space-y-4">
             <p className="text-[10px] font-bold text-[var(--outline)] uppercase tracking-widest">Conversion Rates</p>
             <div className="space-y-3">
               <div className="flex justify-between"><span className="text-sm text-muted-foreground">L2P%</span><span className="font-semibold">{pct(l2pPct)}</span></div>
@@ -320,7 +320,7 @@ export default function MetricsDashboard() {
           </div>
 
           {/* Attainment vs Target */}
-          <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] p-5 space-y-4">
+          <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-5 space-y-4">
             <p className="text-[10px] font-bold text-[var(--outline)] uppercase tracking-widest">Attainment vs Target</p>
             {ciRevenueAtt > 0 && <AttainmentBar value={ciRevenueAtt} label="CI Revenue Attainment" />}
             {leadsAtt > 0 && <AttainmentBar value={leadsAtt} label="Leads Attainment" />}
@@ -369,7 +369,7 @@ export default function MetricsDashboard() {
             { label: 'MoM L2P% Trend',   value: liL2p },
             { label: 'MoM P2B% Trend',   value: liP2b },
           ].map(({ label, value }) => (
-            <div key={label} className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] p-4 text-center space-y-1">
+            <div key={label} className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-4 text-center space-y-1">
               <p className="text-xs text-muted-foreground">{label}</p>
               <p className="text-xl font-semibold">{delta(value)}</p>
             </div>

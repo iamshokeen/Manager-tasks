@@ -209,7 +209,7 @@ export default function DashboardPage() {
         <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3">
           Revenue KPIs
         </h2>
-        <div className="bg-white rounded-xl p-6 shadow-[0_20px_40px_rgba(0,74,198,0.06)]">
+        <div className="bg-card rounded-xl p-6 shadow-[var(--shadow-glass)]">
           {numbersLoading ? (
             <div className="text-sm text-muted-foreground">Loading revenue data…</div>
           ) : !hasRevenue ? (
@@ -288,7 +288,7 @@ export default function DashboardPage() {
             View all
           </Link>
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-[0_20px_40px_rgba(0,74,198,0.06)]">
+        <div className="bg-card rounded-xl p-6 shadow-[var(--shadow-glass)]">
           {tasksLoading ? (
             <div className="p-4 text-sm text-muted-foreground">Loading tasks…</div>
           ) : priorityTasks.length === 0 ? (
@@ -335,7 +335,7 @@ export default function DashboardPage() {
 
       {/* ── 4. Team Snapshot ─────────────────────────────────────────────── */}
       <section>
-        <div className="bg-white rounded-xl p-6 shadow-[0_20px_40px_rgba(0,74,198,0.06)]">
+        <div className="bg-card rounded-xl p-6 shadow-[var(--shadow-glass)]">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
               Team Snapshot
@@ -353,7 +353,7 @@ export default function DashboardPage() {
                 <Link
                   key={member.id}
                   href={`/team/${member.id}`}
-                  className="bg-white rounded-xl p-3 flex items-center gap-3 shadow-[0_20px_40px_rgba(0,74,198,0.06)] hover:-translate-y-0.5 transition-all"
+                  className="bg-card rounded-xl p-3 flex items-center gap-3 shadow-[var(--shadow-glass)] hover:-translate-y-0.5 transition-all"
                 >
                   <MemberAvatar name={member.name} size="md" />
                   <div className="min-w-0 flex-1">
@@ -381,7 +381,7 @@ export default function DashboardPage() {
             Manage
           </Link>
         </div>
-        <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] divide-y divide-border">
+        <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] divide-y divide-border">
           {cadencesLoading ? (
             <div className="p-4 text-sm text-muted-foreground">Loading cadences…</div>
           ) : activeCadences.length === 0 ? (
@@ -417,7 +417,7 @@ export default function DashboardPage() {
       {/* ── 6. Automation Status (Failsafe Panel) ────────────────────────── */}
       <section>
         <button
-          className="w-full flex items-center justify-between bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] px-6 py-4 text-left hover:bg-[var(--surface-container-low)] transition-colors"
+          className="w-full flex items-center justify-between bg-card rounded-xl shadow-[var(--shadow-glass)] px-6 py-4 text-left hover:bg-[var(--surface-container-low)] transition-colors"
           onClick={() => setAutomationOpen((v) => !v)}
         >
           <div>
@@ -432,7 +432,7 @@ export default function DashboardPage() {
         </button>
 
         {automationOpen && (
-          <div className="bg-white rounded-b-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] px-6 py-4 space-y-3 -mt-3 pt-6">
+          <div className="bg-card rounded-b-xl shadow-[var(--shadow-glass)] px-6 py-4 space-y-3 -mt-3 pt-6">
             {/* Sync Sheets */}
             <div className="flex items-center justify-between gap-4">
               <div>

@@ -174,7 +174,7 @@ export default function SettingsPage() {
       <PageHeader title="Settings" description="Configuration, sync, and automation controls" />
 
       {/* Theme */}
-      <div className="bg-card border border-border rounded-lg p-5 mb-4">
+      <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-5 mb-4">
         <h2 className="text-sm font-semibold text-foreground mb-1 uppercase tracking-wider">
           Appearance
         </h2>
@@ -183,7 +183,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Revenue Targets Upload */}
-      <div className="bg-card border border-border rounded-lg p-5 mb-4">
+      <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-5 mb-4">
         <h2 className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wider">
           Revenue Targets (FY27)
         </h2>
@@ -191,7 +191,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Sheets Sync */}
-      <div className="bg-card border border-border rounded-lg p-5 mb-4">
+      <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-5 mb-4">
         <h2 className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wider">
           Google Sheets Sync
         </h2>
@@ -208,7 +208,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Automation */}
-      <div className="bg-card border border-border rounded-lg p-5 mb-4">
+      <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-5 mb-4">
         <h2 className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wider">
           Run Automations
         </h2>
