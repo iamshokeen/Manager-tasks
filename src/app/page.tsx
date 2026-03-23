@@ -176,7 +176,7 @@ export default function DashboardPage() {
 
       {/* ── 1. Stat Row ──────────────────────────────────────────────────── */}
       <section>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             label="Open Tasks"
             value={tasksLoading ? '—' : openTasks.length}
@@ -209,7 +209,7 @@ export default function DashboardPage() {
         <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3">
           Revenue KPIs
         </h2>
-        <div className="bg-card border border-border rounded-lg p-5">
+        <div className="bg-white rounded-xl p-6 shadow-[0_20px_40px_rgba(0,74,198,0.06)]">
           {numbersLoading ? (
             <div className="text-sm text-muted-foreground">Loading revenue data…</div>
           ) : !hasRevenue ? (
@@ -288,13 +288,14 @@ export default function DashboardPage() {
             View all
           </Link>
         </div>
-        <div className="bg-card border border-border rounded-lg divide-y divide-border">
+        <div className="bg-white rounded-xl p-6 shadow-[0_20px_40px_rgba(0,74,198,0.06)]">
           {tasksLoading ? (
             <div className="p-4 text-sm text-muted-foreground">Loading tasks…</div>
           ) : priorityTasks.length === 0 ? (
             <div className="p-4 text-sm text-muted-foreground">No open tasks. Nice work!</div>
           ) : (
-            priorityTasks.map((task: {
+            <div className="divide-y divide-border">
+            {priorityTasks.map((task: {
               id: string
               title: string
               priority: string
@@ -304,7 +305,7 @@ export default function DashboardPage() {
               <Link
                 key={task.id}
                 href={`/tasks/${task.id}`}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors"
+                className="flex items-start gap-3 p-3 rounded-lg hover:bg-[var(--surface-container-low)] transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-foreground truncate">{task.title}</div>
@@ -326,7 +327,8 @@ export default function DashboardPage() {
                   )}
                 </div>
               </Link>
-            ))
+            ))}
+            </div>
           )}
         </div>
       </section>
@@ -350,7 +352,7 @@ export default function DashboardPage() {
                 <Link
                   key={member.id}
                   href={`/team/${member.id}`}
-                  className="bg-card border border-border rounded-lg p-3 flex items-center gap-3 hover:bg-muted/40 transition-colors"
+                  className="bg-white rounded-xl p-3 flex items-center gap-3 shadow-[0_20px_40px_rgba(0,74,198,0.06)] hover:-translate-y-0.5 transition-all"
                 >
                   <MemberAvatar name={member.name} size="md" />
                   <div className="min-w-0 flex-1">
@@ -377,7 +379,7 @@ export default function DashboardPage() {
             Manage
           </Link>
         </div>
-        <div className="bg-card border border-border rounded-lg divide-y divide-border">
+        <div className="bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] divide-y divide-border">
           {cadencesLoading ? (
             <div className="p-4 text-sm text-muted-foreground">Loading cadences…</div>
           ) : activeCadences.length === 0 ? (
@@ -413,7 +415,7 @@ export default function DashboardPage() {
       {/* ── 6. Automation Status (Failsafe Panel) ────────────────────────── */}
       <section>
         <button
-          className="w-full flex items-center justify-between bg-card border border-border rounded-lg px-4 py-3 text-left hover:bg-muted/40 transition-colors"
+          className="w-full flex items-center justify-between bg-white rounded-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] px-6 py-4 text-left hover:bg-[var(--surface-container-low)] transition-colors"
           onClick={() => setAutomationOpen((v) => !v)}
         >
           <div>
@@ -428,7 +430,7 @@ export default function DashboardPage() {
         </button>
 
         {automationOpen && (
-          <div className="bg-card border border-t-0 border-border rounded-b-lg px-4 py-4 space-y-3">
+          <div className="bg-white rounded-b-xl shadow-[0_20px_40px_rgba(0,74,198,0.06)] px-6 py-4 space-y-3 -mt-3 pt-6">
             {/* Sync Sheets */}
             <div className="flex items-center justify-between gap-4">
               <div>

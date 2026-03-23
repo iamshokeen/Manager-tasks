@@ -34,21 +34,22 @@ export const BentoCard = ({
   <div
     className={cn(
       'group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl',
-      'bg-card border border-border',
+      'bg-white shadow-[0_20px_40px_rgba(0,74,198,0.06)] hover:-translate-y-0.5 transition-all cursor-pointer',
       className
     )}
   >
     <div>{background}</div>
     <div className="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-5 transition-all duration-300 group-hover:-translate-y-8">
-      <Icon className="h-8 w-8 origin-left text-muted-foreground transition-all duration-300 group-hover:scale-75" />
-      <h3 className="text-sm font-semibold text-foreground">{name}</h3>
-      <p className="text-xs text-muted-foreground">{description}</p>
+      <div className="w-10 h-10 rounded-lg bg-primary/5 flex items-center justify-center mb-3">
+        <Icon className="h-5 w-5 text-primary transition-all duration-300 group-hover:scale-75" />
+      </div>
+      <h3 className="font-semibold text-foreground text-sm">{name}</h3>
+      <p className="text-xs text-[var(--outline)]">{description}</p>
     </div>
     <div className="pointer-events-none absolute bottom-0 flex w-full translate-y-8 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
       <a
         href={href}
-        className="pointer-events-auto text-xs hover:underline"
-        style={{ color: 'var(--color-gold)' }}
+        className="pointer-events-auto text-xs text-primary hover:underline"
       >
         {cta} →
       </a>
