@@ -1,39 +1,92 @@
 /* src/app/globals.css */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
+/* ─── Azure "Elevated Estate" — Light Default ─── */
 :root {
-  --background: #0A0B0F;
-  --card: #111318;
-  --card-foreground: #E8E9ED;
-  --border: #1E2028;
-  --input: #1E2028;
-  --primary: #C9A84C;
-  --primary-foreground: #0A0B0F;
-  --secondary: #1E3A5F;
-  --secondary-foreground: #93C5FD;
-  --muted: #1E2028;
-  --muted-foreground: #6B7280;
-  --accent: #1E2028;
-  --accent-foreground: #E8E9ED;
-  --destructive: #EF4444;
-  --destructive-foreground: #FEFEFE;
-  --foreground: #E8E9ED;
-  --ring: #C9A84C;
-  --radius: 0.5rem;
-  --popover: #111318;
-  --popover-foreground: #E8E9ED;
+  /* Surfaces */
+  --background: #f7f9fb;
+  --foreground: #191c1e;
+  --card: #ffffff;
+  --card-foreground: #434655;
+  --popover: #f7f9fb;
+  --popover-foreground: #191c1e;
 
-  /* Custom status + brand colors */
-  --color-critical: #EF4444;
-  --color-high: #F59E0B;
-  --color-medium: #3B82F6;
-  --color-low: #10B981;
-  --color-gold: #C9A84C;
-  --color-navy: #1E3A5F;
+  /* Interactive */
+  --primary: #004ac6;
+  --primary-foreground: #ffffff;
+  --secondary: #eceef0;
+  --secondary-foreground: #191c1e;
+  --muted: #f2f4f6;
+  --muted-foreground: #737686;
+  --accent: #eceef0;
+  --accent-foreground: #191c1e;
+  --destructive: #ba1a1a;
+  --destructive-foreground: #ffffff;
+
+  /* Structure */
+  --border: rgba(195, 198, 215, 0.4);
+  --input: #f2f4f6;
+  --ring: #004ac6;
+  --radius: 0.5rem;
+
+  /* Azure M3 Surface Palette (for direct use in components) */
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f2f4f6;
+  --surface-container: #eceef0;
+  --surface-container-high: #e6e8ea;
+  --surface-container-highest: #e0e3e5;
+  --surface-dim: #d8dadc;
+  --outline: #737686;
+  --outline-variant: #c3c6d7;
+  --primary-container: #2563eb;
+  --on-primary-container: #eeefff;
+  --secondary-container: #acbfff;
+  --error-container: #ffdad6;
+  --on-error-container: #93000a;
+
+  /* Status colors */
+  --color-critical: #ba1a1a;
+  --color-high: #bc4800;
+  --color-medium: #495c95;
+  --color-low: #1a7a4a;
+
+  /* Glass shadow */
+  --shadow-glass: 0 20px 40px rgba(0, 74, 198, 0.06);
+}
+
+/* ─── Dark override (future use) ─── */
+.dark {
+  --background: #0d0e12;
+  --foreground: #e3e2e8;
+  --card: #1e1f24;
+  --card-foreground: #e3e2e8;
+  --popover: #1e1f24;
+  --popover-foreground: #e3e2e8;
+  --primary: #b4c5ff;
+  --primary-foreground: #00174b;
+  --secondary: #2a2b30;
+  --secondary-foreground: #e3e2e8;
+  --muted: #2a2b30;
+  --muted-foreground: #737686;
+  --accent: #2a2b30;
+  --accent-foreground: #e3e2e8;
+  --destructive: #ffb4ab;
+  --destructive-foreground: #690005;
+  --border: rgba(77, 70, 55, 0.3);
+  --input: #2a2b30;
+  --ring: #b4c5ff;
+  --surface-container-lowest: #0d0e12;
+  --surface-container-low: #121318;
+  --surface-container: #1e1f24;
+  --surface-container-high: #282930;
+  --surface-container-highest: #343439;
+  --outline: #958d7d;
+  --outline-variant: #4d4637;
+  --primary-container: #003ea8;
 }
 
 @theme inline {
@@ -55,8 +108,6 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-ring: var(--ring);
-  --color-gold: var(--color-gold);
-  --color-navy: var(--color-navy);
   --color-critical: var(--color-critical);
   --color-high: var(--color-high);
   --color-medium-status: var(--color-medium);
@@ -75,25 +126,21 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar styling */
+/* Thin scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+::-webkit-scrollbar-thumb { background: var(--outline-variant); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--outline); }
 
-/* Print / PDF styles */
+/* Print / PDF */
 @media print {
   aside, header { display: none !important; }
   main, [data-main] { margin-left: 0 !important; padding-top: 0 !important; }
   body { background: #fff !important; color: #111 !important; }
-  .bg-card, .bg-muted\/30 { background: #f9f9f9 !important; }
-  .text-muted-foreground { color: #555 !important; }
-  .text-foreground { color: #111 !important; }
-  .border-border { border-color: #ddd !important; }
   @page { margin: 1.5cm; }
 }
