@@ -25,6 +25,7 @@ model TeamMember {
   projects        Project[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+  user            User?
 }
 
 model Project {
@@ -77,8 +78,9 @@ model TaskActivity {
   from      String?
   to        String?
   note      String?  @db.Text
-  source    String   @default("user")
-  createdAt DateTime @default(now())
+  source     String   @default("user")
+  authorName String?
+  createdAt  DateTime @default(now())
 }
 
 model Stakeholder {
@@ -208,4 +210,20 @@ model Setting {
   key       String   @unique
   value     String   @db.Text
   updatedAt DateTime @updatedAt
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  name         String
+  passwordHash String
+  role         Role        @default(JUNIOR)
+  teamMemberId String?     @unique
+  teamMember   TeamMember? @relation(fields: [teamMemberId], references: [id])
+  createdAt    DateTime    @default(now())
+}
+
+enum Role {
+  MANAGER
+  JUNIOR
 }
