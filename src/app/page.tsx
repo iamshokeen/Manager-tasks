@@ -335,15 +335,16 @@ export default function DashboardPage() {
 
       {/* ── 4. Team Snapshot ─────────────────────────────────────────────── */}
       <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
-            Team Snapshot
-          </h2>
-          <Link href="/team" className="text-xs text-primary hover:underline">
-            View all
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl p-6 shadow-[0_20px_40px_rgba(0,74,198,0.06)]">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+              Team Snapshot
+            </h2>
+            <Link href="/team" className="text-xs text-primary hover:underline">
+              View all
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {teamLoading ? (
             <div className="col-span-full text-sm text-muted-foreground">Loading team…</div>
           ) : (members as Array<{ id: string; name: string; role: string; department: string; status: string }>)
@@ -366,6 +367,7 @@ export default function DashboardPage() {
                   )}
                 </Link>
               ))}
+          </div>
         </div>
       </section>
 
