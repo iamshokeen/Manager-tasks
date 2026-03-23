@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/utils'
 import { RefreshCw, Download, Send } from 'lucide-react'
+import { ThemeSelector } from '@/components/ui/theme-selector'
 
 function TargetsUpload() {
   const [loading, setLoading] = useState(false)
@@ -171,6 +172,15 @@ export default function SettingsPage() {
   return (
     <div>
       <PageHeader title="Settings" description="Configuration, sync, and automation controls" />
+
+      {/* Theme */}
+      <div className="bg-card border border-border rounded-lg p-5 mb-4">
+        <h2 className="text-sm font-semibold text-foreground mb-1 uppercase tracking-wider">
+          Appearance
+        </h2>
+        <p className="text-xs text-muted-foreground mb-5">Choose a theme for the interface</p>
+        <ThemeSelector />
+      </div>
 
       {/* Revenue Targets Upload */}
       <div className="bg-card border border-border rounded-lg p-5 mb-4">
