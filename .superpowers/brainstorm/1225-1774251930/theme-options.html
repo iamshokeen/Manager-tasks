@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theme Options</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0A0A0A; font-family: 'Inter', sans-serif; color: #E2E3E8; min-height: 100vh; }
+.page { max-width: 1200px; margin: 0 auto; padding: 40px 32px 80px; }
+h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.sub { font-size: 13px; color: #6B7280; margin-bottom: 36px; }
+
+.options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 32px; }
+
+/* CARD SHELL */
+.theme-card {
+  border-radius: 16px; overflow: hidden; cursor: pointer;
+  border: 2px solid transparent; transition: all 0.2s;
+  position: relative;
+}
+.theme-card:hover { transform: translateY(-2px); }
+.theme-card.selected { border-color: currentColor; }
+.theme-card .badge {
+  position: absolute; top: 10px; right: 10px;
+  font-size: 10px; font-weight: 700; padding: 3px 9px;
+  border-radius: 20px; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.theme-card .label-row {
+  padding: 14px 16px;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.theme-card .name { font-size: 15px; font-weight: 700; }
+.theme-card .desc { font-size: 12px; opacity: 0.6; margin-top: 3px; line-height: 1.5; }
+
+/* MINI APP MOCKUP inside each card */
+.mini-app {
+  height: 260px; display: flex; overflow: hidden;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.mini-sidebar { width: 72px; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; }
+.mini-nav { height: 8px; border-radius: 2px; margin-bottom: 4px; }
+.mini-nav.active { width: 100%; }
+.mini-nav.idle { width: 80%; opacity: 0.3; }
+.mini-logo { height: 20px; border-radius: 4px; margin-bottom: 12px; }
+.mini-main { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.mini-hero { height: 52px; border-radius: 8px; display: flex; align-items: center; padding: 0 12px; gap: 8px; }
+.mini-hero-text { flex: 1; }
+.mini-hero-title { height: 10px; border-radius: 2px; width: 60%; margin-bottom: 5px; }
+.mini-hero-sub { height: 7px; border-radius: 2px; width: 40%; opacity: 0.4; }
+.mini-stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; }
+.mini-stat { height: 36px; border-radius: 6px; }
+.mini-row { height: 9px; border-radius: 2px; }
+.mini-row.w100 { width: 100%; }
+.mini-row.w80 { width: 80%; }
+.mini-row.w60 { width: 60%; }
+.mini-row.w40 { width: 40%; }
+.mini-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.mini-card { height: 40px; border-radius: 6px; }
+.mini-topbar { height: 32px; display: flex; align-items: center; padding: 0 10px; justify-content: space-between; }
+.mini-topbar-btn { height: 16px; width: 40px; border-radius: 4px; }
+
+/* ═══ THEME 1 — CURRENT: GOLD DARK ═══ */
+.gold {
+  background: #0A0B10;
+  --acc: #C9A84C;
+  --acc-dim: rgba(201,168,76,0.1);
+  --bg: #0A0B10;
+  --s: #111318;
+  --s2: #1A1C24;
+  --text: rgba(232,233,237,0.9);
+}
+.gold .badge { background: rgba(201,168,76,0.15); color: #C9A84C; }
+.gold .name { color: #E8E9ED; }
+.gold .mini-app { background: #07080C; border-color: #1A1C24; }
+.gold .mini-sidebar { background: #0A0B10; border-right: 1px solid #1A1C24; }
+.gold .mini-logo { background: #C9A84C; }
+.gold .mini-nav.active { background: #C9A84C; }
+.gold .mini-nav.idle { background: #1E2028; }
+.gold .mini-topbar { background: #07080C; border-bottom: 1px solid #1A1C24; }
+.gold .mini-topbar-btn { background: #C9A84C; }
+.gold .mini-hero { background: linear-gradient(135deg, #0F1018, #1A1C28); border: 1px solid #1E2028; }
+.gold .mini-hero-title { background: #E8E9ED; }
+.gold .mini-stat { background: #0E0F15; border: 1px solid #1A1C24; }
+.gold .mini-stat:first-child { border-color: rgba(201,168,76,0.2); }
+.gold .mini-card { background: #0E0F15; border: 1px solid #1A1C24; }
+.gold .mini-row { background: #1E2028; }
+.gold .label-row { background: #0A0B10; }
+.gold .check { color: #C9A84C; }
+
+/* ═══ THEME 2 — VIOLET DARK (Linear-inspired) ═══ */
+.violet {
+  background: #0D0D12;
+  --acc: #7C3AED;
+}
+.violet .badge { background: rgba(124,58,237,0.15); color: #A78BFA; }
+.violet .name { color: #E8E9ED; }
+.violet .mini-app { background: #08080F; }
+.violet .mini-sidebar { background: #0B0B14; border-right: 1px solid #1A1A2E; }
+.violet .mini-logo { background: linear-gradient(135deg, #7C3AED, #4F46E5); }
+.violet .mini-nav.active { background: linear-gradient(90deg, #7C3AED, #4F46E5); }
+.violet .mini-nav.idle { background: #1A1A2E; }
+.violet .mini-topbar { background: #08080F; border-bottom: 1px solid #1A1A2E; }
+.violet .mini-topbar-btn { background: #7C3AED; }
+.violet .mini-hero { background: linear-gradient(135deg, #12101F, #1A1530); border: 1px solid #2D2250; }
+.violet .mini-hero-title { background: #E8E9ED; }
+.violet .mini-stat { background: #0F0E1A; border: 1px solid #1A1A2E; }
+.violet .mini-stat:first-child { border-color: rgba(124,58,237,0.3); }
+.violet .mini-card { background: #0F0E1A; border: 1px solid #1A1A2E; }
+.violet .mini-row { background: #1A1A2E; }
+.violet .label-row { background: #0D0D12; }
+
+/* ═══ THEME 3 — SLATE CLEAN (Notion-inspired) ═══ */
+.slate {
+  background: #191919;
+}
+.slate .badge { background: rgba(255,255,255,0.08); color: #E2E2E2; }
+.slate .name { color: #E2E2E2; }
+.slate .mini-app { background: #191919; }
+.slate .mini-sidebar { background: #1F1F1F; border-right: 1px solid #2A2A2A; }
+.slate .mini-logo { background: #E8E8E8; border-radius: 6px; }
+.slate .mini-nav.active { background: rgba(255,255,255,0.12); }
+.slate .mini-nav.idle { background: rgba(255,255,255,0.06); }
+.slate .mini-topbar { background: #191919; border-bottom: 1px solid #2A2A2A; }
+.slate .mini-topbar-btn { background: #E8E8E8; border-radius: 4px; }
+.slate .mini-hero { background: linear-gradient(135deg, #222222, #282828); border: 1px solid #2A2A2A; }
+.slate .mini-hero-title { background: #E8E8E8; }
+.slate .mini-stat { background: #222222; border: 1px solid #2A2A2A; }
+.slate .mini-stat:first-child { border-color: rgba(255,255,255,0.15); }
+.slate .mini-card { background: #222222; border: 1px solid #2A2A2A; }
+.slate .mini-row { background: #2A2A2A; }
+.slate .label-row { background: #191919; }
+
+/* ═══ THEME 4 — NAVY GRADIENT (Premium SaaS) ═══ */
+.navy {
+  background: #080C14;
+}
+.navy .badge { background: rgba(14,165,233,0.15); color: #38BDF8; }
+.navy .name { color: #E8ECF0; }
+.navy .mini-app { background: #060A12; }
+.navy .mini-sidebar { background: #080C14; border-right: 1px solid #0F1929; }
+.navy .mini-logo { background: linear-gradient(135deg, #0EA5E9, #6366F1); }
+.navy .mini-nav.active { background: rgba(14,165,233,0.15); border-left: 2px solid #0EA5E9; }
+.navy .mini-nav.idle { background: rgba(255,255,255,0.04); }
+.navy .mini-topbar { background: #060A12; border-bottom: 1px solid #0F1929; }
+.navy .mini-topbar-btn { background: linear-gradient(135deg, #0EA5E9, #6366F1); }
+.navy .mini-hero { background: linear-gradient(135deg, #0A1220, #0F1E35); border: 1px solid #0F1929; }
+.navy .mini-hero-title { background: #E8ECF0; }
+.navy .mini-stat { background: #080E18; border: 1px solid #0F1929; }
+.navy .mini-stat:first-child { border-color: rgba(14,165,233,0.3); }
+.navy .mini-card { background: #080E18; border: 1px solid #0F1929; }
+.navy .mini-row { background: #0F1929; }
+.navy .label-row { background: #080C14; }
+
+/* ═══ THEME 5 — LIGHT MINIMAL (Notion Default) ═══ */
+.light {
+  background: #FFFFFF;
+}
+.light .badge { background: #F3F4F6; color: #6B7280; }
+.light .name { color: #111827; }
+.light .desc { color: #6B7280 !important; opacity: 1 !important; }
+.light .mini-app { background: #FAFAFA; }
+.light .mini-sidebar { background: #F7F7F5; border-right: 1px solid #E5E7EB; }
+.light .mini-logo { background: #111827; border-radius: 6px; }
+.light .mini-nav.active { background: rgba(0,0,0,0.08); }
+.light .mini-nav.idle { background: rgba(0,0,0,0.04); }
+.light .mini-topbar { background: #FFFFFF; border-bottom: 1px solid #E5E7EB; }
+.light .mini-topbar-btn { background: #111827; }
+.light .mini-hero { background: linear-gradient(135deg, #F3F4F6, #EAEAEC); border: 1px solid #E5E7EB; }
+.light .mini-hero-title { background: #111827; }
+.light .mini-stat { background: #FFFFFF; border: 1px solid #E5E7EB; }
+.light .mini-card { background: #FFFFFF; border: 1px solid #E5E7EB; }
+.light .mini-row { background: #E5E7EB; }
+.light .label-row { background: #FFFFFF; }
+
+/* ═══ THEME 6 — FOREST DARK (Earthy, premium) ═══ */
+.forest {
+  background: #0C110E;
+}
+.forest .badge { background: rgba(16,185,129,0.12); color: #34D399; }
+.forest .name { color: #E8EDE9; }
+.forest .mini-app { background: #090E0B; }
+.forest .mini-sidebar { background: #0B100D; border-right: 1px solid #162019; }
+.forest .mini-logo { background: linear-gradient(135deg, #059669, #10B981); }
+.forest .mini-nav.active { background: rgba(16,185,129,0.1); border-left: 2px solid #10B981; }
+.forest .mini-nav.idle { background: rgba(255,255,255,0.04); }
+.forest .mini-topbar { background: #090E0B; border-bottom: 1px solid #162019; }
+.forest .mini-topbar-btn { background: #10B981; }
+.forest .mini-hero { background: linear-gradient(135deg, #0E1A12, #132018); border: 1px solid #162019; }
+.forest .mini-hero-title { background: #E8EDE9; }
+.forest .mini-stat { background: #0B1410; border: 1px solid #162019; }
+.forest .mini-stat:first-child { border-color: rgba(16,185,129,0.3); }
+.forest .mini-card { background: #0B1410; border: 1px solid #162019; }
+.forest .mini-row { background: #162019; }
+.forest .label-row { background: #0C110E; }
+
+/* SELECTION */
+.options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.select-hint { text-align: center; font-size: 13px; color: #4B5060; margin-top: 24px; }
+.select-hint kbd { background: #1A1C24; border: 1px solid #2A2D38; border-radius: 4px; padding: 2px 7px; font-size: 11px; }
+
+/* BOTTOM NOTE */
+.note { margin-top: 32px; background: #111318; border: 1px solid #1E2028; border-radius: 10px; padding: 16px 20px; font-size: 13px; color: #6B7280; line-height: 1.7; }
+.note strong { color: #B8BAC4; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Pick a visual direction</h1>
+  <p class="sub">The gold dark theme was the original choice — but you're not locked in. Here are 6 directions. Click one to select.</p>
+
+  <div class="options">
+
+    <!-- 1. GOLD DARK (current) -->
+    <div class="theme-card gold" onclick="select(this,'gold-dark')" style="border-color:transparent;">
+      <div class="mini-app">
+        <div class="mini-sidebar">
+          <div class="mini-logo"></div>
+          <div class="mini-nav active"></div>
+          <div class="mini-nav idle"></div>
+          <div class="mini-nav idle"></div>
+          <div class="mini-nav idle"></div>
+          <div class="mini-nav idle"></div>
+        </div>
+        <div class="mini-main">
+          <div class="mini-topbar"><div class="mini-row w60"></div><div class="mini-topbar-btn"></div></div>
+          <div class="mini-hero">
+            <div class="mini-hero-text">
+              <div class="mini-hero-title"></div>
+              <div class="mini-hero-sub"></div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat"></div><div class="mini-stat"></div>
+            <div class="mini-stat"></div><div class="mini-stat"></div>
+          </div>
+          <div class="mini-cards">
+            <div class="mini-card"></div><div class="mini-card"></div>
+          </div>
+        </div>
+      </div>
+      <div class="label-row">
+        <div class="badge">Current</div>
+        <div>
+          <div class="name">Gold Dark</div>
+          <div class="desc">Luxury villa brand feel. Rich, warm, premium.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. VIOLET -->
+    <div class="theme-card violet" onclick="select(this,'violet-dark')" style="border-color:transparent;">
+      <div class="mini-app">
+        <div class="mini-sidebar">
+          <div class="mini-logo"></div>
+          <div class="mini-nav active"></div>
+          <div class="mini-nav idle"></div>
+          <div class="mini-nav idle"></div>
+          <div class="mini-nav idle"></div>
+        </div>
+        <div class="mini-main">
+          <div class="mini-topbar"><div class="mini-row w60"></div><div class="mini-topbar-btn"></div></div>
+          <div class="mini-hero">
+            <div class="mini-hero-text">
+              <div class="mini-hero-title"></div>
+              <div class="mini-hero-sub"></div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat"></div><div class="mini-stat"></div>
+            <div class="mini-stat"></div><div class="mini-stat"></div>
+          </div>
+          <div class="mini-cards">
+            <div class="mini-card"></div><div class="mini-card"></div>
+          </div>
+        </div>
+      </div>
+      <div class="label-row">
+        <div class="badge">Popular</div>
+        <div>
+          <div class="name">Violet Dark</div>
+          <div class="desc">Linear / Raycast energy. Deep purple, electric. Modern SaaS.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. SLATE -->
+    <div class="theme-card slate" onclick="select(this,'slate-dark')" style="border-color:transparent;">
+      <div class="mini-app">
+        <div class="mini-sidebar">
+          <div class="mini-logo"></div>
+          <div class="mini-nav active"></div>
+          <div class="mini-nav idle"></div>
+          <div class="mini-nav idle"></div>
+          <div class="mini-nav idle"></div>
+        </div>
+        <div class="mini-main">
+          <div class="mini-topbar"><div class="mini-row w60"></div><div class="mini-topbar-btn"></div></div>
+          <div class="mini-hero">
+            <div class="mini-hero-text">
+              <div class="mini-hero-title"></div>
+              <div class="mini-hero-sub"></div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat"></div><div class="mini-stat"></div>
+            <div class="mini-stat"></div><div class="mini-stat"></div>
+          </div>
+          <div class="mini-cards">
+            <div class="mini-card"></div><div class="mini-card"></div>
+          </div>
+        </div>
+      </div>
+      <div class="label-row" style="background:#191919;">
+        <div class="badge">Notion-like</div>
+        <div>
+          <div class="name">Slate Dark</div>
+          <div class="desc">Exactly Notion's dark mode. Pure neutral, content-first.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. NAVY -->
+    <div class="theme-card navy" onclick="select(this,'navy-blue')" style="border-color:transparent;">
+      <div class="mini-app">
+        <div class="mini-sidebar">
+          <div class="mini-logo"></div>
+          <div class="mini-nav active"></div>
+          <div class="mini-nav idle"></div>
+          <div class="mini-nav idle"></div>
+          <div class="mini-nav idle"></div>
+        </div>
+        <div class="mini-main">
+          <div class="mini-topbar"><div class="mini-row w60"></div><div class="mini-topbar-btn"></div></div>
+          <div class="mini-hero">
+            <div class="mini-hero-text">
+              <div class="mini-hero-title"></div>
+              <div class="mini-hero-sub"></div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat"></div><div class="mini-stat"></div>
+            <div class="mini-stat"></div><div class="mini-stat"></div>
+          </div>
+          <div class="mini-cards">
+            <div class="mini-card"></div><div class="mini-card"></div>
+          </div>
+        </div>
+      </div>
+      <div class="label-row" style="background:#080C14;">
+        <div class="badge">Premium</div>
+        <div>
+          <div class="name">Navy Blue</div>
+          <div class="desc">Deep navy + sky blue. Stripe / Vercel dashboard energy.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. LIGHT -->
+    <div class="theme-card light" onclick="select(this,'light-minimal')" style="border-color:transparent;">
+      <div class="mini-app">
+        <div class="mini-sidebar">
+          <div class="mini-logo"></div>
+          <div class="mini-nav active"></div>
+          <div class="mini-nav idle"></div>
+          <div class="mini-nav idle"></div>
+          <div class="mini-nav idle"></div>
+        </div>
+        <div class="mini-main">
+          <div class="mini-topbar"><div class="mini-row w60" style="background:#E5E7EB;"></div><div class="mini-topbar-btn"></div></div>
+          <div class="mini-hero">
+            <div class="mini-hero-text">
+              <div class="mini-hero-title"></div>
+              <div class="mini-hero-sub"></div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat"></div><div class="mini-stat"></div>
+            <div class="mini-stat"></div><div class="mini-stat"></div>
+          </div>
+          <div class="mini-cards">
+            <div class="mini-card"></div><div class="mini-card"></div>
+          </div>
+        </div>
+      </div>
+      <div class="label-row">
+        <div class="badge">Clean</div>
+        <div>
+          <div class="name">Light Minimal</div>
+          <div class="desc">Notion default. Crisp, readable, great outdoors. Can pair with any accent.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. FOREST -->
+    <div class="theme-card forest" onclick="select(this,'forest-dark')" style="border-color:transparent;">
+      <div class="mini-app">
+        <div class="mini-sidebar">
+          <div class="mini-logo"></div>
+          <div class="mini-nav active"></div>
+          <div class="mini-nav idle"></div>
+          <div class="mini-nav idle"></div>
+          <div class="mini-nav idle"></div>
+        </div>
+        <div class="mini-main">
+          <div class="mini-topbar"><div class="mini-row w60"></div><div class="mini-topbar-btn"></div></div>
+          <div class="mini-hero">
+            <div class="mini-hero-text">
+              <div class="mini-hero-title"></div>
+              <div class="mini-hero-sub"></div>
+            </div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini-stat"></div><div class="mini-stat"></div>
+            <div class="mini-stat"></div><div class="mini-stat"></div>
+          </div>
+          <div class="mini-cards">
+            <div class="mini-card"></div><div class="mini-card"></div>
+          </div>
+        </div>
+      </div>
+      <div class="label-row" style="background:#0C110E;">
+        <div class="badge">Unique</div>
+        <div>
+          <div class="name">Forest Dark</div>
+          <div class="desc">Deep black-green + emerald. Fresh, calm, unexpected.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="select-hint">Click a theme to select it · Or just tell me in the terminal</p>
+
+  <div class="note">
+    <strong>Also an option:</strong> Pick a base (dark/light) + choose your own accent color independently — e.g. Slate Dark with a coral accent, or Navy with gold kept. The theme and accent don't have to be the same system.<br><br>
+    <strong>My take:</strong> The <strong>Violet Dark</strong> is the most "Notion but better" feeling for a productivity app in 2026. The <strong>Slate Dark</strong> is the closest to actual Notion. <strong>Gold Dark</strong> still makes sense if the Lohono brand matters to you personally.
+  </div>
+</div>
+
+<div id="selected-badge" style="display:none;position:fixed;bottom:16px;right:16px;font-size:11px;font-weight:700;padding:7px 14px;border-radius:8px;letter-spacing:0.05em;z-index:999;background:#10B981;color:#07080C;">
+  ✓ Selected: <span id="selected-name"></span>
+</div>
+
+<script>
+function select(el, name) {
+  document.querySelectorAll('.theme-card').forEach(c => c.style.borderColor = 'transparent');
+  const colors = {
+    'gold-dark': '#C9A84C',
+    'violet-dark': '#7C3AED',
+    'slate-dark': '#E2E2E2',
+    'navy-blue': '#0EA5E9',
+    'light-minimal': '#111827',
+    'forest-dark': '#10B981'
+  };
+  el.style.borderColor = colors[name] || '#fff';
+  document.getElementById('selected-name').textContent = el.querySelector('.name').textContent;
+  document.getElementById('selected-badge').style.display = 'block';
+
+  // Record selection
+  if (window.recordSelection) window.recordSelection(name);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lohono CMD — MoSCoW Redesign Plan</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #07080C; font-family: 'Inter', -apple-system, sans-serif; color: #E8E9ED; min-height: 100vh; }
+  .page { max-width: 1000px; margin: 0 auto; padding: 36px 28px 60px; }
+
+  h1 { font-size: 26px; font-weight: 800; color: #ECEDF1; margin-bottom: 6px; }
+  h1 span { color: #C9A84C; }
+  .page-sub { font-size: 14px; color: #6B7280; margin-bottom: 40px; line-height: 1.6; max-width: 600px; }
+
+  /* ── TIER BLOCK ── */
+  .tier { margin-bottom: 36px; }
+  .tier-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #1A1C24; }
+  .tier-badge { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 14px; border-radius: 6px; }
+  .tier-badge.must { background: rgba(201,168,76,0.15); color: #C9A84C; border: 1px solid rgba(201,168,76,0.25); }
+  .tier-badge.should { background: rgba(59,130,246,0.12); color: #60A5FA; border: 1px solid rgba(59,130,246,0.2); }
+  .tier-badge.could { background: rgba(139,92,246,0.12); color: #A78BFA; border: 1px solid rgba(139,92,246,0.2); }
+  .tier-badge.wont { background: rgba(107,114,128,0.1); color: #6B7280; border: 1px solid rgba(107,114,128,0.15); }
+  .tier-title { font-size: 16px; font-weight: 700; color: #ECEDF1; }
+  .tier-desc { font-size: 12px; color: #4B5060; margin-left: auto; max-width: 300px; text-align: right; }
+
+  /* ── ITEMS GRID ── */
+  .items { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .items.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* ── ITEM CARD ── */
+  .item {
+    background: #0E0F15; border: 1px solid #1A1C24;
+    border-radius: 10px; padding: 14px 16px;
+  }
+  .item-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+  .item-emoji { font-size: 18px; flex-shrink: 0; line-height: 1; margin-top: 1px; }
+  .item-title { font-size: 13px; font-weight: 600; color: #D4D6DC; line-height: 1.4; }
+  .item-body { font-size: 12px; color: #6B7280; line-height: 1.6; padding-left: 28px; }
+  .item-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; padding-left: 28px; }
+  .itag { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+  .itag.ui { background: rgba(201,168,76,0.08); color: #C9A84C80; }
+  .itag.new { background: rgba(16,185,129,0.08); color: #10B98180; }
+  .itag.fix { background: rgba(239,68,68,0.08); color: #EF444480; }
+  .itag.data { background: rgba(59,130,246,0.08); color: #3B82F680; }
+  .itag.perf { background: rgba(245,158,11,0.08); color: #F59E0B80; }
+
+  /* ── MUST ITEMS special glow ── */
+  .tier.must .item { border-color: rgba(201,168,76,0.12); }
+  .tier.must .item:hover { border-color: rgba(201,168,76,0.25); }
+  .tier.should .item { border-color: rgba(59,130,246,0.1); }
+  .tier.could .item { border-color: rgba(139,92,246,0.08); }
+  .tier.wont .item { opacity: 0.6; }
+
+  /* ── EFFORT INDICATORS ── */
+  .effort { display: flex; align-items: center; gap: 4px; margin-top: 8px; padding-left: 28px; }
+  .effort-label { font-size: 10px; color: #2E3140; }
+  .effort-dots { display: flex; gap: 2px; }
+  .effort-dot { width: 8px; height: 4px; border-radius: 2px; background: #1E2028; }
+  .effort-dot.filled { background: #C9A84C; }
+  .effort-dot.filled.blue { background: #3B82F6; }
+  .effort-dot.filled.purple { background: #8B5CF6; }
+  .effort-dot.filled.gray { background: #4B5060; }
+
+  /* ── SUMMARY ROW ── */
+  .summary { background: #0E0F15; border: 1px solid #1A1C24; border-radius: 12px; padding: 20px 24px; margin-top: 36px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .sum-item { text-align: center; }
+  .sum-val { font-size: 28px; font-weight: 800; }
+  .sum-val.gold { color: #C9A84C; }
+  .sum-val.blue { color: #60A5FA; }
+  .sum-val.purple { color: #A78BFA; }
+  .sum-val.gray { color: #6B7280; }
+  .sum-label { font-size: 11px; color: #4B5060; margin-top: 4px; }
+  .sum-tier { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+  .sum-tier.must { color: #C9A84C; }
+  .sum-tier.should { color: #60A5FA; }
+  .sum-tier.could { color: #A78BFA; }
+  .sum-tier.wont { color: #6B7280; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>Lohono CMD <span>Redesign Plan</span></h1>
+  <p class="page-sub">MoSCoW prioritization for the full upgrade — UI/UX overhaul, drag-drop interactions, mobile-first fixes, and Notion-style features. Ordered by impact and feasibility.</p>
+
+  <!-- ═══════════════════════════════════════════
+       MUST HAVE
+  ════════════════════════════════════════════ -->
+  <div class="tier must">
+    <div class="tier-header">
+      <div class="tier-badge must">M — Must Have</div>
+      <div class="tier-title">Core experience fixes · Ship these first</div>
+      <div class="tier-desc">Broken or critically low-value without these</div>
+    </div>
+    <div class="items">
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">📱</div><div class="item-title">Mobile-first responsive layout</div></div>
+        <div class="item-body">Replace fixed 220px sidebar with a bottom navigation bar on mobile. Full-width content on phones. Sidebar collapses to a slide-in drawer on tablets. Currently the app is completely unusable on phone.</div>
+        <div class="item-tags"><span class="itag fix">Fixes broken mobile</span><span class="itag ui">Layout overhaul</span></div>
+        <div class="effort"><span class="effort-label">Effort</span><div class="effort-dots"><div class="effort-dot filled"></div><div class="effort-dot filled"></div><div class="effort-dot filled"></div><div class="effort-dot"></div><div class="effort-dot"></div></div></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">🎨</div><div class="item-title">Visual identity upgrade — Hero pages</div></div>
+        <div class="item-body">Every page gets a proper hero header with gradient, quick-stats, and context. Replace the plain text headings with structured page headers that include breadcrumbs, actions, and KPI callouts. Dashboard gets a full hero section.</div>
+        <div class="item-tags"><span class="itag ui">UI refresh</span><span class="itag new">Hero sections</span></div>
+        <div class="effort"><span class="effort-label">Effort</span><div class="effort-dots"><div class="effort-dot filled"></div><div class="effort-dot filled"></div><div class="effort-dot filled"></div><div class="effort-dot"></div><div class="effort-dot"></div></div></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">🖱️</div><div class="item-title">Drag-and-drop Kanban board</div></div>
+        <div class="item-body">Tasks page gets real drag-drop using dnd-kit. Drag cards between columns (To Do → In Progress → Review → Done). Visual drop targets, drag handles, smooth animations. Works on desktop and tablet touch.</div>
+        <div class="item-tags"><span class="itag new">dnd-kit</span><span class="itag ui">Interaction</span></div>
+        <div class="effort"><span class="effort-label">Effort</span><div class="effort-dots"><div class="effort-dot filled"></div><div class="effort-dot filled"></div><div class="effort-dot filled"></div><div class="effort-dot filled"></div><div class="effort-dot"></div></div></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">⌘</div><div class="item-title">Command palette (⌘K)</div></div>
+        <div class="item-body">Global search and jump-to across the whole app. Type to find tasks, team members, pages, metrics. Run quick actions: "create task", "log 1:1", "sync sheets". Essential for power users and mobile keyboard users.</div>
+        <div class="item-tags"><span class="itag new">cmdk library</span><span class="itag ui">Navigation</span></div>
+        <div class="effort"><span class="effort-label">Effort</span><div class="effort-dots"><div class="effort-dot filled"></div><div class="effort-dot filled"></div><div class="effort-dot"></div><div class="effort-dot"></div><div class="effort-dot"></div></div></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">🔔</div><div class="item-title">Notification center + badge system</div></div>
+        <div class="item-body">In-app notification bell showing overdue tasks, upcoming cadences, and team activity. Unread count badge on nav items. Real-time feel using SWR polling. Critical for mobile where you can't see everything at a glance.</div>
+        <div class="item-tags"><span class="itag fix">Overdue awareness</span><span class="itag ui">UX</span></div>
+        <div class="effort"><span class="effort-label">Effort</span><div class="effort-dots"><div class="effort-dot filled"></div><div class="effort-dot filled"></div><div class="effort-dot filled"></div><div class="effort-dot"></div><div class="effort-dot"></div></div></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">📋</div><div class="item-title">Task detail side panel (not modal)</div></div>
+        <div class="item-body">Replace the full-page task detail with a right-side slide-over panel. Open task, see description, comments, activity log, reassign, change status — without leaving the board. Modal currently feels heavy and breaks flow.</div>
+        <div class="item-tags"><span class="itag ui">Side panel</span><span class="itag fix">Flow improvement</span></div>
+        <div class="effort"><span class="effort-label">Effort</span><div class="effort-dots"><div class="effort-dot filled"></div><div class="effort-dot filled"></div><div class="effort-dot filled"></div><div class="effort-dot"></div><div class="effort-dot"></div></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SHOULD HAVE
+  ════════════════════════════════════════════ -->
+  <div class="tier should">
+    <div class="tier-header">
+      <div class="tier-badge should">S — Should Have</div>
+      <div class="tier-title">Major value additions · Phase 2</div>
+      <div class="tier-desc">High ROI features that upgrade the product significantly</div>
+    </div>
+    <div class="items">
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">📄</div><div class="item-title">Notion-style rich text pages</div></div>
+        <div class="item-body">Replace the static Playbook accordion with editable rich text pages using BlockNote or TipTap. Create meeting notes, strategy docs, runbooks. Pages organized in a tree sidebar. The Playbook becomes a live wiki.</div>
+        <div class="item-tags"><span class="itag new">BlockNote/TipTap</span><span class="itag data">Notion-like</span></div>
+        <div class="effort"><span class="effort-label">Effort</span><div class="effort-dots"><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot"></div></div></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">🗃️</div><div class="item-title">Database views — Table, Board, Gallery</div></div>
+        <div class="item-body">Tasks, Team, and Stakeholder pages get view switchers. List/Table view shows sortable columns. Board = existing Kanban. Gallery shows cards in a grid. Inspired by Notion databases but focused on your data models.</div>
+        <div class="item-tags"><span class="itag new">Multi-view</span><span class="itag data">Notion-like</span></div>
+        <div class="effort"><span class="effort-label">Effort</span><div class="effort-dots"><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div></div></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">📊</div><div class="item-title">Activity feed + team changelog</div></div>
+        <div class="item-body">Real-time activity log visible on dashboard and per-team-member page. Shows who changed what, task completions, 1:1 logs, metric updates. Makes the app feel alive and gives visibility into team momentum.</div>
+        <div class="item-tags"><span class="itag new">Activity log</span><span class="itag data">Team visibility</span></div>
+        <div class="effort"><span class="effort-label">Effort</span><div class="effort-dots"><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot"></div><div class="effort-dot"></div></div></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">👤</div><div class="item-title">Team member profile pages (rich)</div></div>
+        <div class="item-body">Each team member gets a full profile: role, department, skills, delegation level, task history, 1:1 log, notes. A mini-HR profile card. Searchable from command palette. Drag to reorder team view.</div>
+        <div class="item-tags"><span class="itag new">Profile pages</span><span class="itag data">People data</span></div>
+        <div class="effort"><span class="effort-label">Effort</span><div class="effort-dots"><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot"></div><div class="effort-dot"></div></div></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">📅</div><div class="item-title">Calendar / Timeline view for tasks</div></div>
+        <div class="item-body">A month-view calendar showing task due dates, cadences, and 1:1 meetings. Click a day to see what's due. Great for planning-heavy weeks. Replaces the "Due This Week" stat card with a real visual timeline.</div>
+        <div class="item-tags"><span class="itag new">Calendar view</span><span class="itag ui">Planning</span></div>
+        <div class="effort"><span class="effort-label">Effort</span><div class="effort-dots"><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot"></div></div></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">📲</div><div class="item-title">Mobile swipe gestures on task cards</div></div>
+        <div class="item-body">Swipe right to mark done, swipe left to open actions menu (reassign, reschedule, delete). Pull-to-refresh triggers Sheets sync. Long-press to enter multi-select mode. Makes mobile management feel native.</div>
+        <div class="item-tags"><span class="itag fix">Mobile UX</span><span class="itag new">Touch gestures</span></div>
+        <div class="effort"><span class="effort-label">Effort</span><div class="effort-dots"><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot filled blue"></div><div class="effort-dot"></div><div class="effort-dot"></div></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       COULD HAVE
+  ════════════════════════════════════════════ -->
+  <div class="tier could">
+    <div class="tier-header">
+      <div class="tier-badge could">C — Could Have</div>
+      <div class="tier-title">Nice-to-have upgrades · Phase 3</div>
+      <div class="tier-desc">Adds delight but app is complete without these</div>
+    </div>
+    <div class="items triple">
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">🤖</div><div class="item-title">AI quick summaries (Claude)</div></div>
+        <div class="item-body">Summarize the week's tasks, flag at-risk items, draft a stakeholder update from your data. One-tap AI context via the Claude API.</div>
+        <div class="item-tags"><span class="itag new">Claude API</span><span class="itag perf">AI</span></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">🔄</div><div class="item-title">Drag-reorder sidebar + pinned items</div></div>
+        <div class="item-body">Let users drag nav items to reorder, pin favorite pages, and collapse/expand groups. Personalized navigation.</div>
+        <div class="item-tags"><span class="itag ui">Customization</span></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">📈</div><div class="item-title">Inline metric sparklines</div></div>
+        <div class="item-body">Small trend lines on every KPI card showing last 8 weeks of data. Visual momentum indicator without opening the full Metrics page.</div>
+        <div class="item-tags"><span class="itag data">Charts</span><span class="itag ui">Data viz</span></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">🌙</div><div class="item-title">Light mode toggle</div></div>
+        <div class="item-body">Optional light theme for outdoor / bright-light use. Current dark theme stays as default. CSS variable swap.</div>
+        <div class="item-tags"><span class="itag ui">Theming</span></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">🔗</div><div class="item-title">Shareable page links</div></div>
+        <div class="item-body">Generate a read-only shareable URL for any page, report, or doc. Send to stakeholders without requiring login.</div>
+        <div class="item-tags"><span class="itag new">Sharing</span></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">📤</div><div class="item-title">Export to PDF / CSV</div></div>
+        <div class="item-body">Export any database view to CSV. Export reports and pages to PDF. Right-click context menu on table rows.</div>
+        <div class="item-tags"><span class="itag data">Export</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       WON'T HAVE
+  ════════════════════════════════════════════ -->
+  <div class="tier wont">
+    <div class="tier-header">
+      <div class="tier-badge wont">W — Won't Have (now)</div>
+      <div class="tier-title">Out of scope · Revisit later</div>
+      <div class="tier-desc">Either too complex, changes the product's nature, or low ROI for one user</div>
+    </div>
+    <div class="items">
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">👥</div><div class="item-title">Multi-user collaboration (real-time)</div></div>
+        <div class="item-body">Live cursors, simultaneous editing, presence indicators. This is a single-user tool for Saksham — not a team product. Real-time sync adds enormous complexity for zero current benefit.</div>
+        <div class="item-tags"><span class="itag fix">Single-user app</span></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">📧</div><div class="item-title">Full Gmail integration</div></div>
+        <div class="item-body">Reading, sending, and threading emails inside the app. Gmail MCP already exists but full in-app email client is scope creep. Keep the existing email report sending, nothing more.</div>
+        <div class="item-tags"><span class="itag fix">Out of scope</span></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">💳</div><div class="item-title">Multi-tenant / SaaS billing</div></div>
+        <div class="item-body">This is a personal tool, not a product. No user accounts, subscriptions, or org-level access control needed.</div>
+        <div class="item-tags"><span class="itag fix">Not a SaaS</span></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head"><div class="item-emoji">📦</div><div class="item-title">Native iOS/Android apps</div></div>
+        <div class="item-body">PWA already gives a native-like experience on mobile. Building separate native apps is a 10x effort increase for minimal gain over an installable PWA.</div>
+        <div class="item-tags"><span class="itag fix">PWA covers this</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SUMMARY ── -->
+  <div class="summary">
+    <div class="sum-item">
+      <div class="sum-val gold">6</div>
+      <div class="sum-label">features</div>
+      <div class="sum-tier must">Must Have</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val blue">6</div>
+      <div class="sum-label">features</div>
+      <div class="sum-tier should">Should Have</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val purple">6</div>
+      <div class="sum-label">features</div>
+      <div class="sum-tier could">Could Have</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val gray">4</div>
+      <div class="sum-label">features</div>
+      <div class="sum-tier wont">Won't Have</div>
+    </div>
+  </div>
+
+</div>
+
+<div style="position:fixed;bottom:16px;right:16px;background:#C9A84C;color:#07080C;font-size:11px;font-weight:700;padding:7px 14px;border-radius:8px;letter-spacing:0.05em;z-index:999;">
+  MoSCoW PLAN · LOHONO CMD REDESIGN
+</div>
+</body>
+</html>

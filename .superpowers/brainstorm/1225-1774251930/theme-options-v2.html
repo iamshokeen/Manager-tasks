@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theme Picker v2</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #F0F0F0; font-family: 'Inter', sans-serif; color: #111; min-height: 100vh; transition: background 0.3s; }
+.page { max-width: 1280px; margin: 0 auto; padding: 40px 32px 80px; }
+h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; color: #111; }
+.sub { font-size: 13px; color: #888; margin-bottom: 10px; }
+
+/* FILTER TABS */
+.filter-row { display: flex; gap: 6px; margin-bottom: 28px; flex-wrap: wrap; }
+.filter-btn { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1.5px solid #E0E0E0; background: #fff; color: #666; transition: all 0.15s; }
+.filter-btn:hover { border-color: #999; color: #333; }
+.filter-btn.active { background: #111; color: #fff; border-color: #111; }
+
+/* GRID */
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+/* CARD */
+.theme-card {
+  border-radius: 14px; overflow: hidden; cursor: pointer;
+  border: 2px solid transparent; transition: all 0.18s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.theme-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+.theme-card.selected { box-shadow: 0 0 0 3px var(--acc, #111), 0 8px 24px rgba(0,0,0,0.15); }
+
+/* MINI APP INSIDE CARD */
+.mini { height: 180px; display: flex; overflow: hidden; position: relative; }
+.mini-sb { width: 56px; padding: 10px 7px; display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+.mini-logo { height: 18px; border-radius: 5px; margin-bottom: 8px; }
+.mini-dot { height: 7px; border-radius: 2px; }
+.mini-dot.a { width: 100%; }
+.mini-dot.i { width: 75%; opacity: 0.35; }
+.mini-body { flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 7px; overflow: hidden; }
+.mini-topbar { height: 24px; border-bottom-width: 1px; border-bottom-style: solid; display: flex; align-items: center; justify-content: flex-end; padding: 0 6px; margin: -10px -10px 6px; }
+.mini-tbar-btn { height: 14px; width: 32px; border-radius: 4px; }
+.mini-hero-block { height: 44px; border-radius: 7px; padding: 8px 10px; }
+.mini-hero-t { height: 9px; border-radius: 2px; width: 55%; margin-bottom: 5px; }
+.mini-hero-s { height: 6px; border-radius: 2px; width: 35%; opacity: 0.5; }
+.mini-stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
+.mini-stat-b { height: 28px; border-radius: 5px; }
+.mini-rows { display: flex; flex-direction: column; gap: 4px; }
+.mini-r { height: 7px; border-radius: 2px; }
+.mini-r.f { width: 100%; }
+.mini-r.m { width: 75%; }
+.mini-r.s { width: 50%; }
+
+/* LABEL */
+.card-label { padding: 11px 13px 13px; }
+.card-name { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.card-desc { font-size: 11px; opacity: 0.6; line-height: 1.5; }
+.card-badge { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 10px; margin-bottom: 5px; }
+
+/* SELECTED INDICATOR */
+.sel-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; padding: 14px 32px; backdrop-filter: blur(12px); border-top: 1px solid rgba(255,255,255,0.2); z-index: 100; align-items: center; justify-content: space-between; }
+.sel-bar.visible { display: flex; }
+.sel-theme-preview { display: flex; align-items: center; gap: 12px; }
+.sel-swatch { width: 32px; height: 32px; border-radius: 8px; }
+.sel-name { font-size: 15px; font-weight: 700; }
+.sel-sub { font-size: 12px; opacity: 0.6; }
+.sel-confirm { padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+/* ═══════════════════════
+   THEME DEFINITIONS
+═══════════════════════ */
+
+/* — DARK THEMES — */
+.t-gold { --acc:#C9A84C; --bg:#07080C; --sb:#0A0B10; --bd:#1A1C24; --hero:#111520; --stat:#0E0F15; --dot-a:#C9A84C; --txt:#E8E9ED; --lb:#0A0B10; --tbar:#07080C; --btn:#C9A84C; }
+.t-violet { --acc:#7C3AED; --bg:#08080F; --sb:#0B0B14; --bd:#1A1A2E; --hero:#12101F; --stat:#0F0E1A; --dot-a:#7C3AED; --txt:#E8E9ED; --lb:#0D0D12; --tbar:#08080F; --btn:#7C3AED; }
+.t-slate { --acc:#E2E2E2; --bg:#191919; --sb:#1F1F1F; --bd:#2A2A2A; --hero:#222; --stat:#222; --dot-a:rgba(255,255,255,0.15); --txt:#E2E2E2; --lb:#191919; --tbar:#191919; --btn:#E2E2E2; }
+.t-navy { --acc:#0EA5E9; --bg:#060A12; --sb:#080C14; --bd:#0F1929; --hero:#0A1220; --stat:#080E18; --dot-a:#0EA5E9; --txt:#E8ECF0; --lb:#080C14; --tbar:#060A12; --btn:#0EA5E9; }
+.t-forest { --acc:#10B981; --bg:#090E0B; --sb:#0B100D; --bd:#162019; --hero:#0E1A12; --stat:#0B1410; --dot-a:#10B981; --txt:#E8EDE9; --lb:#0C110E; --tbar:#090E0B; --btn:#10B981; }
+.t-rose-dark { --acc:#F43F5E; --bg:#0C080A; --sb:#120B0D; --bd:#261419; --hero:#1A0E12; --stat:#160B0F; --dot-a:#F43F5E; --txt:#F8ECF0; --lb:#0C080A; --tbar:#0C080A; --btn:#F43F5E; }
+.t-amber-dark { --acc:#F59E0B; --bg:#0C0A06; --sb:#120F08; --bd:#231B0A; --hero:#1A1208; --stat:#160F07; --dot-a:#F59E0B; --txt:#F8F0E0; --lb:#0C0A06; --tbar:#0C0A06; --btn:#F59E0B; }
+.t-cyan-dark { --acc:#06B6D4; --bg:#060C0E; --sb:#080E12; --bd:#0C1E26; --hero:#0A1820; --stat:#08141A; --dot-a:#06B6D4; --txt:#E0F4F8; --lb:#060C0E; --tbar:#060C0E; --btn:#06B6D4; }
+
+/* — LIGHT THEMES — */
+.t-light-clean { --acc:#111827; --bg:#FFFFFF; --sb:#F7F7F5; --bd:#E5E7EB; --hero:#F3F4F6; --stat:#FFFFFF; --dot-a:rgba(0,0,0,0.1); --txt:#111827; --lb:#FFFFFF; --tbar:#FFFFFF; --btn:#111827; }
+.t-light-blue { --acc:#2563EB; --bg:#F8FAFF; --sb:#EEF2FF; --bd:#DBEAFE; --hero:#EFF6FF; --stat:#FFFFFF; --dot-a:#2563EB; --txt:#1E3A8A; --lb:#F8FAFF; --tbar:#FFFFFF; --btn:#2563EB; }
+.t-light-rose { --acc:#E11D48; --bg:#FFF8F9; --sb:#FFF1F2; --bd:#FCE7EB; --hero:#FFF1F4; --stat:#FFFFFF; --dot-a:#E11D48; --txt:#4C0519; --lb:#FFF8F9; --tbar:#FFFFFF; --btn:#E11D48; }
+.t-light-violet { --acc:#7C3AED; --bg:#FAFAFF; --sb:#F5F3FF; --bd:#EDE9FE; --hero:#F5F3FF; --stat:#FFFFFF; --dot-a:#7C3AED; --txt:#2E1065; --lb:#FAFAFF; --tbar:#FFFFFF; --btn:#7C3AED; }
+.t-light-green { --acc:#16A34A; --bg:#F7FFF9; --sb:#F0FDF4; --bd:#DCFCE7; --hero:#F0FDF4; --stat:#FFFFFF; --dot-a:#16A34A; --txt:#14532D; --lb:#F7FFF9; --tbar:#FFFFFF; --btn:#16A34A; }
+.t-light-amber { --acc:#D97706; --bg:#FFFBF0; --sb:#FFFBEB; --bd:#FEF3C7; --hero:#FFFBEB; --stat:#FFFFFF; --dot-a:#D97706; --txt:#451A03; --lb:#FFFBF0; --tbar:#FFFFFF; --btn:#D97706; }
+.t-light-teal { --acc:#0D9488; --bg:#F0FFFE; --sb:#F0FDFA; --bd:#CCFBF1; --hero:#F0FDFA; --stat:#FFFFFF; --dot-a:#0D9488; --txt:#134E4A; --lb:#F0FFFE; --tbar:#FFFFFF; --btn:#0D9488; }
+.t-light-orange { --acc:#EA580C; --bg:#FFF9F5; --sb:#FFF7ED; --bd:#FED7AA; --hero:#FFF7ED; --stat:#FFFFFF; --dot-a:#EA580C; --txt:#431407; --lb:#FFF9F5; --tbar:#FFFFFF; --btn:#EA580C; }
+
+/* — COLORFUL/GRADIENT THEMES — */
+.t-aurora { --acc:#A855F7; --bg:#0A0618; --sb:#0F0820; --bd:#1E1040; --hero:linear-gradient(135deg,#1a0a30,#0d1a3a); --stat:#120928; --dot-a:#A855F7; --txt:#F0E8FF; --lb:#0A0618; --tbar:#0A0618; --btn:#A855F7; }
+.t-sunset { --acc:#F97316; --bg:#0F0805; --sb:#180C08; --bd:#2A1508; --hero:linear-gradient(135deg,#1a0c06,#1a0a10); --stat:#160A05; --dot-a:#F97316; --txt:#FFF0E8; --lb:#0F0805; --tbar:#0F0805; --btn:#F97316; }
+.t-ocean { --acc:#0EA5E9; --bg:#030C18; --sb:#050F1E; --bd:#0A1F35; --hero:linear-gradient(135deg,#061428,#040E20); --stat:#05111E; --dot-a:#0EA5E9; --txt:#E0F4FF; --lb:#030C18; --tbar:#030C18; --btn:#0EA5E9; }
+.t-candy { --acc:#EC4899; --bg:#FDF2F8; --sb:#FCE7F3; --bd:#F9A8D4; --hero:linear-gradient(135deg,#FCE7F3,#EDE9FE); --stat:#FFFFFF; --dot-a:#EC4899; --txt:#831843; --lb:#FDF2F8; --tbar:#FFFFFF; --btn:#EC4899; }
+
+/* Apply CSS vars to each element */
+.theme-card { background: var(--lb); }
+.mini { background: var(--bg); }
+.mini-sb { background: var(--sb); border-right: 1px solid var(--bd); }
+.mini-logo { background: var(--btn); }
+.mini-dot.a { background: var(--dot-a); }
+.mini-dot.i { background: var(--bd); }
+.mini-body { }
+.mini-topbar { background: var(--tbar); border-bottom-color: var(--bd); }
+.mini-tbar-btn { background: var(--btn); }
+.mini-hero-block { background: var(--hero); border: 1px solid var(--bd); }
+.mini-hero-t { background: var(--txt); }
+.mini-hero-s { background: var(--txt); }
+.mini-stat-b { background: var(--stat); border: 1px solid var(--bd); }
+.mini-stat-b:first-child { border-color: var(--acc) !important; opacity: 0.9; }
+.mini-r { background: var(--bd); }
+.card-label { background: var(--lb); color: var(--txt); }
+.card-badge { background: var(--bd); color: var(--acc); border: 1px solid var(--bd); }
+
+/* For gradient heroes */
+.t-aurora .mini-hero-block,
+.t-sunset .mini-hero-block,
+.t-ocean .mini-hero-block,
+.t-candy .mini-hero-block {
+  background: var(--hero) !important;
+  border: none !important;
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Choose your theme</h1>
+  <p class="sub">Dark, light, colorful — pick what feels like YOU. Not locked to gold.</p>
+
+  <div class="filter-row">
+    <div class="filter-btn active" onclick="filter('all', this)">All themes</div>
+    <div class="filter-btn" onclick="filter('dark', this)">🌑 Dark</div>
+    <div class="filter-btn" onclick="filter('light', this)">☀️ Light</div>
+    <div class="filter-btn" onclick="filter('colorful', this)">🌈 Colorful</div>
+    <div class="filter-btn" onclick="filter('gradient', this)">✨ Gradient / Vibrant</div>
+  </div>
+
+  <div class="grid" id="grid">
+
+    <!-- ═══ DARK ═══ -->
+    <div class="theme-card t-gold" data-cat="dark" data-name="Gold Dark" data-acc="#C9A84C" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb"><div class="mini-logo"></div><div class="mini-dot a"></div><div class="mini-dot i"></div><div class="mini-dot i"></div><div class="mini-dot i"></div></div>
+        <div class="mini-body">
+          <div class="mini-topbar"><div class="mini-tbar-btn"></div></div>
+          <div class="mini-hero-block"><div class="mini-hero-t"></div><div class="mini-hero-s"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b"></div><div class="mini-stat-b"></div><div class="mini-stat-b"></div></div>
+          <div class="mini-rows"><div class="mini-r f"></div><div class="mini-r m"></div><div class="mini-r s"></div></div>
+        </div>
+      </div>
+      <div class="card-label"><div class="card-badge">Current</div><div class="card-name">Gold Dark</div><div class="card-desc">Luxury, warm, Lohono brand</div></div>
+    </div>
+
+    <div class="theme-card t-violet" data-cat="dark" data-name="Violet Dark" data-acc="#7C3AED" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb"><div class="mini-logo"></div><div class="mini-dot a"></div><div class="mini-dot i"></div><div class="mini-dot i"></div><div class="mini-dot i"></div></div>
+        <div class="mini-body">
+          <div class="mini-topbar"><div class="mini-tbar-btn"></div></div>
+          <div class="mini-hero-block"><div class="mini-hero-t"></div><div class="mini-hero-s"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b"></div><div class="mini-stat-b"></div><div class="mini-stat-b"></div></div>
+          <div class="mini-rows"><div class="mini-r f"></div><div class="mini-r m"></div><div class="mini-r s"></div></div>
+        </div>
+      </div>
+      <div class="card-label"><div class="card-badge">Popular</div><div class="card-name">Violet Dark</div><div class="card-desc">Linear / Raycast energy</div></div>
+    </div>
+
+    <div class="theme-card t-slate" data-cat="dark" data-name="Slate Dark" data-acc="#E2E2E2" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb"><div class="mini-logo"></div><div class="mini-dot a"></div><div class="mini-dot i"></div><div class="mini-dot i"></div><div class="mini-dot i"></div></div>
+        <div class="mini-body">
+          <div class="mini-topbar"><div class="mini-tbar-btn"></div></div>
+          <div class="mini-hero-block"><div class="mini-hero-t"></div><div class="mini-hero-s"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b"></div><div class="mini-stat-b"></div><div class="mini-stat-b"></div></div>
+          <div class="mini-rows"><div class="mini-r f"></div><div class="mini-r m"></div><div class="mini-r s"></div></div>
+        </div>
+      </div>
+      <div class="card-label"><div class="card-badge">Notion-like</div><div class="card-name">Slate Dark</div><div class="card-desc">Notion's actual dark mode</div></div>
+    </div>
+
+    <div class="theme-card t-navy" data-cat="dark" data-name="Navy Blue" data-acc="#0EA5E9" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb"><div class="mini-logo"></div><div class="mini-dot a"></div><div class="mini-dot i"></div><div class="mini-dot i"></div><div class="mini-dot i"></div></div>
+        <div class="mini-body">
+          <div class="mini-topbar"><div class="mini-tbar-btn"></div></div>
+          <div class="mini-hero-block"><div class="mini-hero-t"></div><div class="mini-hero-s"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b"></div><div class="mini-stat-b"></div><div class="mini-stat-b"></div></div>
+          <div class="mini-rows"><div class="mini-r f"></div><div class="mini-r m"></div><div class="mini-r s"></div></div>
+        </div>
+      </div>
+      <div class="card-label"><div class="card-badge">Premium</div><div class="card-name">Navy Blue</div><div class="card-desc">Stripe / Vercel dashboard</div></div>
+    </div>
+
+    <div class="theme-card t-forest" data-cat="dark" data-name="Forest Dark" data-acc="#10B981" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb"><div class="mini-logo"></div><div class="mini-dot a"></div><div class="mini-dot i"></div><div class="mini-dot i"></div><div class="mini-dot i"></div></div>
+        <div class="mini-body">
+          <div class="mini-topbar"><div class="mini-tbar-btn"></div></div>
+          <div class="mini-hero-block"><div class="mini-hero-t"></div><div class="mini-hero-s"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b"></div><div class="mini-stat-b"></div><div class="mini-stat-b"></div></div>
+          <div class="mini-rows"><div class="mini-r f"></div><div class="mini-r m"></div><div class="mini-r s"></div></div>
+        </div>
+      </div>
+      <div class="card-label"><div class="card-badge">Unique</div><div class="card-name">Forest Dark</div><div class="card-desc">Deep green-black + emerald</div></div>
+    </div>
+
+    <div class="theme-card t-rose-dark" data-cat="dark" data-name="Rose Dark" data-acc="#F43F5E" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb"><div class="mini-logo"></div><div class="mini-dot a"></div><div class="mini-dot i"></div><div class="mini-dot i"></div><div class="mini-dot i"></div></div>
+        <div class="mini-body">
+          <div class="mini-topbar"><div class="mini-tbar-btn"></div></div>
+          <div class="mini-hero-block"><div class="mini-hero-t"></div><div class="mini-hero-s"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b"></div><div class="mini-stat-b"></div><div class="mini-stat-b"></div></div>
+          <div class="mini-rows"><div class="mini-r f"></div><div class="mini-r m"></div><div class="mini-r s"></div></div>
+        </div>
+      </div>
+      <div class="card-label"><div class="card-badge">Bold</div><div class="card-name">Rose Dark</div><div class="card-desc">Deep black + hot pink. Striking.</div></div>
+    </div>
+
+    <div class="theme-card t-amber-dark" data-cat="dark" data-name="Amber Dark" data-acc="#F59E0B" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb"><div class="mini-logo"></div><div class="mini-dot a"></div><div class="mini-dot i"></div><div class="mini-dot i"></div><div class="mini-dot i"></div></div>
+        <div class="mini-body">
+          <div class="mini-topbar"><div class="mini-tbar-btn"></div></div>
+          <div class="mini-hero-block"><div class="mini-hero-t"></div><div class="mini-hero-s"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b"></div><div class="mini-stat-b"></div><div class="mini-stat-b"></div></div>
+          <div class="mini-rows"><div class="mini-r f"></div><div class="mini-r m"></div><div class="mini-r s"></div></div>
+        </div>
+      </div>
+      <div class="card-label"><div class="card-badge">Warm</div><div class="card-name">Amber Dark</div><div class="card-desc">Black + deep amber. Cosy.</div></div>
+    </div>
+
+    <div class="theme-card t-cyan-dark" data-cat="dark" data-name="Cyan Dark" data-acc="#06B6D4" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb"><div class="mini-logo"></div><div class="mini-dot a"></div><div class="mini-dot i"></div><div class="mini-dot i"></div><div class="mini-dot i"></div></div>
+        <div class="mini-body">
+          <div class="mini-topbar"><div class="mini-tbar-btn"></div></div>
+          <div class="mini-hero-block"><div class="mini-hero-t"></div><div class="mini-hero-s"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b"></div><div class="mini-stat-b"></div><div class="mini-stat-b"></div></div>
+          <div class="mini-rows"><div class="mini-r f"></div><div class="mini-r m"></div><div class="mini-r s"></div></div>
+        </div>
+      </div>
+      <div class="card-label"><div class="card-badge">Electric</div><div class="card-name">Cyan Dark</div><div class="card-desc">Near-black + electric teal</div></div>
+    </div>
+
+    <!-- ═══ LIGHT ═══ -->
+    <div class="theme-card t-light-clean" data-cat="light" data-name="Light Clean" data-acc="#111827" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb" style="border-right:1px solid #E5E7EB;"><div class="mini-logo" style="background:#111827;"></div><div class="mini-dot a" style="background:rgba(0,0,0,0.1);"></div><div class="mini-dot i" style="background:#E5E7EB;opacity:1;"></div><div class="mini-dot i" style="background:#E5E7EB;opacity:1;"></div></div>
+        <div class="mini-body" style="background:#FAFAFA;">
+          <div class="mini-topbar" style="background:#fff;border-bottom-color:#E5E7EB;"><div class="mini-tbar-btn" style="background:#111827;"></div></div>
+          <div class="mini-hero-block" style="background:#F3F4F6;border-color:#E5E7EB;"><div class="mini-hero-t" style="background:#111827;"></div><div class="mini-hero-s" style="background:#6B7280;"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b" style="background:#fff;border-color:#E5E7EB;"></div><div class="mini-stat-b" style="background:#fff;border-color:#E5E7EB;"></div><div class="mini-stat-b" style="background:#fff;border-color:#111827;"></div></div>
+          <div class="mini-rows"><div class="mini-r f" style="background:#E5E7EB;"></div><div class="mini-r m" style="background:#E5E7EB;"></div></div>
+        </div>
+      </div>
+      <div class="card-label" style="background:#fff;color:#111827;"><div class="card-badge" style="background:#F3F4F6;color:#111827;border-color:#E5E7EB;">Classic</div><div class="card-name">Light Clean</div><div class="card-desc">Pure white. Notion default. Timeless.</div></div>
+    </div>
+
+    <div class="theme-card t-light-blue" data-cat="light" data-name="Sky Blue Light" data-acc="#2563EB" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb" style="background:#EEF2FF;border-right:1px solid #DBEAFE;"><div class="mini-logo" style="background:#2563EB;"></div><div class="mini-dot a" style="background:#2563EB;"></div><div class="mini-dot i" style="background:#DBEAFE;opacity:1;"></div><div class="mini-dot i" style="background:#DBEAFE;opacity:1;"></div></div>
+        <div class="mini-body" style="background:#F8FAFF;">
+          <div class="mini-topbar" style="background:#fff;border-bottom-color:#DBEAFE;"><div class="mini-tbar-btn" style="background:#2563EB;"></div></div>
+          <div class="mini-hero-block" style="background:#EFF6FF;border-color:#BFDBFE;"><div class="mini-hero-t" style="background:#1E3A8A;"></div><div class="mini-hero-s" style="background:#3B82F6;"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b" style="background:#fff;border-color:#2563EB;"></div><div class="mini-stat-b" style="background:#fff;border-color:#DBEAFE;"></div><div class="mini-stat-b" style="background:#fff;border-color:#DBEAFE;"></div></div>
+          <div class="mini-rows"><div class="mini-r f" style="background:#DBEAFE;"></div><div class="mini-r m" style="background:#DBEAFE;"></div></div>
+        </div>
+      </div>
+      <div class="card-label" style="background:#F8FAFF;color:#1E3A8A;"><div class="card-badge" style="background:#DBEAFE;color:#2563EB;border-color:#BFDBFE;">Fresh</div><div class="card-name">Sky Blue Light</div><div class="card-desc">Airy, corporate-clean. Business focus.</div></div>
+    </div>
+
+    <div class="theme-card t-light-violet" data-cat="light" data-name="Lavender Light" data-acc="#7C3AED" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb" style="background:#F5F3FF;border-right:1px solid #EDE9FE;"><div class="mini-logo" style="background:#7C3AED;"></div><div class="mini-dot a" style="background:#7C3AED;"></div><div class="mini-dot i" style="background:#EDE9FE;opacity:1;"></div><div class="mini-dot i" style="background:#EDE9FE;opacity:1;"></div></div>
+        <div class="mini-body" style="background:#FAFAFF;">
+          <div class="mini-topbar" style="background:#fff;border-bottom-color:#EDE9FE;"><div class="mini-tbar-btn" style="background:#7C3AED;"></div></div>
+          <div class="mini-hero-block" style="background:#F5F3FF;border-color:#DDD6FE;"><div class="mini-hero-t" style="background:#2E1065;"></div><div class="mini-hero-s" style="background:#7C3AED;"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b" style="background:#fff;border-color:#7C3AED;"></div><div class="mini-stat-b" style="background:#fff;border-color:#EDE9FE;"></div><div class="mini-stat-b" style="background:#fff;border-color:#EDE9FE;"></div></div>
+          <div class="mini-rows"><div class="mini-r f" style="background:#EDE9FE;"></div><div class="mini-r m" style="background:#EDE9FE;"></div></div>
+        </div>
+      </div>
+      <div class="card-label" style="background:#FAFAFF;color:#2E1065;"><div class="card-badge" style="background:#EDE9FE;color:#7C3AED;border-color:#DDD6FE;">Dreamy</div><div class="card-name">Lavender Light</div><div class="card-desc">Soft purple tones. Creative, calm.</div></div>
+    </div>
+
+    <div class="theme-card t-light-rose" data-cat="light" data-name="Rose Light" data-acc="#E11D48" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb" style="background:#FFF1F2;border-right:1px solid #FCE7EB;"><div class="mini-logo" style="background:#E11D48;"></div><div class="mini-dot a" style="background:#E11D48;"></div><div class="mini-dot i" style="background:#FCE7EB;opacity:1;"></div><div class="mini-dot i" style="background:#FCE7EB;opacity:1;"></div></div>
+        <div class="mini-body" style="background:#FFF8F9;">
+          <div class="mini-topbar" style="background:#fff;border-bottom-color:#FCE7EB;"><div class="mini-tbar-btn" style="background:#E11D48;"></div></div>
+          <div class="mini-hero-block" style="background:#FFF1F4;border-color:#FECDD3;"><div class="mini-hero-t" style="background:#4C0519;"></div><div class="mini-hero-s" style="background:#E11D48;"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b" style="background:#fff;border-color:#E11D48;"></div><div class="mini-stat-b" style="background:#fff;border-color:#FCE7EB;"></div><div class="mini-stat-b" style="background:#fff;border-color:#FCE7EB;"></div></div>
+          <div class="mini-rows"><div class="mini-r f" style="background:#FCE7EB;"></div><div class="mini-r m" style="background:#FCE7EB;"></div></div>
+        </div>
+      </div>
+      <div class="card-label" style="background:#FFF8F9;color:#4C0519;"><div class="card-badge" style="background:#FCE7EB;color:#E11D48;border-color:#FECDD3;">Vibrant</div><div class="card-name">Rose Light</div><div class="card-desc">Warm blush pink. Bold + friendly.</div></div>
+    </div>
+
+    <div class="theme-card t-light-green" data-cat="light" data-name="Mint Light" data-acc="#16A34A" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb" style="background:#F0FDF4;border-right:1px solid #DCFCE7;"><div class="mini-logo" style="background:#16A34A;"></div><div class="mini-dot a" style="background:#16A34A;"></div><div class="mini-dot i" style="background:#DCFCE7;opacity:1;"></div><div class="mini-dot i" style="background:#DCFCE7;opacity:1;"></div></div>
+        <div class="mini-body" style="background:#F7FFF9;">
+          <div class="mini-topbar" style="background:#fff;border-bottom-color:#DCFCE7;"><div class="mini-tbar-btn" style="background:#16A34A;"></div></div>
+          <div class="mini-hero-block" style="background:#F0FDF4;border-color:#BBF7D0;"><div class="mini-hero-t" style="background:#14532D;"></div><div class="mini-hero-s" style="background:#16A34A;"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b" style="background:#fff;border-color:#16A34A;"></div><div class="mini-stat-b" style="background:#fff;border-color:#DCFCE7;"></div><div class="mini-stat-b" style="background:#fff;border-color:#DCFCE7;"></div></div>
+          <div class="mini-rows"><div class="mini-r f" style="background:#DCFCE7;"></div><div class="mini-r m" style="background:#DCFCE7;"></div></div>
+        </div>
+      </div>
+      <div class="card-label" style="background:#F7FFF9;color:#14532D;"><div class="card-badge" style="background:#DCFCE7;color:#16A34A;border-color:#BBF7D0;">Fresh</div><div class="card-name">Mint Light</div><div class="card-desc">Clean green + white. Energising.</div></div>
+    </div>
+
+    <div class="theme-card t-light-amber" data-cat="light" data-name="Honey Light" data-acc="#D97706" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb" style="background:#FFFBEB;border-right:1px solid #FEF3C7;"><div class="mini-logo" style="background:#D97706;"></div><div class="mini-dot a" style="background:#D97706;"></div><div class="mini-dot i" style="background:#FEF3C7;opacity:1;"></div><div class="mini-dot i" style="background:#FEF3C7;opacity:1;"></div></div>
+        <div class="mini-body" style="background:#FFFBF0;">
+          <div class="mini-topbar" style="background:#fff;border-bottom-color:#FEF3C7;"><div class="mini-tbar-btn" style="background:#D97706;"></div></div>
+          <div class="mini-hero-block" style="background:#FFFBEB;border-color:#FDE68A;"><div class="mini-hero-t" style="background:#451A03;"></div><div class="mini-hero-s" style="background:#D97706;"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b" style="background:#fff;border-color:#D97706;"></div><div class="mini-stat-b" style="background:#fff;border-color:#FEF3C7;"></div><div class="mini-stat-b" style="background:#fff;border-color:#FEF3C7;"></div></div>
+          <div class="mini-rows"><div class="mini-r f" style="background:#FEF3C7;"></div><div class="mini-r m" style="background:#FEF3C7;"></div></div>
+        </div>
+      </div>
+      <div class="card-label" style="background:#FFFBF0;color:#451A03;"><div class="card-badge" style="background:#FEF3C7;color:#D97706;border-color:#FDE68A;">Warm</div><div class="card-name">Honey Light</div><div class="card-desc">Warm amber on cream. Luxurious feel.</div></div>
+    </div>
+
+    <div class="theme-card t-light-teal" data-cat="light" data-name="Teal Light" data-acc="#0D9488" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb" style="background:#F0FDFA;border-right:1px solid #CCFBF1;"><div class="mini-logo" style="background:#0D9488;"></div><div class="mini-dot a" style="background:#0D9488;"></div><div class="mini-dot i" style="background:#CCFBF1;opacity:1;"></div><div class="mini-dot i" style="background:#CCFBF1;opacity:1;"></div></div>
+        <div class="mini-body" style="background:#F0FFFE;">
+          <div class="mini-topbar" style="background:#fff;border-bottom-color:#CCFBF1;"><div class="mini-tbar-btn" style="background:#0D9488;"></div></div>
+          <div class="mini-hero-block" style="background:#F0FDFA;border-color:#99F6E4;"><div class="mini-hero-t" style="background:#134E4A;"></div><div class="mini-hero-s" style="background:#0D9488;"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b" style="background:#fff;border-color:#0D9488;"></div><div class="mini-stat-b" style="background:#fff;border-color:#CCFBF1;"></div><div class="mini-stat-b" style="background:#fff;border-color:#CCFBF1;"></div></div>
+          <div class="mini-rows"><div class="mini-r f" style="background:#CCFBF1;"></div><div class="mini-r m" style="background:#CCFBF1;"></div></div>
+        </div>
+      </div>
+      <div class="card-label" style="background:#F0FFFE;color:#134E4A;"><div class="card-badge" style="background:#CCFBF1;color:#0D9488;border-color:#99F6E4;">Calm</div><div class="card-name">Teal Light</div><div class="card-desc">Aqua mint. Zen, focused, cool.</div></div>
+    </div>
+
+    <div class="theme-card t-light-orange" data-cat="light" data-name="Sunset Light" data-acc="#EA580C" onclick="selectTheme(this)">
+      <div class="mini">
+        <div class="mini-sb" style="background:#FFF7ED;border-right:1px solid #FED7AA;"><div class="mini-logo" style="background:#EA580C;"></div><div class="mini-dot a" style="background:#EA580C;"></div><div class="mini-dot i" style="background:#FED7AA;opacity:1;"></div><div class="mini-dot i" style="background:#FED7AA;opacity:1;"></div></div>
+        <div class="mini-body" style="background:#FFF9F5;">
+          <div class="mini-topbar" style="background:#fff;border-bottom-color:#FED7AA;"><div class="mini-tbar-btn" style="background:#EA580C;"></div></div>
+          <div class="mini-hero-block" style="background:#FFF7ED;border-color:#FDBA74;"><div class="mini-hero-t" style="background:#431407;"></div><div class="mini-hero-s" style="background:#EA580C;"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b" style="background:#fff;border-color:#EA580C;"></div><div class="mini-stat-b" style="background:#fff;border-color:#FED7AA;"></div><div class="mini-stat-b" style="background:#fff;border-color:#FED7AA;"></div></div>
+          <div class="mini-rows"><div class="mini-r f" style="background:#FED7AA;"></div><div class="mini-r m" style="background:#FED7AA;"></div></div>
+        </div>
+      </div>
+      <div class="card-label" style="background:#FFF9F5;color:#431407;"><div class="card-badge" style="background:#FED7AA;color:#EA580C;border-color:#FDBA74;">Energy</div><div class="card-name">Sunset Light</div><div class="card-desc">Warm orange on white. Bold, lively.</div></div>
+    </div>
+
+    <!-- ═══ COLORFUL / GRADIENT ═══ -->
+    <div class="theme-card t-aurora" data-cat="gradient" data-name="Aurora" data-acc="#A855F7" onclick="selectTheme(this)">
+      <div class="mini" style="background:linear-gradient(160deg,#0A0618,#0D1A3A);">
+        <div class="mini-sb" style="background:rgba(255,255,255,0.04);border-right:1px solid rgba(255,255,255,0.06);"><div class="mini-logo" style="background:linear-gradient(135deg,#A855F7,#EC4899);"></div><div class="mini-dot a" style="background:#A855F7;"></div><div class="mini-dot i" style="background:rgba(255,255,255,0.1);opacity:1;"></div><div class="mini-dot i" style="background:rgba(255,255,255,0.1);opacity:1;"></div></div>
+        <div class="mini-body">
+          <div class="mini-topbar" style="background:transparent;border-bottom-color:rgba(255,255,255,0.06);"><div class="mini-tbar-btn" style="background:linear-gradient(90deg,#A855F7,#EC4899);"></div></div>
+          <div class="mini-hero-block" style="background:linear-gradient(135deg,rgba(168,85,247,0.2),rgba(99,102,241,0.15));border-color:rgba(168,85,247,0.2);"><div class="mini-hero-t" style="background:#F0E8FF;"></div><div class="mini-hero-s" style="background:#A855F7;"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b" style="background:rgba(168,85,247,0.1);border-color:rgba(168,85,247,0.3);"></div><div class="mini-stat-b" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);"></div><div class="mini-stat-b" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);"></div></div>
+          <div class="mini-rows"><div class="mini-r f" style="background:rgba(168,85,247,0.2);"></div><div class="mini-r m" style="background:rgba(255,255,255,0.06);"></div></div>
+        </div>
+      </div>
+      <div class="card-label" style="background:linear-gradient(135deg,#0E0820,#0D1A3A);color:#F0E8FF;"><div class="card-badge" style="background:rgba(168,85,247,0.15);color:#A855F7;border-color:rgba(168,85,247,0.2);">Vibrant</div><div class="card-name">Aurora</div><div class="card-desc">Deep space + purple/pink gradient.</div></div>
+    </div>
+
+    <div class="theme-card t-ocean" data-cat="gradient" data-name="Deep Ocean" data-acc="#0EA5E9" onclick="selectTheme(this)">
+      <div class="mini" style="background:linear-gradient(160deg,#030C18,#040E20);">
+        <div class="mini-sb" style="background:rgba(255,255,255,0.03);border-right:1px solid rgba(255,255,255,0.05);"><div class="mini-logo" style="background:linear-gradient(135deg,#0EA5E9,#6366F1);"></div><div class="mini-dot a" style="background:#0EA5E9;"></div><div class="mini-dot i" style="background:rgba(255,255,255,0.1);opacity:1;"></div><div class="mini-dot i" style="background:rgba(255,255,255,0.1);opacity:1;"></div></div>
+        <div class="mini-body">
+          <div class="mini-topbar" style="background:transparent;border-bottom-color:rgba(255,255,255,0.05);"><div class="mini-tbar-btn" style="background:linear-gradient(90deg,#0EA5E9,#6366F1);"></div></div>
+          <div class="mini-hero-block" style="background:linear-gradient(135deg,rgba(14,165,233,0.15),rgba(99,102,241,0.1));border-color:rgba(14,165,233,0.2);"><div class="mini-hero-t" style="background:#E0F4FF;"></div><div class="mini-hero-s" style="background:#0EA5E9;"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b" style="background:rgba(14,165,233,0.1);border-color:rgba(14,165,233,0.3);"></div><div class="mini-stat-b" style="background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.07);"></div><div class="mini-stat-b" style="background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.07);"></div></div>
+          <div class="mini-rows"><div class="mini-r f" style="background:rgba(14,165,233,0.2);"></div><div class="mini-r m" style="background:rgba(255,255,255,0.05);"></div></div>
+        </div>
+      </div>
+      <div class="card-label" style="background:linear-gradient(135deg,#060A14,#08102A);color:#E0F4FF;"><div class="card-badge" style="background:rgba(14,165,233,0.15);color:#0EA5E9;border-color:rgba(14,165,233,0.2);">Deep</div><div class="card-name">Deep Ocean</div><div class="card-desc">Abyss black + electric cyan/indigo.</div></div>
+    </div>
+
+    <div class="theme-card t-sunset" data-cat="gradient" data-name="Sunset Dark" data-acc="#F97316" onclick="selectTheme(this)">
+      <div class="mini" style="background:linear-gradient(160deg,#0F0805,#130A08);">
+        <div class="mini-sb" style="background:rgba(255,255,255,0.03);border-right:1px solid rgba(255,255,255,0.05);"><div class="mini-logo" style="background:linear-gradient(135deg,#F97316,#EC4899);"></div><div class="mini-dot a" style="background:#F97316;"></div><div class="mini-dot i" style="background:rgba(255,255,255,0.1);opacity:1;"></div><div class="mini-dot i" style="background:rgba(255,255,255,0.1);opacity:1;"></div></div>
+        <div class="mini-body">
+          <div class="mini-topbar" style="background:transparent;border-bottom-color:rgba(255,255,255,0.05);"><div class="mini-tbar-btn" style="background:linear-gradient(90deg,#F97316,#EC4899);"></div></div>
+          <div class="mini-hero-block" style="background:linear-gradient(135deg,rgba(249,115,22,0.15),rgba(236,72,153,0.1));border-color:rgba(249,115,22,0.2);"><div class="mini-hero-t" style="background:#FFF0E8;"></div><div class="mini-hero-s" style="background:#F97316;"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b" style="background:rgba(249,115,22,0.1);border-color:rgba(249,115,22,0.3);"></div><div class="mini-stat-b" style="background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.07);"></div><div class="mini-stat-b" style="background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.07);"></div></div>
+          <div class="mini-rows"><div class="mini-r f" style="background:rgba(249,115,22,0.2);"></div><div class="mini-r m" style="background:rgba(255,255,255,0.05);"></div></div>
+        </div>
+      </div>
+      <div class="card-label" style="background:linear-gradient(135deg,#100806,#160B0A);color:#FFF0E8;"><div class="card-badge" style="background:rgba(249,115,22,0.15);color:#F97316;border-color:rgba(249,115,22,0.2);">Fire</div><div class="card-name">Sunset Dark</div><div class="card-desc">Dark charcoal + orange → pink gradient.</div></div>
+    </div>
+
+    <div class="theme-card t-candy" data-cat="gradient" data-name="Candy" data-acc="#EC4899" onclick="selectTheme(this)">
+      <div class="mini" style="background:linear-gradient(160deg,#FDF2F8,#F5F3FF);">
+        <div class="mini-sb" style="background:#FCE7F3;border-right:1px solid #F9A8D4;"><div class="mini-logo" style="background:linear-gradient(135deg,#EC4899,#A855F7);"></div><div class="mini-dot a" style="background:#EC4899;"></div><div class="mini-dot i" style="background:#F9A8D4;opacity:1;"></div><div class="mini-dot i" style="background:#F9A8D4;opacity:1;"></div></div>
+        <div class="mini-body">
+          <div class="mini-topbar" style="background:rgba(255,255,255,0.7);border-bottom-color:#F9A8D4;"><div class="mini-tbar-btn" style="background:linear-gradient(90deg,#EC4899,#A855F7);"></div></div>
+          <div class="mini-hero-block" style="background:linear-gradient(135deg,#FCE7F3,#EDE9FE);border-color:#F9A8D4;"><div class="mini-hero-t" style="background:#831843;"></div><div class="mini-hero-s" style="background:#EC4899;"></div></div>
+          <div class="mini-stat-row"><div class="mini-stat-b" style="background:#fff;border-color:#EC4899;"></div><div class="mini-stat-b" style="background:#fff;border-color:#F9A8D4;"></div><div class="mini-stat-b" style="background:#fff;border-color:#EDE9FE;"></div></div>
+          <div class="mini-rows"><div class="mini-r f" style="background:#F9A8D4;"></div><div class="mini-r m" style="background:#EDE9FE;"></div></div>
+        </div>
+      </div>
+      <div class="card-label" style="background:#FDF2F8;color:#831843;"><div class="card-badge" style="background:#FCE7F3;color:#EC4899;border-color:#F9A8D4;">Fun</div><div class="card-name">Candy</div><div class="card-desc">Light pink + lavender gradient. Playful.</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SELECTION BAR -->
+<div class="sel-bar" id="selBar">
+  <div class="sel-theme-preview">
+    <div class="sel-swatch" id="selSwatch"></div>
+    <div>
+      <div class="sel-name" id="selName">—</div>
+      <div class="sel-sub" id="selSub">Selected theme</div>
+    </div>
+  </div>
+  <div class="sel-confirm" id="selConfirm">✓ Confirm this theme →</div>
+</div>
+
+<script>
+let selected = null;
+
+function filter(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.theme-card').forEach(card => {
+    if (cat === 'all' || card.dataset.cat === cat) {
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+function selectTheme(el) {
+  document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selected = el.dataset.name;
+  const acc = el.dataset.acc;
+  el.style.setProperty('--acc', acc);
+
+  document.getElementById('selSwatch').style.background = acc;
+  document.getElementById('selName').textContent = el.dataset.name;
+  document.getElementById('selBar').classList.add('visible');
+  document.getElementById('selBar').style.background = `${acc}18`;
+  document.getElementById('selConfirm').style.background = acc;
+  document.getElementById('selConfirm').style.color = isLight(acc) ? '#111' : '#fff';
+
+  if (window.recordSelection) window.recordSelection(el.dataset.name);
+}
+
+function isLight(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return (r*299 + g*587 + b*114) / 1000 > 160;
+}
+</script>
+</body>
+</html>

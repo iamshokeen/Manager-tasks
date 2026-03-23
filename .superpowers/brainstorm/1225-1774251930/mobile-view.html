@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lohono CMD — Mobile Redesign</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #07080C; font-family: 'Inter', -apple-system, sans-serif; color: #E8E9ED; min-height: 100vh; }
+
+  .page { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  h1 { font-size: 22px; font-weight: 700; color: #E8E9ED; margin-bottom: 6px; }
+  .page-sub { font-size: 13px; color: #6B7280; margin-bottom: 36px; }
+  .page-sub span { color: #EF4444; font-weight: 500; }
+
+  /* COMPARISON GRID */
+  .comparison { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+  .phone-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
+  .phone-label.bad { color: #EF4444; }
+  .phone-label.good { color: #10B981; }
+  .phone-label.new { color: #C9A84C; }
+
+  /* PHONE FRAME */
+  .phone {
+    width: 260px; background: #111318; border-radius: 32px;
+    border: 2px solid #1E2028; overflow: hidden; position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .phone.bad { border-color: rgba(239,68,68,0.3); }
+  .phone.good { border-color: rgba(16,185,129,0.3); }
+  .phone.new-design { border-color: rgba(201,168,76,0.4); box-shadow: 0 20px 60px rgba(201,168,76,0.08); }
+
+  /* STATUS BAR */
+  .status-bar { background: #0A0B10; padding: 8px 16px; display: flex; justify-content: space-between; font-size: 10px; color: #4B5060; }
+
+  /* OLD BROKEN STATE */
+  .broken-sidebar { width: 220px; background: #0A0B10; border-right: 1px solid #1E2028; height: 400px; padding: 10px 0; }
+  .broken-content { width: 40px; background: #07080C; padding: 8px; }
+  .broken-layout { display: flex; overflow: hidden; }
+  .broken-note { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 6px; margin: 8px; padding: 7px 10px; font-size: 10px; color: #EF4444; line-height: 1.4; }
+  .broken-overflow { font-size: 9px; color: #4B5060; padding: 6px 10px; font-style: italic; }
+  .broken-nav-item { padding: 7px 12px; font-size: 11px; color: #6B7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* FIXED MOBILE */
+  .mobile-shell { background: #07080C; min-height: 440px; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    display: flex; background: #0A0B10; border-top: 1px solid #1E2028;
+    padding: 8px 0 10px;
+  }
+  .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+  .bottom-nav-item .bn-icon { font-size: 18px; opacity: 0.5; }
+  .bottom-nav-item.active .bn-icon { opacity: 1; }
+  .bottom-nav-item .bn-label { font-size: 9px; color: #4B5060; }
+  .bottom-nav-item.active .bn-label { color: #C9A84C; }
+
+  /* Mobile topbar */
+  .m-topbar { background: #0A0B10; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1E2028; }
+  .m-topbar-title { font-size: 15px; font-weight: 700; color: #E8E9ED; }
+  .m-topbar-title span { color: #C9A84C; }
+  .m-topbar-actions { display: flex; gap: 8px; }
+  .m-btn { width: 28px; height: 28px; background: #12141A; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+
+  /* Mobile hero */
+  .m-hero { padding: 14px; }
+  .m-greeting { font-size: 10px; color: #C9A84C; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
+  .m-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+
+  /* Mobile stat row */
+  .m-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .m-stat { background: #0E0F15; border: 1px solid #1A1C24; border-radius: 10px; padding: 10px 12px; }
+  .m-stat-val { font-size: 20px; font-weight: 700; }
+  .m-stat-val.blue { color: #60A5FA; }
+  .m-stat-val.red { color: #F87171; }
+  .m-stat-val.gold { color: #C9A84C; }
+  .m-stat-val.green { color: #34D399; }
+  .m-stat-label { font-size: 10px; color: #4B5060; margin-top: 2px; }
+
+  /* Mobile section */
+  .m-section { padding: 0 14px 14px; }
+  .m-section-title { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #4B5060; margin-bottom: 8px; }
+
+  /* Mobile task */
+  .m-task { background: #0E0F15; border: 1px solid #1A1C24; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; }
+  .m-task-title { font-size: 12px; color: #B8BAC4; margin-bottom: 5px; line-height: 1.4; }
+  .m-task-meta { display: flex; gap: 6px; align-items: center; }
+  .m-tag { font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: 500; }
+  .m-tag.critical { background: rgba(239,68,68,0.12); color: #EF4444; }
+  .m-tag.high { background: rgba(245,158,11,0.12); color: #F59E0B; }
+  .m-tag.medium { background: rgba(59,130,246,0.12); color: #60A5FA; }
+
+  /* Mobile revenue bar */
+  .m-rev { background: #0E0F15; border: 1px solid #1A1C24; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; }
+  .m-rev-label { font-size: 10px; color: #4B5060; text-transform: uppercase; letter-spacing: 0.08em; }
+  .m-rev-val { font-size: 16px; font-weight: 700; color: #C9A84C; margin: 2px 0; }
+  .m-prog { height: 4px; background: #1A1C24; border-radius: 2px; overflow: hidden; margin-top: 6px; }
+  .m-prog-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #C9A84C, #E8C96A); }
+
+  /* PROGRESSIVE WEB APP screen */
+  .pwa-install { padding: 14px; }
+  .install-card { background: linear-gradient(135deg, #12141A, #1A1C24); border: 1px solid #C9A84C30; border-radius: 12px; padding: 14px; }
+  .install-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #C9A84C, #E8C96A); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 10px; }
+  .install-title { font-size: 14px; font-weight: 700; color: #E8E9ED; margin-bottom: 4px; }
+  .install-sub { font-size: 11px; color: #6B7280; line-height: 1.5; margin-bottom: 12px; }
+  .install-btn { background: #C9A84C; color: #07080C; font-size: 12px; font-weight: 700; padding: 9px 16px; border-radius: 8px; text-align: center; cursor: pointer; }
+  .install-feature { display: flex; gap: 7px; align-items: flex-start; margin-bottom: 6px; }
+  .install-feature-dot { width: 5px; height: 5px; border-radius: 50%; background: #C9A84C; margin-top: 5px; flex-shrink: 0; }
+  .install-feature-text { font-size: 11px; color: #6B7280; }
+  .install-features { margin-top: 10px; padding-top: 10px; border-top: 1px solid #1E2028; }
+
+  /* SCROLL indicator */
+  .scroll-arrow { text-align: center; padding: 8px; color: #2E3140; font-size: 11px; }
+
+  /* CAPTION */
+  .caption { margin-top: 14px; background: #0E0F15; border: 1px solid #1A1C24; border-radius: 8px; padding: 10px 14px; font-size: 11px; color: #6B7280; line-height: 1.6; max-width: 260px; }
+  .caption strong { color: #B8BAC4; display: block; margin-bottom: 4px; }
+
+  /* FEATURE TAGS */
+  .feature-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; max-width: 260px; }
+  .ftag { font-size: 10px; padding: 3px 8px; border-radius: 5px; font-weight: 500; }
+  .ftag.must { background: rgba(201,168,76,0.12); color: #C9A84C; }
+  .ftag.new { background: rgba(16,185,129,0.12); color: #10B981; }
+  .ftag.fix { background: rgba(59,130,246,0.12); color: #60A5FA; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <h1>Mobile Experience — Before & After</h1>
+  <p class="page-sub">Current state: <span>sidebar is fixed 220px wide — on a 390px phone screen, the content area is only 170px. Totally broken.</span> Here's the fix.</p>
+
+  <div class="comparison">
+
+    <!-- ── BEFORE: BROKEN ── -->
+    <div class="phone-wrap">
+      <div class="phone-label bad">⚠ Current (Broken)</div>
+      <div class="phone bad" style="height:460px;overflow:hidden;">
+        <div class="status-bar"><span>9:41</span><span>●●●</span></div>
+        <div class="broken-layout" style="height:420px;">
+          <div class="broken-sidebar">
+            <div class="broken-nav-item" style="color:#C9A84C;font-weight:600;">⬡ Dashboard</div>
+            <div class="broken-nav-item">◈ Projects</div>
+            <div class="broken-nav-item">◇ Tasks</div>
+            <div class="broken-nav-item">★ My Tasks</div>
+            <div class="broken-nav-item">▣ Team</div>
+            <div class="broken-nav-item">◉ 1:1s</div>
+            <div class="broken-nav-item">◆ Stakeholders</div>
+            <div class="broken-nav-item">▲ Metrics</div>
+            <div class="broken-nav-item" style="white-space:nowrap;">◎ OTA Assessment</div>
+          </div>
+          <div class="broken-content">
+            <div style="font-size:7px;color:#2E3140;writing-mode:vertical-rl;">content hidden →</div>
+          </div>
+        </div>
+        <div class="broken-note">Sidebar takes 220px of 390px screen. Content invisible. Text truncated. Unusable on phone.</div>
+      </div>
+      <div class="feature-tags" style="margin-top:10px;">
+        <span class="ftag fix">Fixed 220px sidebar</span>
+        <span class="ftag fix">No bottom nav</span>
+        <span class="ftag fix">Content clipped</span>
+        <span class="ftag fix">No touch gestures</span>
+      </div>
+    </div>
+
+    <!-- ── AFTER: MOBILE FIRST ── -->
+    <div class="phone-wrap">
+      <div class="phone-label good">✓ Redesigned Mobile</div>
+      <div class="phone good new-design">
+        <div class="status-bar"><span>9:41</span><span style="color:#C9A84C;">●●●</span></div>
+        <div class="mobile-shell">
+          <!-- TOPBAR -->
+          <div class="m-topbar">
+            <div class="m-topbar-title"><span>L</span>CMD</div>
+            <div class="m-topbar-actions">
+              <div class="m-btn">🔍</div>
+              <div class="m-btn">🔔</div>
+              <div class="m-btn" style="background:#C9A84C;color:#07080C;font-weight:700;">+</div>
+            </div>
+          </div>
+          <!-- HERO -->
+          <div class="m-hero">
+            <div class="m-greeting">Good morning</div>
+            <div class="m-title">Command Center</div>
+            <div class="m-stats">
+              <div class="m-stat"><div class="m-stat-val blue">24</div><div class="m-stat-label">Open Tasks</div></div>
+              <div class="m-stat"><div class="m-stat-val red">7</div><div class="m-stat-label">Overdue</div></div>
+              <div class="m-stat"><div class="m-stat-val gold">₹8.4Cr</div><div class="m-stat-label">CI Revenue</div></div>
+              <div class="m-stat"><div class="m-stat-val green">73%</div><div class="m-stat-label">OTA Target</div></div>
+            </div>
+          </div>
+          <!-- TASKS SECTION -->
+          <div class="m-section">
+            <div class="m-section-title">Priority Tasks</div>
+            <div class="m-task">
+              <div class="m-task-title">OTA channel mix review Q4</div>
+              <div class="m-task-meta"><span class="m-tag critical">Critical</span><span style="font-size:10px;color:#4B5060;margin-left:auto;">Due today</span></div>
+            </div>
+            <div class="m-task">
+              <div class="m-task-title">Weekly stakeholder report draft</div>
+              <div class="m-task-meta"><span class="m-tag high">High</span><span style="font-size:10px;color:#4B5060;margin-left:auto;">Mar 25</span></div>
+            </div>
+          </div>
+          <!-- REVENUE -->
+          <div class="m-section">
+            <div class="m-section-title">Revenue KPIs</div>
+            <div class="m-rev">
+              <div class="m-rev-label">Check-in Revenue YTD</div>
+              <div class="m-rev-val">₹8.42 Cr</div>
+              <div class="m-prog"><div class="m-prog-fill" style="width:9.9%"></div></div>
+              <div style="font-size:10px;color:#4B5060;margin-top:4px;">9.9% of ₹85.19 Cr target</div>
+            </div>
+          </div>
+          <div class="scroll-arrow">↑ swipe up for more</div>
+        </div>
+        <!-- BOTTOM NAV -->
+        <div class="bottom-nav">
+          <div class="bottom-nav-item active"><div class="bn-icon">⬡</div><div class="bn-label" style="color:#C9A84C;">Home</div></div>
+          <div class="bottom-nav-item"><div class="bn-icon">✓</div><div class="bn-label">Tasks</div></div>
+          <div class="bottom-nav-item"><div class="bn-icon">👥</div><div class="bn-label">Team</div></div>
+          <div class="bottom-nav-item"><div class="bn-icon">📊</div><div class="bn-label">Data</div></div>
+          <div class="bottom-nav-item"><div class="bn-icon">☰</div><div class="bn-label">More</div></div>
+        </div>
+      </div>
+      <div class="feature-tags" style="margin-top:10px;">
+        <span class="ftag must">Bottom nav bar</span>
+        <span class="ftag must">Full-width content</span>
+        <span class="ftag new">Swipe gestures</span>
+        <span class="ftag new">Touch-friendly</span>
+      </div>
+    </div>
+
+    <!-- ── PWA INSTALL ── -->
+    <div class="phone-wrap">
+      <div class="phone-label new">+ PWA Upgrade</div>
+      <div class="phone new-design">
+        <div class="status-bar"><span>9:41</span><span style="color:#C9A84C;">●●●</span></div>
+        <div class="mobile-shell">
+          <div class="m-topbar">
+            <div class="m-topbar-title"><span>L</span>CMD</div>
+            <div class="m-topbar-actions">
+              <div class="m-btn">⚙</div>
+            </div>
+          </div>
+          <div class="pwa-install">
+            <div class="install-card">
+              <div class="install-icon">⚡</div>
+              <div class="install-title">Add to Home Screen</div>
+              <div class="install-sub">Install Lohono CMD as an app for instant access, offline support, and native feel.</div>
+              <div class="install-btn">Install App</div>
+              <div class="install-features">
+                <div class="install-feature"><div class="install-feature-dot"></div><div class="install-feature-text">Works offline — tasks & team data cached</div></div>
+                <div class="install-feature"><div class="install-feature-dot"></div><div class="install-feature-text">Push notifications for overdue tasks</div></div>
+                <div class="install-feature"><div class="install-feature-dot"></div><div class="install-feature-text">Full-screen, no browser chrome</div></div>
+                <div class="install-feature"><div class="install-feature-dot"></div><div class="install-feature-text">Drag-and-drop on tablet mode</div></div>
+              </div>
+            </div>
+
+            <div style="margin-top:14px;">
+              <div class="m-section-title" style="padding:0;margin-bottom:8px;">Mobile-specific features</div>
+              <div class="m-task" style="margin-bottom:6px;">
+                <div class="m-task-title">📳 Swipe task card right → Mark Done</div>
+              </div>
+              <div class="m-task" style="margin-bottom:6px;">
+                <div class="m-task-title">✋ Long-press card → Quick actions</div>
+              </div>
+              <div class="m-task">
+                <div class="m-task-title">👆 Pull to refresh → sync Sheets</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bottom-nav">
+          <div class="bottom-nav-item"><div class="bn-icon">⬡</div><div class="bn-label">Home</div></div>
+          <div class="bottom-nav-item"><div class="bn-icon">✓</div><div class="bn-label">Tasks</div></div>
+          <div class="bottom-nav-item"><div class="bn-icon">👥</div><div class="bn-label">Team</div></div>
+          <div class="bottom-nav-item"><div class="bn-icon">📊</div><div class="bn-label">Data</div></div>
+          <div class="bottom-nav-item active"><div class="bn-icon">☰</div><div class="bn-label" style="color:#C9A84C;">More</div></div>
+        </div>
+      </div>
+      <div class="feature-tags" style="margin-top:10px;">
+        <span class="ftag new">PWA installable</span>
+        <span class="ftag new">Offline cache</span>
+        <span class="ftag new">Push notifs</span>
+        <span class="ftag new">Swipe actions</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div style="position:fixed;bottom:16px;right:16px;background:#10B981;color:#07080C;font-size:11px;font-weight:700;padding:7px 14px;border-radius:8px;letter-spacing:0.05em;z-index:999;">
+  MOBILE REDESIGN · BEFORE/AFTER
+</div>
+
+</body>
+</html>

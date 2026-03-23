@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lohono CMD — Full Design Spec</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0A0A0A;--surface:#111318;--surface2:#181A20;
+  --border:#1E2028;--border2:#252830;
+  --text:#E2E3E8;--text2:#9CA3AF;--text3:#4B5060;--text4:#2E3140;
+  --gold:#C9A84C;--gold-dim:rgba(201,168,76,0.1);
+  --blue:#3B82F6;--green:#10B981;--red:#EF4444;--purple:#8B5CF6;
+}
+body{background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);line-height:1.6;}
+
+/* ── LAYOUT ── */
+.shell{display:flex;min-height:100vh;}
+.toc{width:260px;min-width:260px;background:#0D0E14;border-right:1px solid var(--border);padding:20px 0;position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0;}
+.content{flex:1;padding:48px 56px;max-width:860px;}
+
+/* ── TOC ── */
+.toc-logo{padding:0 16px 16px;border-bottom:1px solid var(--border);margin-bottom:12px;}
+.toc-logo-title{font-size:13px;font-weight:800;color:var(--gold);letter-spacing:0.04em;}
+.toc-logo-sub{font-size:10px;color:var(--text3);margin-top:2px;}
+.toc-section{padding:10px 16px 4px;font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);}
+.toc-item{display:block;padding:5px 16px;font-size:12px;color:var(--text3);cursor:pointer;text-decoration:none;transition:all 0.1s;}
+.toc-item:hover{color:var(--text2);background:rgba(255,255,255,0.02);}
+.toc-item.active{color:var(--gold);background:var(--gold-dim);}
+.toc-item.sub{padding-left:28px;font-size:11px;}
+.toc-item .dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:currentColor;margin-right:7px;opacity:0.7;}
+
+/* ── CONTENT ── */
+h1{font-size:28px;font-weight:800;color:var(--text);margin-bottom:8px;}
+h1 .tag{font-size:12px;font-weight:600;color:var(--gold);background:var(--gold-dim);padding:3px 10px;border-radius:5px;margin-left:12px;vertical-align:middle;}
+.intro{font-size:14px;color:var(--text3);max-width:600px;line-height:1.7;margin-bottom:40px;border-left:3px solid var(--border2);padding-left:16px;}
+
+/* PAGE SECTION */
+.page-section{margin-bottom:64px;padding-top:24px;}
+.page-title{font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:12px;}
+.page-title .emoji{font-size:22px;}
+.page-title .pill{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:3px 10px;border-radius:20px;}
+.pill.must{background:rgba(201,168,76,0.12);color:var(--gold);}
+.pill.should{background:rgba(59,130,246,0.12);color:#60A5FA;}
+.pill.could{background:rgba(139,92,246,0.12);color:#A78BFA;}
+.page-purpose{font-size:13px;color:var(--text3);margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+
+/* ELEMENT BLOCKS */
+.el-group{margin-bottom:24px;}
+.el-group-title{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.el-group-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.el-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:8px;}
+.el-item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px;}
+.el-name{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;}
+.el-name .icon{font-size:15px;}
+.el-type{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:500;white-space:nowrap;}
+.el-type.component{background:rgba(59,130,246,0.1);color:#60A5FA;}
+.el-type.state{background:rgba(16,185,129,0.1);color:#34D399;}
+.el-type.interaction{background:rgba(245,158,11,0.1);color:#FCD34D;}
+.el-type.animation{background:rgba(139,92,246,0.1);color:#A78BFA;}
+.el-type.mobile{background:rgba(239,68,68,0.1);color:#F87171;}
+.el-type.data{background:rgba(201,168,76,0.1);color:var(--gold);}
+.el-desc{font-size:12px;color:var(--text2);line-height:1.6;}
+.el-spec{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;}
+.spec-tag{font-size:10px;padding:2px 8px;border-radius:4px;background:var(--surface2);color:var(--text3);border:1px solid var(--border2);font-family:'JetBrains Mono',monospace;}
+
+/* BEHAVIOR TABLE */
+.beh-table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:12px;}
+.beh-table th{padding:7px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);background:var(--surface2);border:1px solid var(--border);}
+.beh-table td{padding:8px 12px;color:var(--text2);border:1px solid var(--border);vertical-align:top;line-height:1.5;}
+.beh-table td:first-child{color:var(--text);font-weight:500;white-space:nowrap;}
+.beh-table tr:hover td{background:rgba(255,255,255,0.01);}
+
+/* CALLOUT */
+.callout{background:var(--gold-dim);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:12px 16px;font-size:12px;color:var(--text);margin-bottom:16px;line-height:1.6;}
+.callout.blue{background:rgba(59,130,246,0.06);border-color:#3B82F6;}
+.callout.red{background:rgba(239,68,68,0.06);border-color:#EF4444;}
+.callout strong{color:var(--gold);}
+.callout.blue strong{color:#60A5FA;}
+
+/* THEME SECTION */
+.theme-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.theme-swatch{border-radius:10px;overflow:hidden;border:1px solid var(--border);}
+.swatch-preview{height:60px;display:flex;}
+.swatch-sb{width:28px;flex-shrink:0;}
+.swatch-body{flex:1;padding:8px;}
+.swatch-hero{height:20px;border-radius:4px;margin-bottom:5px;}
+.swatch-row{height:5px;border-radius:2px;margin-bottom:3px;}
+.swatch-info{padding:8px 10px;}
+.swatch-name{font-size:11px;font-weight:700;}
+.swatch-acc{font-size:10px;opacity:0.6;margin-top:2px;font-family:'JetBrains Mono',monospace;}
+
+/* DIVIDER */
+hr{border:none;border-top:1px solid var(--border);margin:32px 0;}
+
+/* CODE */
+code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border2);padding:1px 6px;border-radius:3px;color:var(--gold);}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* STICKY BADGE */
+.corner-badge{position:fixed;bottom:16px;right:16px;background:var(--gold);color:#07080C;font-size:11px;font-weight:700;padding:7px 14px;border-radius:8px;z-index:999;letter-spacing:0.05em;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ════ TABLE OF CONTENTS ════ -->
+<nav class="toc">
+  <div class="toc-logo">
+    <div class="toc-logo-title">Lohono CMD — Design Spec</div>
+    <div class="toc-logo-sub">Full brief for Stitch · v1.0 · March 2026</div>
+  </div>
+
+  <div class="toc-section">System</div>
+  <a class="toc-item" href="#system"><span class="dot"></span>Design System</a>
+  <a class="toc-item" href="#nav"><span class="dot"></span>Navigation Shell</a>
+  <a class="toc-item" href="#themes"><span class="dot"></span>All 20 Themes</a>
+  <a class="toc-item" href="#animations"><span class="dot"></span>Animations & Motion</a>
+
+  <div class="toc-section">Pages</div>
+  <a class="toc-item" href="#dashboard"><span class="dot"></span>Dashboard</a>
+  <a class="toc-item" href="#tasks"><span class="dot"></span>Tasks</a>
+  <a class="toc-item sub" href="#tasks-kanban">Kanban Board</a>
+  <a class="toc-item sub" href="#tasks-table">Table View</a>
+  <a class="toc-item sub" href="#tasks-calendar">Calendar View</a>
+  <a class="toc-item sub" href="#tasks-detail">Task Detail Panel</a>
+  <a class="toc-item" href="#my-tasks"><span class="dot"></span>My Tasks</a>
+  <a class="toc-item" href="#projects"><span class="dot"></span>Projects</a>
+  <a class="toc-item" href="#team"><span class="dot"></span>Team</a>
+  <a class="toc-item sub" href="#team-profile">Member Profile</a>
+  <a class="toc-item" href="#oneонones"><span class="dot"></span>1:1s</a>
+  <a class="toc-item" href="#stakeholders"><span class="dot"></span>Stakeholders</a>
+  <a class="toc-item" href="#metrics"><span class="dot"></span>Metrics</a>
+  <a class="toc-item" href="#assessment"><span class="dot"></span>Assessment</a>
+  <a class="toc-item" href="#reports"><span class="dot"></span>Reports</a>
+  <a class="toc-item" href="#pages"><span class="dot"></span>Pages (Wiki)</a>
+  <a class="toc-item" href="#cadence"><span class="dot"></span>Cadence</a>
+  <a class="toc-item" href="#settings"><span class="dot"></span>Settings</a>
+
+  <div class="toc-section">Mobile</div>
+  <a class="toc-item" href="#mobile"><span class="dot"></span>Mobile Spec</a>
+</nav>
+
+<!-- ════ MAIN CONTENT ════ -->
+<div class="content">
+
+  <h1>Lohono Command Center <span class="tag">Design Spec</span></h1>
+  <div class="intro">
+    A personal management tool for Saksham Shokeen — Head of Revenue Strategy, Lohono Stays. 5 direct reports, 6 departments, FY27 KPI tracking, team management, and a Notion-style workspace. Single user. Next.js + Tailwind. This document is the complete design brief for every screen.
+  </div>
+
+  <!-- ══════════════════════════════════
+       DESIGN SYSTEM
+  ══════════════════════════════════ -->
+  <div class="page-section" id="system">
+    <div class="page-title"><span class="emoji">🎨</span> Design System</div>
+    <div class="page-purpose">Global tokens, typography, spacing, and components used across all screens.</div>
+
+    <div class="el-group">
+      <div class="el-group-title">Typography</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Font Stack</div><div class="el-type component">Token</div></div>
+        <div class="el-desc">Primary: <code>Inter</code> (all UI text). Monospace: <code>JetBrains Mono</code> (numbers, metrics, revenue figures, code). Weights used: 300 (light captions), 400 (body), 500 (labels), 600 (section heads), 700 (card titles, nav), 800 (page titles, hero).</div>
+        <div class="el-spec"><span class="spec-tag">H1: 28px/800</span><span class="spec-tag">H2: 20px/700</span><span class="spec-tag">H3: 15px/600</span><span class="spec-tag">Body: 14px/400</span><span class="spec-tag">Label: 12px/500</span><span class="spec-tag">Caption: 11px/400</span><span class="spec-tag">Micro: 10px/600 uppercase</span></div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Spacing Scale</div><div class="el-type component">Token</div></div>
+        <div class="el-desc">Base unit 4px. Page padding: 28px desktop, 16px mobile. Section gaps: 24px. Card padding: 16–20px. Component inner padding: 12px. Compact row height: 40px. Touch target minimum: 48px on mobile.</div>
+        <div class="el-spec"><span class="spec-tag">4 8 12 16 20 24 32 40 48 64</span></div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Border Radius</div><div class="el-type component">Token</div></div>
+        <div class="el-desc">Chips/tags: 4px. Inputs/small buttons: 6px. Cards: 10–12px. Modals/panels: 14–16px. Avatar: 50% circle (or 8–10px square style for team cards). Bottom sheet mobile: 20px top corners only.</div>
+        <div class="el-spec"><span class="spec-tag">4px chips</span><span class="spec-tag">6px inputs</span><span class="spec-tag">10px cards</span><span class="spec-tag">16px panels</span><span class="spec-tag">20px sheets</span></div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Core Status Colors (consistent across all themes)</div>
+      <div class="el-item">
+        <div class="el-desc">These do NOT change between themes — they are semantic and must stay recognisable:</div>
+        <div class="el-spec">
+          <span class="spec-tag" style="color:#EF4444;border-color:#EF444440;">Critical: #EF4444</span>
+          <span class="spec-tag" style="color:#F59E0B;border-color:#F59E0B40;">High: #F59E0B</span>
+          <span class="spec-tag" style="color:#3B82F6;border-color:#3B82F640;">Medium: #3B82F6</span>
+          <span class="spec-tag" style="color:#10B981;border-color:#10B98140;">Low/Done: #10B981</span>
+          <span class="spec-tag" style="color:#EF4444;border-color:#EF444440;">Overdue: #EF4444</span>
+          <span class="spec-tag" style="color:#F59E0B;border-color:#F59E0B40;">Due Today: accent color</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Reusable Components</div>
+      <table class="beh-table">
+        <thead><tr><th>Component</th><th>Description</th><th>States</th></tr></thead>
+        <tbody>
+          <tr><td>StatCard</td><td>KPI tile with label, large number, subtitle, optional trend arrow</td><td>default, hover (slight lift), loading (shimmer skeleton)</td></tr>
+          <tr><td>PriorityBadge</td><td>Coloured pill: Critical/High/Medium/Low. Color from semantic tokens.</td><td>default only</td></tr>
+          <tr><td>StatusBadge</td><td>Pill: Todo/In Progress/Review/Done. Coloured dot + label.</td><td>default, interactive (clickable dropdown to change)</td></tr>
+          <tr><td>MemberAvatar</td><td>Circle or rounded square with initials + gradient bg. Sizes: sm(20), md(32), lg(44), xl(64)</td><td>default, hover (name tooltip), online dot (green)</td></tr>
+          <tr><td>DepartmentBadge</td><td>Neutral pill with department name (OTA, Analytics, People, etc.)</td><td>default only</td></tr>
+          <tr><td>ProgressBar</td><td>Thin (6px) bar with accent gradient fill. Label above shows % and target.</td><td>empty (0%), filling (animated on mount), over 100% (green)</td></tr>
+          <tr><td>EmptyState</td><td>Centered icon + heading + description + optional CTA button</td><td>shown when list/table has 0 items</td></tr>
+          <tr><td>PageHeader</td><td>Hero section: emoji/icon, title, subtitle, quick stats, action buttons</td><td>every page has one — see each page spec</td></tr>
+          <tr><td>CommandPalette</td><td>⌘K modal: search input + grouped results (pages, tasks, team, actions)</td><td>closed, open, searching, result-selected</td></tr>
+          <tr><td>SidePanel</td><td>Right slide-over (400px desktop, full-screen mobile) for detail views</td><td>closed, opening (slide in), open, closing (slide out)</td></tr>
+          <tr><td>Toast</td><td>Bottom-right notification (success green, error red, info blue). Auto-dismiss 4s.</td><td>appearing, visible, dismissing</td></tr>
+          <tr><td>ConfirmDialog</td><td>Centered modal for destructive actions. "Cancel" + red "Confirm" buttons.</td><td>open/closed</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       NAVIGATION SHELL
+  ══════════════════════════════════ -->
+  <div class="page-section" id="nav">
+    <div class="page-title"><span class="emoji">🧭</span> Navigation Shell</div>
+    <div class="page-purpose">The persistent chrome that wraps every page. Behaves differently on desktop vs mobile.</div>
+
+    <div class="el-group">
+      <div class="el-group-title">Desktop Sidebar (≥768px)</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name"><span class="icon">🗂️</span> Sidebar Structure</div><div class="el-type component">Layout</div></div>
+        <div class="el-desc">Fixed left, 240px wide. Divided into: Logo + search bar at top → Scrollable nav groups → User avatar row at bottom. Nav groups: Overview (Dashboard, Pages), Work (Projects, Tasks, My Tasks, Cadence), People (Team, 1:1s, Stakeholders), Data (Metrics, Databases, Reports, Playbook). Each group has a tiny uppercase label.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name"><span class="icon">🔍</span> Quick Search Bar</div><div class="el-type interaction">Interactive</div></div>
+        <div class="el-desc">Sits below logo. Shows "Search or jump to… ⌘K". Clicking opens the Command Palette. Not a real input — just a trigger button styled like an input field. Shows a keyboard shortcut hint on the right.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name"><span class="icon">📌</span> Nav Item</div><div class="el-type interaction">Interactive</div></div>
+        <div class="el-desc">Each item: left border 2px (transparent when idle, accent color when active) + icon (16px SVG) + label + optional badge. Hover: background 2% white, text lightens. Active: accent-colored text, accent left border, very faint accent background tint. Badge shows count (e.g. overdue tasks = red pill number).</div>
+        <div class="el-spec"><span class="spec-tag">hover: 150ms ease</span><span class="spec-tag">active: border-left accent</span><span class="spec-tag">badge: red or accent color</span></div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name"><span class="icon">👤</span> User Row (Bottom)</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Avatar (initials) + name + role title. Hover shows subtle background. Clicking opens a mini dropdown: "Settings", "Theme switcher" (opens theme picker modal), "Keyboard shortcuts", "Sign out".</div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Top Bar (Desktop)</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Topbar</div><div class="el-type component">Layout</div></div>
+        <div class="el-desc">52px height. Left side: breadcrumb (App / Current Page). Center: empty. Right side: icon buttons (notification bell with unread badge, theme switcher pill) + primary "+ New" button in accent color. The topbar background matches the page background — no heavy chrome, just a thin bottom border.</div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Mobile Navigation (≤767px)</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name"><span class="icon">📱</span> Bottom Navigation Bar</div><div class="el-type mobile">Mobile</div></div>
+        <div class="el-desc">Fixed bottom bar. 5 tabs: Home (dashboard), Tasks, Team, Data (metrics/databases), More (opens slide-up sheet with remaining nav items). Active tab shows accent color icon + label. Inactive tabs are muted grey. Safe area inset on iPhone. Height: 56px + safe area.</div>
+        <div class="el-spec"><span class="spec-tag">height: 56px + safe-area</span><span class="spec-tag">5 tabs max</span><span class="spec-tag">active: accent color + dot indicator</span></div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name"><span class="icon">☰</span> Mobile Top Bar</div><div class="el-type mobile">Mobile</div></div>
+        <div class="el-desc">44px height. Shows app logo/initials on left. Center: current page title. Right: search icon + notification bell + "+" button (accent). No breadcrumb (too small). Tapping "+" opens a bottom sheet quick-add menu: New Task, New Page, Log 1:1, Add Cadence.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name"><span class="icon">📋</span> "More" Bottom Sheet</div><div class="el-type mobile">Mobile</div></div>
+        <div class="el-desc">Slide up from bottom. Lists all nav items not in the bottom bar: Cadence, Stakeholders, Playbook, Reports, Settings, Theme Switcher. Has a drag handle at top. Tap outside or drag down to close. Spring animation on open/close.</div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Theme Switcher (global)</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name"><span class="icon">🎨</span> Theme Picker Modal</div><div class="el-type interaction">Interactive</div></div>
+        <div class="el-desc">Accessible from: topbar button, sidebar user menu, Settings page. Opens as a centered modal (or bottom sheet on mobile). Shows all 20 themes as mini app previews in a 4-column grid. Filter tabs: All / Dark / Light / Colorful. Clicking a theme immediately applies it (live preview). Themes persist to localStorage. Currently selected theme gets a colored ring.</div>
+        <div class="el-spec"><span class="spec-tag">20 themes total</span><span class="spec-tag">live preview on click</span><span class="spec-tag">persists to localStorage</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       ALL 20 THEMES
+  ══════════════════════════════════ -->
+  <div class="page-section" id="themes">
+    <div class="page-title"><span class="emoji">🌈</span> All 20 Colour Themes</div>
+    <div class="page-purpose">User can switch between any of these at any time. Each theme defines: background, surface, border, accent, text colors. Status colors (red/amber/green/blue for priority) remain constant across all themes.</div>
+
+    <div class="callout"><strong>Design rule:</strong> Every theme uses the same component structure and layout. Only colors change. The accent color is used for: active nav items, primary buttons, progress fills, active tab indicators, selected states, focus rings, and links.</div>
+
+    <div class="el-group">
+      <div class="el-group-title">Dark Themes (8)</div>
+      <table class="beh-table">
+        <thead><tr><th>Name</th><th>Background</th><th>Surface</th><th>Accent</th><th>Vibe</th></tr></thead>
+        <tbody>
+          <tr><td>Gold Dark <small style="color:var(--gold)">(current)</small></td><td><code>#07080C</code></td><td><code>#111318</code></td><td><code>#C9A84C</code></td><td>Luxury villa, warm premium</td></tr>
+          <tr><td>Violet Dark</td><td><code>#08080F</code></td><td><code>#0F0E1A</code></td><td><code>#7C3AED</code></td><td>Linear/Raycast, modern SaaS</td></tr>
+          <tr><td>Slate Dark</td><td><code>#191919</code></td><td><code>#222222</code></td><td><code>rgba(255,255,255,0.12)</code></td><td>Notion dark mode, neutral content</td></tr>
+          <tr><td>Navy Blue</td><td><code>#060A12</code></td><td><code>#080E18</code></td><td><code>#0EA5E9</code></td><td>Stripe/Vercel, data dashboard</td></tr>
+          <tr><td>Forest Dark</td><td><code>#090E0B</code></td><td><code>#0B1410</code></td><td><code>#10B981</code></td><td>Deep green, calm, earthy</td></tr>
+          <tr><td>Rose Dark</td><td><code>#0C080A</code></td><td><code>#160B0F</code></td><td><code>#F43F5E</code></td><td>Deep black + hot pink, striking</td></tr>
+          <tr><td>Amber Dark</td><td><code>#0C0A06</code></td><td><code>#160F07</code></td><td><code>#F59E0B</code></td><td>Black + deep amber, cosy warm</td></tr>
+          <tr><td>Cyan Dark</td><td><code>#060C0E</code></td><td><code>#08141A</code></td><td><code>#06B6D4</code></td><td>Near-black + electric teal</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Light Themes (8)</div>
+      <table class="beh-table">
+        <thead><tr><th>Name</th><th>Background</th><th>Surface</th><th>Accent</th><th>Vibe</th></tr></thead>
+        <tbody>
+          <tr><td>Light Clean</td><td><code>#FFFFFF</code></td><td><code>#FAFAFA</code></td><td><code>#111827</code></td><td>Pure white, Notion default</td></tr>
+          <tr><td>Sky Blue Light</td><td><code>#F8FAFF</code></td><td><code>#FFFFFF</code></td><td><code>#2563EB</code></td><td>Airy blue, corporate clean</td></tr>
+          <tr><td>Lavender Light</td><td><code>#FAFAFF</code></td><td><code>#FFFFFF</code></td><td><code>#7C3AED</code></td><td>Soft purple, creative calm</td></tr>
+          <tr><td>Rose Light</td><td><code>#FFF8F9</code></td><td><code>#FFFFFF</code></td><td><code>#E11D48</code></td><td>Blush pink, bold + friendly</td></tr>
+          <tr><td>Mint Light</td><td><code>#F7FFF9</code></td><td><code>#FFFFFF</code></td><td><code>#16A34A</code></td><td>Green + white, energising</td></tr>
+          <tr><td>Honey Light</td><td><code>#FFFBF0</code></td><td><code>#FFFFFF</code></td><td><code>#D97706</code></td><td>Warm amber on cream, luxurious</td></tr>
+          <tr><td>Teal Light</td><td><code>#F0FFFE</code></td><td><code>#FFFFFF</code></td><td><code>#0D9488</code></td><td>Aqua mint, zen + focused</td></tr>
+          <tr><td>Sunset Light</td><td><code>#FFF9F5</code></td><td><code>#FFFFFF</code></td><td><code>#EA580C</code></td><td>Orange on white, energetic</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Colorful / Gradient Themes (4)</div>
+      <table class="beh-table">
+        <thead><tr><th>Name</th><th>Background</th><th>Accent / Gradient</th><th>Vibe</th></tr></thead>
+        <tbody>
+          <tr><td>Aurora</td><td><code>#0A0618 → #0D1A3A</code></td><td><code>#A855F7 → #EC4899</code></td><td>Deep space purple/pink. Hero sections use gradient tints.</td></tr>
+          <tr><td>Deep Ocean</td><td><code>#030C18 → #040E20</code></td><td><code>#0EA5E9 → #6366F1</code></td><td>Abyss black with cyan/indigo gradient accents.</td></tr>
+          <tr><td>Sunset Dark</td><td><code>#0F0805 → #130A08</code></td><td><code>#F97316 → #EC4899</code></td><td>Dark charcoal + orange-to-pink fire gradient.</td></tr>
+          <tr><td>Candy</td><td><code>#FDF2F8 → #F5F3FF</code></td><td><code>#EC4899 → #A855F7</code></td><td>Light pink + lavender gradient. Playful and fun.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout blue"><strong>Stitch note:</strong> When designing in Stitch, pick ONE theme to design in (recommend Gold Dark or Violet Dark for visibility). All other themes are implemented in code via CSS variables — the layout and components are identical across all themes, only the color tokens swap.</div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       ANIMATIONS & MOTION
+  ══════════════════════════════════ -->
+  <div class="page-section" id="animations">
+    <div class="page-title"><span class="emoji">✨</span> Animations & Motion</div>
+    <div class="page-purpose">All interactions have intentional motion. Nothing should feel static or jarring.</div>
+
+    <table class="beh-table">
+      <thead><tr><th>Interaction</th><th>Animation</th><th>Duration / Easing</th></tr></thead>
+      <tbody>
+        <tr><td>Page navigation</td><td>Fade in + slight translateY(8px) up</td><td>200ms ease-out</td></tr>
+        <tr><td>Card hover lift</td><td>translateY(-2px) + box-shadow deepen</td><td>180ms cubic-bezier(0.4,0,0.2,1)</td></tr>
+        <tr><td>Button hover</td><td>Background lightens slightly, scale(1.01)</td><td>120ms ease</td></tr>
+        <tr><td>Sidebar panel open</td><td>translateX(100%) → translateX(0) + backdrop fade</td><td>280ms cubic-bezier(0.4,0,0.2,1)</td></tr>
+        <tr><td>Modal/dialog open</td><td>scale(0.95) + opacity(0) → scale(1) + opacity(1)</td><td>200ms cubic-bezier(0.34,1.56,0.64,1) (spring)</td></tr>
+        <tr><td>Command palette open</td><td>scale(0.96) + opacity(0) → scale(1) + opacity(1)</td><td>150ms ease-out</td></tr>
+        <tr><td>Bottom sheet (mobile)</td><td>translateY(100%) → translateY(0)</td><td>320ms cubic-bezier(0.32,0.72,0,1)</td></tr>
+        <tr><td>Drag card (Kanban)</td><td>rotate(-1deg) + scale(1.03) + deep shadow while dragging</td><td>immediate on grab</td></tr>
+        <tr><td>Drop zone activate</td><td>Border color → accent, background accent-dim, scale(0.98)</td><td>150ms ease</td></tr>
+        <tr><td>Checkbox check</td><td>bounceIn scale: 0 → 1.2 → 1, fill with accent</td><td>300ms cubic-bezier(0.4,0,0.2,1)</td></tr>
+        <tr><td>Progress bar fill</td><td>width: 0 → final%, delayed after mount</td><td>1000ms cubic-bezier(0.4,0,0.2,1) + 200ms delay</td></tr>
+        <tr><td>Skeleton loading</td><td>gradient shimmer left to right</td><td>1500ms infinite linear</td></tr>
+        <tr><td>Toast notification</td><td>Slide in from bottom-right, auto-dismiss with fade</td><td>in: 200ms spring, out: 150ms ease</td></tr>
+        <tr><td>Hover action reveal</td><td>opacity: 0 → 1 + translateX(6px) → 0</td><td>150ms ease</td></tr>
+        <tr><td>Number counters</td><td>Count up from 0 to final value on first load</td><td>800ms ease-out</td></tr>
+        <tr><td>Swipe card (mobile)</td><td>translateX following finger, snap to action or snap back</td><td>snap: 250ms spring</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr>
+
+  <!-- ══════════════════════════════════
+       DASHBOARD
+  ══════════════════════════════════ -->
+  <div class="page-section" id="dashboard">
+    <div class="page-title"><span class="emoji">⬡</span> Dashboard <span class="pill must">Must Have</span></div>
+    <div class="page-purpose">The home screen. First thing seen every session. Shows the full picture at a glance: task health, revenue KPIs, team status, recent pages, and activity. Not a navigation hub — it's a live status board.</div>
+
+    <div class="el-group">
+      <div class="el-group-title">Hero Section</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name"><span class="icon">🌅</span> Hero Card</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Full-width card with subtle gradient background (dark-to-slightly-lighter). Top-left: small uppercase greeting line "Good morning, FY27". Below: large bold title "Command Center". Below: subtitle "Revenue & Team Dashboard · Lohono Stays". Bottom: horizontal stat row with 4 stats separated by vertical dividers: Open Tasks (blue number), Overdue (red number), CI Revenue YTD (accent currency), OTA Target % (green). Numbers animate count-up on first load.</div>
+        <div class="el-spec"><span class="spec-tag">radial glow behind gradient</span><span class="spec-tag">numbers count up 800ms</span><span class="spec-tag">full width, 16px border-radius</span></div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Stat Cards Row</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">4-up KPI Cards</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Grid of 4 StatCards: Open Tasks (blue), Overdue (red — red number if >0), Due Today (accent/gold), Completed This Year (green). Each card: label (uppercase tiny) + large number + sub-caption + trend line ("↑ 3 added today"). Hover: card lifts 2px. Click: navigates to Tasks filtered to that state.</div>
+        <div class="el-spec"><span class="spec-tag">2-col on mobile</span><span class="spec-tag">4-col on desktop</span><span class="spec-tag">click to navigate to filtered tasks</span></div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Main Content Grid</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Task Board Strip</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Left column (65%) of a 2-column grid. Shows a mini Kanban: To Do / In Progress / Done columns (Review omitted for space). 2–3 task chips per column visible. Each chip has title + priority badge + assignee avatar + drag handle (shown on hover). "View all tasks" link top-right. "+ Add task" quick action. Cards are fully draggable here too — drag from dashboard board updates the real task status.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Revenue KPI Block</div><div class="el-type data">Data</div></div>
+        <div class="el-desc">Right column (35%). Shows 2 KPI progress items: Check-in Revenue YTD vs target (animated gold progress bar) and OTA Gross GMV YTD vs target (animated blue bar). Each: label row (name on left, target on right), large monospace revenue figure in accent color, thin progress bar, "X% of target" caption. "View all metrics →" link.</div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Bottom Grid (3 columns)</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Team Snapshot</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Left column. Shows active team members as compact cards (avatar + name + role + task count). Task count turns red if >5. Clicking a member card opens their profile. "View all →" link. Shows max 5 members, sorted by task count descending.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Recent Pages</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Center column. Notion-style list of recently edited pages. Each row: page emoji icon + title + either a tag badge (Strategy, SOPs) or relative timestamp ("2 days ago"). Hover highlights row. Click opens the page editor. "+ New page" action in header. Shows max 5 items.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Activity Feed</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Right column. Real-time feed of events: task completions, overdue flags, metric syncs, 1:1 logs, new tasks created. Each item: colored dot (red=overdue, green=completed, blue=system, accent=user action) + text with bold actor names + relative timestamp. Max 6 items shown, "See all" link. Updates every 60s via SWR polling.</div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Cadence & Automation Strip</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">This Week's Cadences</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Full-width card below the 3-col grid. Lists active cadences for the current week. Each row: meeting name + day/time + scope label + "Prep Now" button (lightning icon). The "Automation Status" accordion sits below — collapsed by default. Expanding reveals: Sync Sheets button, Generate All Prep Tasks button, Generate + Email Weekly Report button. All buttons show loading spinners while in-progress.</div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Behavior Summary</div>
+      <table class="beh-table">
+        <thead><tr><th>Element</th><th>Desktop behavior</th><th>Mobile behavior</th></tr></thead>
+        <tbody>
+          <tr><td>Hero stats</td><td>Count up on first mount, static on revisit</td><td>Same, condensed 2-col stat grid</td></tr>
+          <tr><td>KPI cards</td><td>4-col grid, click navigates</td><td>2-col grid, same click behavior</td></tr>
+          <tr><td>Task board strip</td><td>Horizontal 3-col kanban, draggable</td><td>Horizontal scroll strip, tap to open task</td></tr>
+          <tr><td>Revenue block</td><td>Side by side with task board</td><td>Stacked below task board</td></tr>
+          <tr><td>3-col bottom grid</td><td>3 columns</td><td>Stacked vertically, accordion-collapsed by default</td></tr>
+          <tr><td>Activity feed</td><td>Always visible</td><td>Hidden behind "Activity" collapsible section</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       TASKS
+  ══════════════════════════════════ -->
+  <div class="page-section" id="tasks">
+    <div class="page-title"><span class="emoji">✅</span> Tasks <span class="pill must">Must Have</span></div>
+    <div class="page-purpose">The primary work surface. All tasks across all team members and projects. Switchable between Kanban, Table, Calendar, and Timeline views. The most-used page in the app.</div>
+
+    <div class="el-group">
+      <div class="el-group-title">Page Hero</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Tasks Hero</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Title "Tasks" + stats: total open, overdue (red badge), due today. Right side: view switcher (Board / Table / Calendar / Timeline as segmented control), Filter button, Sort button, Group By button, "+ New Task" primary button. Filters/sort persist between view switches.</div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title" id="tasks-kanban">Kanban Board View</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">4 Columns</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Columns: To Do (grey dot) / In Progress (blue dot) / Review (amber dot) / Done (green dot, cards muted). Column header: colored dot + name + count badge. Each column has a scroll area (max-height fills screen, overflow-y scroll). "+" icon in column header to add task directly to that column.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Task Card</div><div class="el-type interaction">Interactive</div></div>
+        <div class="el-desc">Title (2-line clamp) + priority badge + department badge + due date (red if overdue, accent if today) + assignee avatar + name. Hover reveals: drag handle (6-dot icon) on left, "..." actions menu on right (Edit, Reassign, Change Priority, Delete). Clicking card (not handle) opens the Task Detail Side Panel. Dragging by handle moves card between columns with visual feedback.</div>
+        <div class="el-spec"><span class="spec-tag">hover: lift + border accent glow</span><span class="spec-tag">dragging: rotate(-1deg) scale(1.02) deep shadow</span><span class="spec-tag">drop zone: dashed border accent color</span></span></div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Drag & Drop (dnd-kit)</div><div class="el-type animation">Animation</div></div>
+        <div class="el-desc">Library: dnd-kit (@dnd-kit/core, @dnd-kit/sortable). Cards are sortable within columns AND draggable between columns. While dragging: original position shows a ghost placeholder (dashed outline). Drop zones glow accent color when a card is hovering over them. On successful drop: card snaps into position, status updates via optimistic UI + API call. On cancel/failed drop: card animates back to origin.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Empty Column State</div><div class="el-type state">State</div></div>
+        <div class="el-desc">Dashed border zone with text "No tasks here" + "drag cards here" hint + "+ Add task" text link. The drop zone is always visible (taller when empty) to make it easy to drag into.</div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title" id="tasks-table">Table View</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Sortable Table</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Full-width table. Columns: checkbox, Title (sortable), Status (dropdown), Priority (sortable), Assignee (avatar + name), Due Date (sortable, red if overdue), Department, Project. Column headers are clickable to sort (asc/desc, shows arrow). Hover row shows light background. Clicking Title cell opens Task Detail Panel. Clicking Status/Priority shows an inline dropdown to change value. Bottom row: "+ New row" to add task.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Bulk Selection</div><div class="el-type interaction">Interactive</div></div>
+        <div class="el-desc">Checking the header checkbox selects all visible rows. A bulk action bar slides up from the bottom: "X selected · Change Status · Reassign · Delete". Escape or clicking outside deselects. Also accessible via long-press on mobile.</div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title" id="tasks-calendar">Calendar View</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Month Calendar</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Standard month grid. Each day cell shows: small date number + up to 3 task chips (priority color dot + truncated title). "+ X more" link if more than 3. Overdue past days show red background tint. Today's cell has accent border ring. Clicking a task chip opens the detail panel. Clicking empty day area opens New Task form pre-filled with that date. Navigation: prev/next month arrows + "Today" button.</div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title" id="tasks-detail">Task Detail Side Panel</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Slide-over Panel</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">400px wide slide-over from the right. Does NOT close the board behind it — board is still visible and interactive. Panel sections: Title (editable inline), Status dropdown, Priority dropdown, Assignee picker (avatar grid), Due date picker, Department, Project link, Description (rich text, Markdown-rendered). Below the fold: Activity log (timeline of all changes + comments). Bottom: Comment input box with submit button. Header: "Open in full page →" link + X close button.</div>
+        <div class="el-spec"><span class="spec-tag">width: 400px desktop</span><span class="spec-tag">full-screen mobile</span><span class="spec-tag">slide-in: 280ms ease</span><span class="spec-tag">backdrop: 40% black overlay on mobile only</span></span></div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Filters & Search</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Filter Panel</div><div class="el-type interaction">Interactive</div></div>
+        <div class="el-desc">Clicking "Filter" opens a dropdown panel below the button. Filter options: Status (multi-select checkboxes), Priority (multi-select), Assignee (avatar chips), Department (multi-select), Due Date (presets: Overdue, Today, This Week, This Month + custom date range), Source (Manual, AI, Cadence). Active filters show as dismissible chips in the hero area. "Clear all" link appears when filters are active.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       MY TASKS
+  ══════════════════════════════════ -->
+  <div class="page-section" id="my-tasks">
+    <div class="page-title"><span class="emoji">★</span> My Tasks <span class="pill must">Must Have</span></div>
+    <div class="page-purpose">Personal task view filtered to tasks assigned to Saksham, plus self-created tasks (isSelfTask=true). Prioritised list, not kanban. Meant for daily personal planning.</div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">Grouped List</div><div class="el-type component">Component</div></div>
+      <div class="el-desc">Tasks grouped by: Overdue (red header + count) → Due Today (accent header) → Due This Week → Due Later → No Due Date. Within each group: sorted by priority. Each row is a compact task chip with checkbox (checking = mark done, strikethrough animation), title, priority badge, due date. Dragging rows reorders within a group. Completed tasks collapse to a "X completed today" row, expandable.</div>
+    </div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">Quick Add</div><div class="el-type interaction">Interactive</div></div>
+      <div class="el-desc">Sticky "+ Add task" bar at the bottom of each group. Clicking opens an inline form: title input (auto-focus) + priority picker (keyboard shortcut: P) + due date (keyboard: D) + press Enter to save. Escape cancels.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       PROJECTS
+  ══════════════════════════════════ -->
+  <div class="page-section" id="projects">
+    <div class="page-title"><span class="emoji">◈</span> Projects <span class="pill should">Should Have</span></div>
+    <div class="page-purpose">Container for grouping related tasks under a project (e.g. "Q4 OTA Push", "Goa Region Expansion"). Each project has an owner, stage, department, stakeholder link.</div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">Project Cards Grid</div><div class="el-type component">Component</div></div>
+      <div class="el-desc">2-column card grid on desktop, 1-column on mobile. Each project card: title + department badge + stage badge (Planning/Active/On Hold/Done) + owner avatar + task completion bar (X of Y done) + due date + stakeholder name. Clicking card navigates to Project Detail page. Cards draggable to reorder.</div>
+    </div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">Project Detail Page</div><div class="el-type component">Component</div></div>
+      <div class="el-desc">Hero: project emoji + name + description + stage + owner + due date (all editable). Below: full task board (same as Tasks page, filtered to this project). Tabs: Tasks | Pages | Timeline. Each project can have its own linked pages (notes, specs, docs).</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       TEAM
+  ══════════════════════════════════ -->
+  <div class="page-section" id="team">
+    <div class="page-title"><span class="emoji">👥</span> Team <span class="pill must">Must Have</span></div>
+    <div class="page-purpose">Overview of all direct reports. Shows their status, open tasks, delegation level, 1:1 schedule. Acts as a lightweight HR dashboard.</div>
+
+    <div class="el-group">
+      <div class="el-group-title">Page Layout</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Hero</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Title "Team" + "5 active members · 3 departments". Quick stats: Total Open Tasks, Members with Overdue Tasks (red if >0), Avg Tasks Per Member. View switcher: Grid | Table | Org Chart (Could Have).</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Member Card (Grid View)</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Large card per member: top section has gradient avatar (large, initials), name (large bold), role, department badge. Middle section: open task count (accent number, red if high), delegation level (1–4 dot indicators), 1:1 schedule ("Tuesdays 3pm"). Bottom: "Active" or status badge. Hover reveals quick-action strip: "View Profile" | "Log 1:1" | "Assign Task". Cards draggable to reorder team display.</div>
+        <div class="el-spec"><span class="spec-tag">hover: action strip fade-in</span><span class="spec-tag">task count: red if >5</span><span class="spec-tag">card size: ~200x260px</span></span></div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Member Card (Table View)</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Same data in tabular form. Columns: Avatar+Name, Role, Department, Status, Open Tasks (sortable), Delegation Level, 1:1 Day, Actions. Clicking name row navigates to profile.</div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title" id="team-profile">Member Profile Page</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Profile Hero</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Full-bleed cover area (gradient or solid accent tint, 120px). Large avatar circle centered, overlapping cover edge. Name (H1), role, department badge. Quick stats: Hire date, Skills (comma-separated chips), Delegation Level indicator. Edit button (pencil icon) in top-right corner.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Profile Tabs</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Tab bar: Tasks | 1:1 History | Notes | Coaching. <br><strong>Tasks tab:</strong> Shows this member's open tasks, same list format as My Tasks. Can add task from here (pre-assigned to member).<br><strong>1:1 History tab:</strong> Reverse-chronological list of 1:1 sessions with mood indicator (emoji), summary, action items. "Log New 1:1" button.<br><strong>Notes tab:</strong> Free text coaching/context notes about this member. Markdown-rendered, editable inline.<br><strong>Coaching tab:</strong> Delegation level picker with description of each level, structured coaching notes form (SBI framework prompts).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       1:1s
+  ══════════════════════════════════ -->
+  <div class="page-section" id="oneонones">
+    <div class="page-title"><span class="emoji">💬</span> 1:1s <span class="pill must">Must Have</span></div>
+    <div class="page-purpose">Log and review 1:1 meetings with each direct report. Structured form for capturing their updates, your updates, feedback given, development notes, and action items.</div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">1:1 List Page</div><div class="el-type component">Component</div></div>
+      <div class="el-desc">List of all 1:1 sessions across all team members, sorted by date. Filter by member (avatar chips at top). Each row: member avatar + name + date + mood emoji + 1–2 line preview of their updates + action item count. Clicking opens the 1:1 Detail.</div>
+    </div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">1:1 Form / Detail</div><div class="el-type component">Component</div></div>
+      <div class="el-desc">Sections with labeled text areas: "Their Updates" (what they shared), "My Updates" (what I told them), "Feedback Given" (SBI format), "Development Notes", "Next Steps". Plus: Mood selector (emoji row: 😊😐😔😤🤔), Date picker, Action Items list (title + owner + due date + checkbox). "Save" button or auto-save on blur. Breadcrumb links back to member profile.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       STAKEHOLDERS
+  ══════════════════════════════════ -->
+  <div class="page-section" id="stakeholders">
+    <div class="page-title"><span class="emoji">◆</span> Stakeholders <span class="pill must">Must Have</span></div>
+    <div class="page-purpose">Manage key stakeholder relationships: name, title, communication frequency, channel, priority, context, strategy notes.</div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">Stakeholder Cards</div><div class="el-type component">Component</div></div>
+      <div class="el-desc">Card grid or table toggle. Card: avatar initials + name + title + frequency badge (Weekly/Biweekly/Monthly) + channel (Email/Slack/Call) + priority badge + "X open tasks linked" count. Hover reveals: "View profile", "Linked tasks" quick view. Clicking opens stakeholder detail side panel or full page.</div>
+    </div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">Stakeholder Detail</div><div class="el-type component">Component</div></div>
+      <div class="el-desc">Name + title + contact info. Fields: Frequency, Channel, Priority, Context (rich text notes about them), Strategy (what's the approach). Linked Tasks section: shows tasks tagged to this stakeholder. Related Projects section. "Draft Update" button opens a text area with a template for stakeholder communication.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       METRICS
+  ══════════════════════════════════ -->
+  <div class="page-section" id="metrics">
+    <div class="page-title"><span class="emoji">📈</span> Metrics <span class="pill must">Must Have</span></div>
+    <div class="page-purpose">FY27 KPI dashboard. Synced from Google Sheets. Shows Check-in Revenue and OTA GMV across regions and time periods.</div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">KPI Cards + Progress Bars</div><div class="el-type data">Data</div></div>
+      <div class="el-desc">Top section: two large KPI cards side by side — Check-in Revenue YTD and OTA Gross GMV YTD. Each: label, large monospace number in accent color, target number (muted), animated progress bar, "X% of target" caption, trend vs last month (↑ or ↓ with %). Below: regional breakdown — 4 cards for regions (Goa, Maharashtra, North India, Other). Then: month-by-month table showing actuals vs targets for each month of FY27.</div>
+    </div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">Sync Button</div><div class="el-type interaction">Interactive</div></div>
+      <div class="el-desc">Top-right "Sync from Sheets" button. Shows last synced timestamp below it. While syncing: spinner animation on icon. On success: toast "X metrics updated". On fail: toast error + retry option. Sync hits the Apps Script webhook which pulls from Google Sheets.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       ASSESSMENT
+  ══════════════════════════════════ -->
+  <div class="page-section" id="assessment">
+    <div class="page-title"><span class="emoji">🎯</span> Assessment Pages <span class="pill must">Must Have</span></div>
+    <div class="page-purpose">Two sub-pages: OTA Assessment and Check-in GMV Assessment. Deep-dive views per channel with regional and segment breakdowns. Targets sourced from Targets.csv.</div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">OTA Assessment</div><div class="el-type data">Data</div></div>
+      <div class="el-desc">Hero: YTD OTA GMV vs target, attainment %. Below: horizontal tab strip for regions. Main section: channel mix breakdown (Direct, MakeMyTrip, Booking.com, etc.) as a table with YTD actual / target / attainment % / vs last year. Progress bars per channel. Monthly trend chart (Could Have). Right side: callout box showing gap to close and days remaining in FY.</div>
+    </div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">Check-in GMV Assessment</div><div class="el-type data">Data</div></div>
+      <div class="el-desc">4 region cards in a grid (Goa, Maharashtra, North, Other). Each: region name + YTD CI Revenue + target + attainment % + progress bar. Below: monthly breakdown table with all 12 months, actual vs target, color-coded (green=on track, red=behind). ARR and weekday/weekend split stats at bottom.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       REPORTS
+  ══════════════════════════════════ -->
+  <div class="page-section" id="reports">
+    <div class="page-title"><span class="emoji">📊</span> Reports <span class="pill must">Must Have</span></div>
+    <div class="page-purpose">Weekly snapshot reports generated from live data and sent via Resend email. Shows report history and lets you generate/send new ones.</div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">Report List</div><div class="el-type component">Component</div></div>
+      <div class="el-desc">List of past generated reports. Each row: type (Weekly), period (e.g. "Week of Mar 17"), generated at timestamp, "Emailed ✓" badge or "Not sent" badge, "View" button to see the report data, "Re-send" button. Header: "Generate New Report" primary button.</div>
+    </div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">Report Detail View</div><div class="el-type component">Component</div></div>
+      <div class="el-desc">Renders the report data (stored as JSON) in a readable format: Metrics section (revenue figures), Task summary (open/closed/overdue counts), Team activity (task completions per member), Highlights (manually editable), Risks. "Print to PDF" button. "Email Report" button.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       PAGES (WIKI / NOTION)
+  ══════════════════════════════════ -->
+  <div class="page-section" id="pages">
+    <div class="page-title"><span class="emoji">📄</span> Pages (Wiki) <span class="pill should">Should Have</span></div>
+    <div class="page-purpose">Notion-style rich text pages for meeting notes, SOPs, strategy docs, runbooks. Replaces the static Playbook accordion. Pages organized in a tree sidebar. Editable in-place with block-based editor (BlockNote or TipTap).</div>
+
+    <div class="el-group">
+      <div class="el-group-title">Page Tree (Left Panel)</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Page Tree</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Nested tree of all pages. Each item: emoji icon + page title + expand arrow (if has children). Hover reveals: drag handle + "..." menu (rename, delete, duplicate, add child). Active page highlighted with accent background. "+ New page" button at bottom. Tree items draggable to reorder or nest. On mobile: tree lives in a slide-in drawer accessible from a sidebar button.</div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Page Editor</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Page Cover</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Optional gradient or solid color cover at top. Page emoji (large, overlapping cover bottom edge). Hover cover to show "Change cover" / "Remove cover" buttons. Click emoji to open emoji picker.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Title Block</div><div class="el-type interaction">Interactive</div></div>
+        <div class="el-desc">H1-style editable title. Placeholder "Untitled". Press Enter to move cursor to first content block. Press "/" in any block to open the slash command menu.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Page Properties</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">Below title, collapsible row of properties: Created date, Owner (avatar + name), Tags (accent-colored chips, multi-select), Status (custom badge). Clicking any property value opens an inline edit. "Add property" link at end to add custom fields. Collapsed by default if properties are empty, expanded if set.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Block Editor</div><div class="el-type interaction">Interactive</div></div>
+        <div class="el-desc">BlockNote editor. Supported blocks: Text, H1/H2/H3, Bulleted List, Numbered List, Todo (checkbox), Toggle/Collapsible, Callout (accent border + icon), Divider, Quote, Code Block, Image, Inline Database (embeds a task table). Hover any block: drag handle (6-dot) appears on left + "+" button to insert below. Slash command "/" shows block picker menu. Content auto-saves every 2 seconds (or on blur).</div>
+        <div class="el-spec"><span class="spec-tag">slash command: /text /h1 /todo /callout /divider /database</span><span class="spec-tag">auto-save: 2s debounce</span><span class="spec-tag">drag handle: on hover only</span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       CADENCE
+  ══════════════════════════════════ -->
+  <div class="page-section" id="cadence">
+    <div class="page-title"><span class="emoji">🔄</span> Cadence <span class="pill must">Must Have</span></div>
+    <div class="page-purpose">Recurring meeting schedule: weekly syncs, monthly reviews, 1:1s. Each cadence has prep items that auto-generate tasks N days before. The heartbeat of the team's operating rhythm.</div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">Cadence Cards</div><div class="el-type component">Component</div></div>
+      <div class="el-desc">Grid of cadence cards. Each card: name + type icon (recurring arrows) + day + time + duration badge + scope (All team / Department) + active/inactive toggle. Expand button to show PrepItems list. "Prep Now" button (lightning icon) generates tasks immediately. Active toggle is a smooth slide toggle with accent color when on.</div>
+    </div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">Prep Items</div><div class="el-type component">Component</div></div>
+      <div class="el-desc">Expandable list below each cadence card. Each prep item: title + assignee + department + lead time (e.g. "1 day before"). Drag to reorder. "+" Add prep item inline. These items become tasks when "Prep Now" is triggered or when the cron job runs.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       SETTINGS
+  ══════════════════════════════════ -->
+  <div class="page-section" id="settings">
+    <div class="page-title"><span class="emoji">⚙</span> Settings <span class="pill should">Should Have</span></div>
+    <div class="page-purpose">App configuration. Sections: General, Theme, Notifications, Integrations (Sheets sync config, Resend email), Keyboard Shortcuts, About.</div>
+    <div class="el-item">
+      <div class="el-item-head"><div class="el-name">Settings Layout</div><div class="el-type component">Component</div></div>
+      <div class="el-desc">Left nav: section list (General, Appearance, Notifications, Integrations, Shortcuts). Right: section content. Each setting row: label + description + control (toggle, input, button, select). Appearance section prominently features the full Theme Picker grid. Keyboard shortcuts section shows a searchable table of all shortcuts.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       MOBILE SPEC
+  ══════════════════════════════════ -->
+  <div class="page-section" id="mobile">
+    <div class="page-title"><span class="emoji">📱</span> Mobile Spec <span class="pill must">Must Have</span></div>
+    <div class="page-purpose">The app is currently broken on mobile (fixed 220px sidebar occupies most of a 390px screen). This is the complete mobile redesign spec.</div>
+
+    <div class="el-group">
+      <div class="el-group-title">Layout Rules</div>
+      <div class="el-item">
+        <div class="el-desc">Breakpoints: <code>&lt;640px</code> = mobile, <code>640–1024px</code> = tablet, <code>&gt;1024px</code> = desktop.<br><br>
+        <strong>Mobile:</strong> No sidebar. Bottom nav bar (5 tabs). Full-width content. Stacked layouts everywhere. Min touch target 48px. Horizontal scroll for tables (cells fixed-width, table scrolls within container).<br><br>
+        <strong>Tablet:</strong> Collapsible sidebar (hamburger in topbar toggles it). Sidebar overlays content when open (drawer style). Content is full-width when sidebar closed.<br><br>
+        <strong>Desktop:</strong> Fixed 240px sidebar always visible. Topbar with breadcrumb and actions.</div>
+      </div>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">Mobile-specific Interactions</div>
+      <table class="beh-table">
+        <thead><tr><th>Gesture</th><th>Action</th><th>Component</th></tr></thead>
+        <tbody>
+          <tr><td>Swipe right on task card</td><td>Mark as Done (green reveal) — confirm or undo via toast</td><td>Task lists, My Tasks</td></tr>
+          <tr><td>Swipe left on task card</td><td>Show action sheet: Reassign / Reschedule / Delete (red)</td><td>Task lists</td></tr>
+          <tr><td>Pull to refresh</td><td>Trigger Sheets sync + reload all data</td><td>Dashboard, Metrics</td></tr>
+          <tr><td>Long press task card</td><td>Enter multi-select mode — checkboxes appear on all cards</td><td>All task lists</td></tr>
+          <tr><td>Long press team member</td><td>Quick action sheet: Log 1:1, Assign Task, View Profile</td><td>Team grid</td></tr>
+          <tr><td>Swipe right on screen edge</td><td>Go back (iOS-style navigation)</td><td>All detail pages</td></tr>
+          <tr><td>Double tap stat card</td><td>Expand to full metric detail</td><td>Dashboard stats</td></tr>
+          <tr><td>Tap + hold drag</td><td>Drag task between kanban columns (haptic feedback on drop)</td><td>Kanban board</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="el-group">
+      <div class="el-group-title">PWA (Progressive Web App)</div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Install Prompt</div><div class="el-type component">Component</div></div>
+        <div class="el-desc">First mobile visit shows a banner: "Add Lohono CMD to your home screen for the full app experience". CTA: "Install" button. Dismissable. PWA already configured (@ducanh2912/next-pwa). Once installed: full-screen mode, no browser chrome, app icon on home screen. Offline fallback page shows last known data snapshot with "You're offline" indicator.</div>
+      </div>
+      <div class="el-item">
+        <div class="el-item-head"><div class="el-name">Push Notifications</div><div class="el-type should">Could Have</div></div>
+        <div class="el-desc">Web push notifications for: tasks becoming overdue, cadence prep reminder (1 day before meeting), weekly report generated. Permission requested after first install. Settings page toggle to enable/disable each notification type.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div class="corner-badge" style="display:flex;gap:8px;align-items:center;padding:0;overflow:hidden;background:transparent;box-shadow:none;">
+  <span style="background:var(--gold,#C9A84C);color:#07080C;font-size:11px;font-weight:700;padding:7px 14px;border-radius:8px;letter-spacing:0.05em;">DESIGN SPEC · LOHONO CMD</span>
+  <button onclick="downloadMarkdown()" style="background:#1E2028;color:#E2E3E8;border:1px solid #2A2D38;font-size:11px;font-weight:700;padding:7px 14px;border-radius:8px;letter-spacing:0.05em;cursor:pointer;font-family:inherit;transition:all 0.15s;" onmouseover="this.style.background='#2A2D38'" onmouseout="this.style.background='#1E2028'">⬇ Download .md</button>
+</div>
+
+<script>
+function downloadMarkdown() {
+  const md = buildMarkdown();
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'lohono-cmd-design-spec.md';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function buildMarkdown() {
+  let out = [];
+
+  // Walk each page-section
+  document.querySelectorAll('.page-section').forEach(section => {
+    const titleEl = section.querySelector('.page-title');
+    const purposeEl = section.querySelector('.page-purpose');
+    const emoji = titleEl?.querySelector('.emoji')?.textContent?.trim() || '';
+    const pillEl = titleEl?.querySelector('.pill');
+    const pill = pillEl ? ` \`${pillEl.textContent.trim()}\`` : '';
+    // Title text without emoji and pill
+    const titleClone = titleEl?.cloneNode(true);
+    titleClone?.querySelectorAll('.emoji, .pill').forEach(e => e.remove());
+    const titleText = titleClone?.textContent?.trim() || '';
+
+    out.push(`## ${emoji} ${titleText}${pill}\n`);
+    if (purposeEl) out.push(`> ${purposeEl.textContent.trim()}\n`);
+
+    // Callouts
+    section.querySelectorAll('.callout').forEach(c => {
+      out.push(`\n> **Note:** ${c.textContent.trim()}\n`);
+    });
+
+    // Element groups
+    section.querySelectorAll('.el-group').forEach(group => {
+      const groupTitle = group.querySelector('.el-group-title')?.textContent?.trim();
+      if (groupTitle) out.push(`\n### ${groupTitle}\n`);
+
+      // Items
+      group.querySelectorAll('.el-item').forEach(item => {
+        const nameEl = item.querySelector('.el-name');
+        const typeEl = item.querySelector('.el-type');
+        const descEl = item.querySelector('.el-desc');
+        const specEl = item.querySelector('.el-spec');
+
+        const nameClone = nameEl?.cloneNode(true);
+        nameClone?.querySelector('.icon')?.remove();
+        const name = nameClone?.textContent?.trim() || '';
+        const type = typeEl?.textContent?.trim() || '';
+        const desc = descEl?.innerHTML
+          ?.replace(/<br\s*\/?>/gi, '\n')
+          ?.replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
+          ?.replace(/<code>(.*?)<\/code>/gi, '`$1`')
+          ?.replace(/<[^>]+>/g, '')
+          ?.trim() || '';
+
+        if (name) out.push(`\n**${name}** *(${type})*\n`);
+        if (desc) out.push(`${desc}\n`);
+
+        if (specEl) {
+          const tags = [...specEl.querySelectorAll('.spec-tag')].map(t => `\`${t.textContent.trim()}\``).join(' · ');
+          if (tags) out.push(`*Spec: ${tags}*\n`);
+        }
+      });
+
+      // Tables
+      group.querySelectorAll('.beh-table').forEach(table => {
+        out.push('');
+        const headers = [...table.querySelectorAll('thead th')].map(th => th.textContent.trim());
+        if (headers.length) {
+          out.push('| ' + headers.join(' | ') + ' |');
+          out.push('| ' + headers.map(() => '---').join(' | ') + ' |');
+          table.querySelectorAll('tbody tr').forEach(row => {
+            const cells = [...row.querySelectorAll('td')].map(td => td.textContent.trim().replace(/\n+/g, ' ').replace(/\|/g, '\\|'));
+            out.push('| ' + cells.join(' | ') + ' |');
+          });
+          out.push('');
+        }
+      });
+    });
+
+    out.push('\n---\n');
+  });
+
+  const header = [
+    '# Lohono Command Center — Full Design Spec',
+    '',
+    '> Personal management tool for Saksham Shokeen — Head of Revenue Strategy, Lohono Stays.',
+    '> Generated from the Lohono CMD Design Spec · v1.0 · March 2026',
+    '> Use this document as a complete brief for Stitch or any design tool.',
+    '',
+    '---',
+    ''
+  ].join('\n');
+
+  return header + out.join('\n');
+}
+
+// Highlight active TOC item on scroll
+const sections = document.querySelectorAll('.page-section, [id]');
+const tocLinks = document.querySelectorAll('.toc-item');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (s.offsetTop <= window.scrollY + 100) current = s.id;
+  });
+  tocLinks.forEach(l => {
+    l.classList.remove('active');
+    if (l.getAttribute('href') === '#' + current) l.classList.add('active');
+  });
+});
+tocLinks.forEach(l => {
+  l.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(l.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+</script>
+</body>
+</html>

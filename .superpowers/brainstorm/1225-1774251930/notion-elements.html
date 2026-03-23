@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lohono CMD — Notion-style Elements</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #07080C;
+  --surface: #0D0E14;
+  --surface2: #111318;
+  --border: #1A1C24;
+  --border2: #22252F;
+  --text: #E2E3E8;
+  --text2: #9CA3AF;
+  --text3: #4B5060;
+  --gold: #C9A84C;
+  --gold-dim: rgba(201,168,76,0.12);
+  --blue: #3B82F6;
+  --green: #10B981;
+  --red: #EF4444;
+  --purple: #8B5CF6;
+}
+
+body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--text); min-height: 100vh; overflow-x: hidden; }
+.page { max-width: 1100px; margin: 0 auto; padding: 40px 32px 80px; }
+
+/* ── TABS ── */
+.tabs { display: flex; gap: 4px; margin-bottom: 40px; background: var(--surface); border-radius: 10px; padding: 4px; width: fit-content; }
+.tab { padding: 7px 18px; border-radius: 7px; font-size: 12px; font-weight: 500; color: var(--text3); cursor: pointer; transition: all 0.15s; }
+.tab.active { background: var(--surface2); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+.tab:hover:not(.active) { color: var(--text2); }
+
+.section { display: none; }
+.section.active { display: block; }
+
+/* ════════════════════════════════
+   SECTION 1 — PAGE EDITOR
+════════════════════════════════ */
+.editor-wrap { display: grid; grid-template-columns: 220px 1fr; gap: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; min-height: 560px; }
+
+/* Sidebar tree */
+.tree { background: #0A0B10; border-right: 1px solid var(--border); padding: 12px 0; overflow: hidden; }
+.tree-section { padding: 10px 12px 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); }
+.tree-item { display: flex; align-items: center; gap: 7px; padding: 5px 12px; font-size: 12px; color: var(--text3); cursor: pointer; border-radius: 0; transition: all 0.1s; position: relative; }
+.tree-item:hover { background: rgba(255,255,255,0.03); color: var(--text2); }
+.tree-item.active { background: var(--gold-dim); color: var(--gold); }
+.tree-item .ti { font-size: 14px; width: 18px; flex-shrink: 0; }
+.tree-item .arrow { margin-right: -4px; color: var(--text3); font-size: 10px; margin-left: auto; opacity: 0; transition: opacity 0.1s; }
+.tree-item:hover .arrow { opacity: 1; }
+.tree-item.indent { padding-left: 28px; }
+.tree-add { display: flex; align-items: center; gap: 6px; padding: 5px 12px; font-size: 11px; color: var(--text3); cursor: pointer; opacity: 0; transition: opacity 0.15s; }
+.tree:hover .tree-add { opacity: 1; }
+.tree-add:hover { color: var(--text2); }
+
+/* Editor body */
+.editor-body { padding: 40px 48px; overflow-y: auto; }
+.editor-cover { height: 80px; background: linear-gradient(135deg, #0F1018, #1A1C28); border-radius: 8px 8px 0 0; margin: -40px -48px 24px; display: flex; align-items: flex-end; padding: 16px 48px; }
+.editor-icon { font-size: 36px; margin-bottom: -8px; }
+
+.editor-title { font-size: 30px; font-weight: 700; color: var(--text); margin-bottom: 4px; outline: none; border: none; background: transparent; width: 100%; font-family: inherit; }
+.editor-title::placeholder { color: var(--text3); font-weight: 300; }
+.editor-props { display: flex; flex-wrap: wrap; gap: 0; margin-bottom: 28px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+.prop-row { display: flex; align-items: center; gap: 0; width: 100%; padding: 4px 0; }
+.prop-key { font-size: 12px; color: var(--text3); width: 120px; display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 3px 6px; border-radius: 4px; }
+.prop-key:hover { background: rgba(255,255,255,0.04); color: var(--text2); }
+.prop-val { font-size: 12px; color: var(--text2); padding: 3px 8px; border-radius: 4px; cursor: pointer; }
+.prop-val:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+.prop-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 5px; font-weight: 500; }
+.prop-tag.gold { background: rgba(201,168,76,0.12); color: var(--gold); }
+.prop-tag.blue { background: rgba(59,130,246,0.12); color: #60A5FA; }
+.prop-tag.green { background: rgba(16,185,129,0.12); color: var(--green); }
+
+/* Blocks */
+.block { position: relative; padding: 3px 0; margin-bottom: 2px; group: block; }
+.block:hover .block-handle { opacity: 1; }
+.block-handle { position: absolute; left: -28px; top: 4px; opacity: 0; transition: opacity 0.1s; display: flex; gap: 2px; }
+.block-handle-btn { width: 18px; height: 18px; border-radius: 4px; background: var(--surface2); color: var(--text3); font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: grab; }
+.block-handle-btn:hover { background: var(--border2); color: var(--text2); }
+
+.block-h1 { font-size: 22px; font-weight: 700; color: var(--text); margin: 20px 0 4px; }
+.block-h2 { font-size: 16px; font-weight: 600; color: var(--text2); margin: 16px 0 4px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.block-p { font-size: 14px; color: var(--text2); line-height: 1.7; }
+.block-callout { background: var(--gold-dim); border-left: 3px solid var(--gold); border-radius: 6px; padding: 12px 16px; font-size: 13px; color: var(--text); display: flex; gap: 10px; margin: 8px 0; }
+.block-callout .ico { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.block-todo { display: flex; align-items: flex-start; gap: 8px; padding: 3px 0; }
+.block-todo-box { width: 16px; height: 16px; border: 1.5px solid var(--border2); border-radius: 4px; flex-shrink: 0; margin-top: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.block-todo-box.done { background: var(--gold); border-color: var(--gold); color: #07080C; }
+.block-todo-text { font-size: 14px; color: var(--text2); line-height: 1.6; }
+.block-todo-text.done { text-decoration: line-through; color: var(--text3); }
+.block-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.inline-code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: var(--surface2); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; color: var(--gold); }
+.slash-menu { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 6px; width: 220px; margin: 8px 0; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.slash-item { display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: 5px; cursor: pointer; }
+.slash-item:hover, .slash-item.hover { background: var(--gold-dim); }
+.slash-item .si { width: 28px; height: 28px; background: var(--border); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.slash-item .si-text { font-size: 12px; color: var(--text); font-weight: 500; }
+.slash-item .si-sub { font-size: 11px; color: var(--text3); }
+.slash-label { font-size: 10px; color: var(--text3); padding: 4px 10px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; }
+
+/* ════════════════════════════════
+   SECTION 2 — DATABASE
+════════════════════════════════ */
+.db-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.db-header { padding: 20px 24px 0; border-bottom: 1px solid var(--border); }
+.db-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.db-icon { font-size: 22px; }
+.db-title { font-size: 18px; font-weight: 700; color: var(--text); }
+.db-sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
+.db-toolbar { display: flex; align-items: center; gap: 6px; padding-bottom: 12px; }
+.db-btn { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 6px; font-size: 12px; color: var(--text3); cursor: pointer; border: 1px solid transparent; transition: all 0.1s; }
+.db-btn:hover { background: var(--surface2); color: var(--text2); border-color: var(--border); }
+.db-btn.active { background: var(--gold-dim); color: var(--gold); border-color: rgba(201,168,76,0.2); }
+.db-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+.db-add { margin-left: auto; display: flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; background: var(--gold); color: #07080C; cursor: pointer; }
+
+/* Table view */
+.db-table { width: 100%; border-collapse: collapse; }
+.db-table th { padding: 8px 14px; font-size: 11px; font-weight: 600; color: var(--text3); text-align: left; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 1px solid var(--border); background: var(--surface); cursor: pointer; white-space: nowrap; }
+.db-table th:hover { color: var(--text2); }
+.db-table th .sort-arrow { margin-left: 4px; color: var(--gold); font-size: 10px; }
+.db-table td { padding: 10px 14px; font-size: 13px; color: var(--text2); border-bottom: 1px solid var(--border); vertical-align: middle; }
+.db-table tr:hover td { background: rgba(255,255,255,0.02); }
+.db-table tr:last-child td { border-bottom: none; }
+.db-table td:first-child { color: var(--text); font-weight: 500; cursor: pointer; }
+.db-table td:first-child:hover { color: var(--gold); }
+.row-check { width: 16px; height: 16px; border: 1.5px solid var(--border2); border-radius: 4px; cursor: pointer; }
+.cell-tag { display: inline-flex; align-items: center; font-size: 11px; padding: 2px 8px; border-radius: 5px; font-weight: 500; white-space: nowrap; }
+.cell-tag.critical { background: rgba(239,68,68,0.12); color: #F87171; }
+.cell-tag.high { background: rgba(245,158,11,0.12); color: #FCD34D; }
+.cell-tag.medium { background: rgba(59,130,246,0.12); color: #93C5FD; }
+.cell-tag.low { background: rgba(16,185,129,0.12); color: #6EE7B7; }
+.cell-tag.done { background: rgba(16,185,129,0.1); color: #34D399; }
+.cell-tag.todo { background: rgba(107,114,128,0.1); color: #9CA3AF; }
+.cell-tag.in-prog { background: rgba(59,130,246,0.1); color: #60A5FA; }
+.cell-avatar { width: 22px; height: 22px; border-radius: 6px; background: linear-gradient(135deg, #1E3A5F, #2D5A9E); display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #93C5FD; }
+.add-row { display: flex; align-items: center; gap: 8px; padding: 8px 14px; color: var(--text3); font-size: 12px; cursor: pointer; border-top: 1px solid var(--border); }
+.add-row:hover { background: rgba(255,255,255,0.02); color: var(--text2); }
+
+/* View toggle */
+.view-tabs { display: flex; gap: 2px; margin-right: auto; }
+.view-tab { padding: 5px 12px; border-radius: 5px; font-size: 12px; color: var(--text3); cursor: pointer; display: flex; align-items: center; gap: 5px; }
+.view-tab.active { background: var(--surface2); color: var(--gold); }
+.view-tab:hover:not(.active) { color: var(--text2); }
+
+/* ════════════════════════════════
+   SECTION 3 — COMMAND PALETTE
+════════════════════════════════ */
+.palette-demo { display: flex; justify-content: center; padding: 40px 20px; }
+.palette-backdrop { width: 100%; max-width: 560px; }
+.palette-kbd { text-align: center; margin-bottom: 20px; font-size: 13px; color: var(--text3); }
+.palette-kbd kbd { background: var(--surface2); border: 1px solid var(--border2); border-radius: 5px; padding: 3px 8px; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--text2); }
+.palette { background: var(--surface2); border: 1px solid var(--border2); border-radius: 12px; box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,168,76,0.06); overflow: hidden; }
+.palette-input-row { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.palette-input-row .pi { font-size: 16px; color: var(--text3); }
+.palette-input { background: transparent; border: none; outline: none; font-size: 15px; color: var(--text); width: 100%; font-family: inherit; }
+.palette-input::placeholder { color: var(--text3); }
+.palette-input-row kbd { font-size: 11px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+.palette-section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); padding: 10px 14px 4px; }
+.palette-item { display: flex; align-items: center; gap: 11px; padding: 9px 14px; cursor: pointer; transition: background 0.08s; }
+.palette-item:hover, .palette-item.selected { background: var(--gold-dim); }
+.palette-item.selected .pi-title { color: var(--gold); }
+.pi-icon { width: 30px; height: 30px; border-radius: 8px; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.pi-icon.gold { background: var(--gold-dim); }
+.pi-title { font-size: 13px; color: var(--text); font-weight: 500; }
+.pi-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.pi-kbd { margin-left: auto; font-size: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; color: var(--text3); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+.palette-footer { padding: 8px 14px; border-top: 1px solid var(--border); display: flex; gap: 14px; }
+.palette-footer-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); }
+.palette-footer-item kbd { font-size: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-family: 'JetBrains Mono', monospace; }
+
+/* ════════════════════════════════
+   SECTION 4 — ANIMATIONS SPEC
+════════════════════════════════ */
+.anim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.anim-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; overflow: hidden; }
+.anim-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.anim-sub { font-size: 12px; color: var(--text3); margin-bottom: 16px; line-height: 1.5; }
+.anim-demo { background: var(--surface2); border-radius: 8px; padding: 16px; }
+
+/* Hover reveal animation */
+@keyframes fadeSlideIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse-gold { 0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); } 50% { box-shadow: 0 0 0 6px rgba(201,168,76,0.1); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes skeleton { 0% { opacity: 0.4; } 50% { opacity: 0.8; } 100% { opacity: 0.4; } }
+@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes bounceCheck { 0% { transform: scale(0); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+@keyframes progressFill { from { width: 0; } to { width: 73%; } }
+
+/* Hover card demo */
+.hover-card { background: var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; }
+.hover-card:hover { background: #161820; border-color: rgba(201,168,76,0.2); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+.hover-card:hover .hc-action { opacity: 1; transform: translateX(0); }
+.hc-title { font-size: 13px; color: var(--text); font-weight: 500; margin-bottom: 4px; }
+.hc-meta { display: flex; align-items: center; justify-content: space-between; }
+.hc-tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(239,68,68,0.1); color: #F87171; }
+.hc-action { font-size: 11px; color: var(--gold); opacity: 0; transform: translateX(6px); transition: all 0.15s ease; }
+
+/* Side panel */
+.panel-demo { position: relative; height: 120px; overflow: hidden; border-radius: 8px; background: var(--border); display: flex; }
+.panel-main { flex: 1; padding: 12px; }
+.panel-side { width: 160px; background: var(--surface); border-left: 1px solid var(--border2); padding: 10px; animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.panel-main-title { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+.panel-row { height: 10px; background: var(--border2); border-radius: 3px; margin-bottom: 5px; }
+.panel-side-title { font-size: 10px; font-weight: 600; color: var(--gold); margin-bottom: 7px; letter-spacing: 0.06em; text-transform: uppercase; }
+.panel-side-row { height: 8px; background: var(--border2); border-radius: 2px; margin-bottom: 5px; }
+.panel-side-row.s { width: 70%; }
+
+/* Skeleton loading */
+.skel { background: linear-gradient(90deg, var(--border) 25%, var(--border2) 50%, var(--border) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
+.skel-row { height: 12px; margin-bottom: 8px; border-radius: 3px; }
+.skel-avatar { width: 32px; height: 32px; border-radius: 50%; }
+
+/* Checkbox anim */
+.check-demo { display: flex; gap: 12px; align-items: center; }
+.anim-check { width: 20px; height: 20px; border-radius: 5px; border: 2px solid var(--border2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.anim-check.checked { background: var(--gold); border-color: var(--gold); animation: bounceCheck 0.3s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.anim-check.checked::after { content: '✓'; color: #07080C; font-size: 11px; font-weight: 800; }
+.check-text { font-size: 12px; color: var(--text2); transition: all 0.2s; }
+.check-text.done { text-decoration: line-through; color: var(--text3); }
+
+/* Progress */
+.prog-demo { }
+.prog-label { font-size: 11px; color: var(--text3); margin-bottom: 5px; display: flex; justify-content: space-between; }
+.prog-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.prog-fill { height: 100%; background: linear-gradient(90deg, var(--gold), #E8C96A); border-radius: 3px; animation: progressFill 1.2s cubic-bezier(0.4, 0, 0.2, 1) both 0.3s; }
+
+/* Tooltip */
+.tooltip-demo { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.tt-wrap { position: relative; display: inline-block; }
+.tt-wrap:hover .tt { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.tt-btn { padding: 6px 12px; background: var(--border); border-radius: 6px; font-size: 12px; color: var(--text2); cursor: pointer; }
+.tt { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%) translateY(4px); background: #1E2028; border: 1px solid var(--border2); border-radius: 6px; padding: 5px 10px; font-size: 11px; color: var(--text); white-space: nowrap; opacity: 0; pointer-events: none; transition: all 0.15s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 10; }
+.tt::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: var(--border2); }
+
+/* Drag card */
+.drag-demo { display: flex; gap: 8px; }
+.drag-col { flex: 1; background: rgba(255,255,255,0.02); border-radius: 7px; padding: 8px; }
+.drag-col-label { font-size: 10px; color: var(--text3); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 7px; padding: 0 2px; }
+.drag-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 11px; color: var(--text2); cursor: grab; margin-bottom: 5px; transition: all 0.15s; }
+.drag-chip:hover { border-color: rgba(201,168,76,0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3); transform: rotate(-0.5deg) scale(1.01); }
+.drag-chip.dragging { opacity: 0.5; border-style: dashed; }
+.drop-zone { border: 1.5px dashed var(--border2); border-radius: 6px; height: 52px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text3); }
+.drop-zone.active { border-color: var(--gold); background: var(--gold-dim); color: var(--gold); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <h1 style="font-size:24px;font-weight:800;margin-bottom:6px;">Notion-style Elements <span style="color:var(--gold)">& Interactions</span></h1>
+  <p style="font-size:13px;color:var(--text3);margin-bottom:28px;">All the micro-details that make Notion feel alive — adapted for Lohono CMD's dark gold theme.</p>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showSection('editor')">📄 Page Editor</div>
+    <div class="tab" onclick="showSection('database')">🗃️ Database</div>
+    <div class="tab" onclick="showSection('palette')">⌘ Command Palette</div>
+    <div class="tab" onclick="showSection('animations')">✨ Animations</div>
+  </div>
+
+  <!-- ── SECTION 1: PAGE EDITOR ── -->
+  <div id="editor" class="section active">
+    <div class="editor-wrap">
+      <!-- Tree -->
+      <div class="tree">
+        <div class="tree-section">Workspace</div>
+        <div class="tree-item"><span class="ti">⬡</span> Dashboard</div>
+        <div class="tree-item active"><span class="ti">📊</span> Q4 Strategy <span class="arrow">▶</span></div>
+        <div class="tree-item indent"><span class="ti">📝</span> Channel Plan</div>
+        <div class="tree-item indent"><span class="ti">🎯</span> OTA Review</div>
+        <div class="tree-item indent" style="color:var(--gold);background:rgba(201,168,76,0.06);"><span class="ti">📋</span> Tasks DB</div>
+
+        <div class="tree-section" style="margin-top:8px;">Team Notes</div>
+        <div class="tree-item"><span class="ti">🗒️</span> Weekly Sync</div>
+        <div class="tree-item"><span class="ti">👤</span> 1:1 — Priya</div>
+        <div class="tree-item"><span class="ti">👤</span> 1:1 — Amit</div>
+
+        <div class="tree-section" style="margin-top:8px;">Reference</div>
+        <div class="tree-item"><span class="ti">📚</span> Playbook</div>
+        <div class="tree-item"><span class="ti">⚙</span> Settings</div>
+
+        <div class="tree-add">
+          <span style="font-size:14px;color:var(--text3)">+</span> New page
+        </div>
+      </div>
+
+      <!-- Editor -->
+      <div class="editor-body">
+        <div class="editor-cover"></div>
+        <div class="editor-icon">📊</div>
+
+        <div style="margin-top:12px;margin-bottom:16px;">
+          <div style="font-size:28px;font-weight:800;color:var(--text);margin-bottom:10px;">Q4 Channel Strategy</div>
+
+          <div class="editor-props">
+            <div class="prop-row">
+              <span class="prop-key">📅 Created</span>
+              <span class="prop-val">March 20, 2026</span>
+            </div>
+            <div class="prop-row">
+              <span class="prop-key">👤 Owner</span>
+              <span class="prop-val">Saksham Shokeen</span>
+            </div>
+            <div class="prop-row">
+              <span class="prop-key">🏷️ Tags</span>
+              <span class="prop-val"><span class="prop-tag gold">Strategy</span> <span class="prop-tag blue">OTA</span> <span class="prop-tag green">FY27</span></span>
+            </div>
+            <div class="prop-row">
+              <span class="prop-key">📌 Status</span>
+              <span class="prop-val"><span class="prop-tag gold">Active</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="block">
+          <div class="block-handle"><div class="block-handle-btn">⠿</div><div class="block-handle-btn">+</div></div>
+          <div class="block-h1">Overview</div>
+        </div>
+        <div class="block">
+          <div class="block-handle"><div class="block-handle-btn">⠿</div></div>
+          <div class="block-p">This document outlines the Q4 channel strategy for Lohono Stays Revenue team. The goal is to close the <span class="inline-code">OTA GMV gap of ₹1.12Cr</span> before fiscal year end while maintaining check-in revenue growth at 12%+ MoM.</div>
+        </div>
+        <div class="block" style="margin:10px 0;">
+          <div class="block-callout"><div class="ico">⚡</div><div>Q4 target: Close OTA GMV to 85% attainment. Goa and Maharashtra to carry 60% of incremental volume.</div></div>
+        </div>
+        <div class="block">
+          <div class="block-h2">Action Items</div>
+        </div>
+        <div class="block">
+          <div class="block-todo"><div class="block-todo-box done">✓</div><div class="block-todo-text done">Align OTA channel targets with regional leads</div></div>
+        </div>
+        <div class="block">
+          <div class="block-todo"><div class="block-todo-box done">✓</div><div class="block-todo-text done">Upload revised Targets.csv for Q4 adjustments</div></div>
+        </div>
+        <div class="block">
+          <div class="block-todo"><div class="block-todo-box"></div><div class="block-todo-text">Review Goa weekend vs weekday booking split</div></div>
+        </div>
+        <div class="block">
+          <div class="block-todo"><div class="block-todo-box"></div><div class="block-todo-text">Draft stakeholder update for MD review</div></div>
+        </div>
+
+        <hr class="block-divider">
+
+        <div style="font-size:12px;color:var(--text3);display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 0;" id="slash-toggle" onclick="toggleSlash()">
+          <span style="font-size:16px;">+</span> Type <kbd style="background:var(--surface2);border:1px solid var(--border);padding:1px 5px;border-radius:4px;font-family:monospace;font-size:11px;">/</kbd> for a block, or start typing…
+        </div>
+        <div class="slash-menu" id="slash-menu" style="display:none;">
+          <div class="slash-label">Basic blocks</div>
+          <div class="slash-item hover"><div class="si">T</div><div><div class="si-text">Text</div><div class="si-sub">Just start writing</div></div></div>
+          <div class="slash-item"><div class="si">H1</div><div><div class="si-text">Heading 1</div><div class="si-sub">Big section heading</div></div></div>
+          <div class="slash-item"><div class="si">☑</div><div><div class="si-text">To-do list</div><div class="si-sub">Track tasks with checkboxes</div></div></div>
+          <div class="slash-item"><div class="si">⚡</div><div><div class="si-text">Callout</div><div class="si-sub">Make text stand out</div></div></div>
+          <div class="slash-label">Advanced</div>
+          <div class="slash-item"><div class="si">🗃️</div><div><div class="si-text">Database</div><div class="si-sub">Inline table / kanban</div></div></div>
+          <div class="slash-item"><div class="si">📊</div><div><div class="si-text">Chart</div><div class="si-sub">Embed a metric chart</div></div></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 2: DATABASE ── -->
+  <div id="database" class="section">
+    <div class="db-wrap">
+      <div class="db-header">
+        <div class="db-title-row">
+          <div class="db-icon">✅</div>
+          <div>
+            <div class="db-title">Tasks Database</div>
+            <div class="db-sub">24 tasks · 7 overdue · filtered by: This quarter</div>
+          </div>
+        </div>
+        <div class="db-toolbar">
+          <div class="view-tabs">
+            <div class="view-tab active">☰ Table</div>
+            <div class="view-tab">▦ Board</div>
+            <div class="view-tab">▦ Gallery</div>
+            <div class="view-tab">📅 Calendar</div>
+          </div>
+          <div class="db-sep"></div>
+          <div class="db-btn">⚙ Filter</div>
+          <div class="db-btn">↕ Sort</div>
+          <div class="db-btn">⊞ Group by</div>
+          <div class="db-sep"></div>
+          <div class="db-add">+ New task</div>
+        </div>
+      </div>
+      <table class="db-table">
+        <thead>
+          <tr>
+            <th style="width:28px;"><input type="checkbox" class="row-check"></th>
+            <th>Title <span class="sort-arrow">↑</span></th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Assignee</th>
+            <th>Due Date</th>
+            <th>Department</th>
+            <th style="width:40px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="checkbox" class="row-check"></td>
+            <td>OTA channel mix review for Q4</td>
+            <td><span class="cell-tag in-prog">In Progress</span></td>
+            <td><span class="cell-tag critical">Critical</span></td>
+            <td><span class="cell-avatar">SS</span></td>
+            <td style="color:#F87171;">Mar 22 ↑</td>
+            <td style="color:var(--text3);">OTA</td>
+            <td>…</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="row-check"></td>
+            <td>Weekly stakeholder report draft</td>
+            <td><span class="cell-tag todo">To Do</span></td>
+            <td><span class="cell-tag high">High</span></td>
+            <td><span class="cell-avatar">SS</span></td>
+            <td>Mar 25</td>
+            <td style="color:var(--text3);">Reports</td>
+            <td>…</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="row-check"></td>
+            <td>Goa region forecast update</td>
+            <td><span class="cell-tag in-prog">In Progress</span></td>
+            <td><span class="cell-tag medium">Medium</span></td>
+            <td><span class="cell-avatar">PR</span></td>
+            <td>Mar 28</td>
+            <td style="color:var(--text3);">Analytics</td>
+            <td>…</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="row-check"></td>
+            <td>Maharashtra ARR analysis — Q4</td>
+            <td><span class="cell-tag done">Done</span></td>
+            <td><span class="cell-tag low">Low</span></td>
+            <td><span class="cell-avatar">AM</span></td>
+            <td style="color:var(--text3);">Mar 20</td>
+            <td style="color:var(--text3);">Analytics</td>
+            <td>…</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="row-check"></td>
+            <td>1:1 prep — Priya next week</td>
+            <td><span class="cell-tag todo">To Do</span></td>
+            <td><span class="cell-tag high">High</span></td>
+            <td><span class="cell-avatar">SS</span></td>
+            <td>Mar 27</td>
+            <td style="color:var(--text3);">People</td>
+            <td>…</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="add-row">
+        <span style="font-size:14px;">+</span> New row
+        <span style="margin-left:auto;font-size:11px;color:var(--text3);">5 of 24 shown · <span style="color:var(--gold);cursor:pointer;">Load all</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 3: COMMAND PALETTE ── -->
+  <div id="palette" class="section">
+    <div class="palette-demo">
+      <div class="palette-backdrop">
+        <div class="palette-kbd">Press <kbd>⌘K</kbd> or <kbd>Ctrl+K</kbd> from anywhere</div>
+        <div class="palette" style="animation: scaleIn 0.15s cubic-bezier(0.4, 0, 0.2, 1) both;">
+          <div class="palette-input-row">
+            <div class="pi">🔍</div>
+            <input class="palette-input" placeholder="Search tasks, team, pages… or run a command" value="ota">
+            <kbd>Esc</kbd>
+          </div>
+          <div class="palette-section-label">Jump to</div>
+          <div class="palette-item selected">
+            <div class="pi-icon gold">📊</div>
+            <div><div class="pi-title">OTA Assessment</div><div class="pi-sub">Page · Assessment</div></div>
+            <div class="pi-kbd">Enter</div>
+          </div>
+          <div class="palette-item">
+            <div class="pi-icon">✅</div>
+            <div><div class="pi-title">OTA channel mix review for Q4</div><div class="pi-sub">Task · Critical · Overdue</div></div>
+          </div>
+          <div class="palette-item">
+            <div class="pi-icon">📄</div>
+            <div><div class="pi-title">OTA Target Review — FY27</div><div class="pi-sub">Page · Q4 Strategy</div></div>
+          </div>
+          <div class="palette-section-label">Actions</div>
+          <div class="palette-item">
+            <div class="pi-icon">+</div>
+            <div><div class="pi-title">Create task "ota…"</div><div class="pi-sub">New task in current context</div></div>
+            <div class="pi-kbd">⌘↵</div>
+          </div>
+          <div class="palette-item">
+            <div class="pi-icon">🔄</div>
+            <div><div class="pi-title">Sync Sheets</div><div class="pi-sub">Pull latest metrics from Google Sheets</div></div>
+          </div>
+          <div class="palette-item">
+            <div class="pi-icon">📧</div>
+            <div><div class="pi-title">Generate & Send Weekly Report</div><div class="pi-sub">Creates report + emails via Resend</div></div>
+          </div>
+          <div class="palette-footer">
+            <div class="palette-footer-item"><kbd>↑↓</kbd> navigate</div>
+            <div class="palette-footer-item"><kbd>↵</kbd> open</div>
+            <div class="palette-footer-item"><kbd>⌘↵</kbd> create</div>
+            <div class="palette-footer-item"><kbd>Esc</kbd> close</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 4: ANIMATIONS ── -->
+  <div id="animations" class="section">
+    <div class="anim-grid">
+
+      <div class="anim-card">
+        <div class="anim-title">Hover reveals on task cards</div>
+        <div class="anim-sub">Actions fade in + slide on hover. Card lifts with shadow. All at 200ms cubic-bezier.</div>
+        <div class="anim-demo">
+          <div class="hover-card" style="margin-bottom:6px;">
+            <div class="hc-title">OTA channel mix review</div>
+            <div class="hc-meta">
+              <span class="hc-tag">Critical</span>
+              <span class="hc-action">Open →</span>
+            </div>
+          </div>
+          <div class="hover-card">
+            <div class="hc-title">Goa region forecast update</div>
+            <div class="hc-meta">
+              <span class="hc-tag" style="background:rgba(59,130,246,0.1);color:#93C5FD;">Medium</span>
+              <span class="hc-action">Open →</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="anim-card">
+        <div class="anim-title">Slide-in task detail panel</div>
+        <div class="anim-sub">Right-side panel slides in at 300ms. Keeps board visible behind. Click outside to dismiss.</div>
+        <div class="anim-demo">
+          <div class="panel-demo">
+            <div class="panel-main">
+              <div class="panel-main-title">KANBAN BOARD</div>
+              <div class="panel-row" style="width:80%"></div>
+              <div class="panel-row" style="width:60%"></div>
+              <div class="panel-row" style="width:90%"></div>
+            </div>
+            <div class="panel-side">
+              <div class="panel-side-title">Task detail</div>
+              <div class="panel-side-row"></div>
+              <div class="panel-side-row s"></div>
+              <div class="panel-side-row"></div>
+              <div class="panel-side-row s"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="anim-card">
+        <div class="anim-title">Checkbox with bounce</div>
+        <div class="anim-sub">Gold fill with scale bounce on check. Strikethrough animates on text simultaneously.</div>
+        <div class="anim-demo">
+          <div class="check-demo">
+            <div class="anim-check checked" id="c1" onclick="toggleCheck('c1','ct1')"></div>
+            <div class="check-text done" id="ct1">OTA targets uploaded</div>
+          </div>
+          <div style="height:8px;"></div>
+          <div class="check-demo">
+            <div class="anim-check" id="c2" onclick="toggleCheck('c2','ct2')"></div>
+            <div class="check-text" id="ct2">Click to check this off</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="anim-card">
+        <div class="anim-title">Progress bar animation</div>
+        <div class="anim-sub">Bars fill on mount with delay. Gradient gold for CI Revenue, blue for OTA. Eased cubic.</div>
+        <div class="anim-demo">
+          <div class="prog-demo" style="margin-bottom:14px;">
+            <div class="prog-label"><span>Check-in Revenue</span><span style="color:var(--gold);">9.9%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:9.9%;animation:none;transition:width 0s;"></div></div>
+          </div>
+          <div class="prog-demo">
+            <div class="prog-label"><span>OTA Gross GMV</span><span style="color:#60A5FA;">73%</span></div>
+            <div class="prog-bar"><div class="prog-fill" style="width:73%;background:linear-gradient(90deg,#3B82F6,#60A5FA);animation:none;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="anim-card">
+        <div class="anim-title">Tooltips on demand</div>
+        <div class="anim-sub">Fade + slide up at 150ms. Appear on hover with a small arrow pointer. Never block content.</div>
+        <div class="anim-demo">
+          <div class="tooltip-demo">
+            <div class="tt-wrap">
+              <div class="tt-btn">⌘K</div>
+              <div class="tt">Open command palette</div>
+            </div>
+            <div class="tt-wrap">
+              <div class="tt-btn">🔔 3</div>
+              <div class="tt">3 unread notifications</div>
+            </div>
+            <div class="tt-wrap">
+              <div class="tt-btn">Sync Sheets</div>
+              <div class="tt">Last synced: 6 hours ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="anim-card">
+        <div class="anim-title">Drag-and-drop Kanban</div>
+        <div class="anim-sub">Cards rotate slightly while dragging. Drop zone glows gold when active. Snap back on cancel.</div>
+        <div class="anim-demo">
+          <div class="drag-demo">
+            <div class="drag-col">
+              <div class="drag-col-label">To Do</div>
+              <div class="drag-chip">OTA review Q4</div>
+              <div class="drag-chip dragging">Goa forecast ↔</div>
+            </div>
+            <div class="drag-col">
+              <div class="drag-col-label">In Progress</div>
+              <div class="drag-chip">Weekly report</div>
+              <div class="drop-zone active">Drop here ↓</div>
+            </div>
+            <div class="drag-col">
+              <div class="drag-col-label">Done</div>
+              <div class="drag-chip" style="opacity:0.5;">ARR analysis</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div style="position:fixed;bottom:16px;right:16px;background:#C9A84C;color:#07080C;font-size:11px;font-weight:700;padding:7px 14px;border-radius:8px;letter-spacing:0.05em;z-index:999;">
+  NOTION ELEMENTS · INTERACTIVE
+</div>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+function toggleSlash() {
+  const m = document.getElementById('slash-menu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function toggleCheck(checkId, textId) {
+  const check = document.getElementById(checkId);
+  const text = document.getElementById(textId);
+  check.classList.toggle('checked');
+  text.classList.toggle('done');
+}
+</script>
+</body>
+</html>
