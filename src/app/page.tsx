@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { TextShimmer } from '@/components/ui/text-shimmer'
 import { BentoGrid, BentoCard } from '@/components/ui/bento-grid'
 import { isOverdue, isDueToday, isDueSoon, formatDate } from '@/lib/utils'
+import { formatDistanceToNow } from 'date-fns'
 import { formatCrore } from '@/lib/format'
 import { RefreshCw, Zap, Mail, ChevronDown, ChevronUp, BarChart3, TrendingUp, Hotel, Users, FileText, BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
@@ -36,6 +37,7 @@ export default function DashboardPage() {
   const { members, isLoading: teamLoading } = useTeam()
   const { data: metricsData, isLoading: numbersLoading } = useSWR('/api/metrics', fetcher)
   const { data: targetsData } = useSWR('/api/targets', fetcher)
+  const { data: activityData } = useSWR('/api/activity', fetcher)
   const { cadences, isLoading: cadencesLoading } = useCadences()
 
   const [automationOpen, setAutomationOpen] = useState(false)
@@ -371,7 +373,38 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ── 5. This Week's Cadences ──────────────────────────────────────── */}
+      {/* ── 5. Recent Activity ───────────────────────────────────────────── */}
+      <section>
+        <div className="bg-card rounded-xl p-6 shadow-[var(--shadow-glass)]">
+          <h2 className="text-lg font-bold text-foreground mb-4">Recent Activity</h2>
+          <div className="space-y-3">
+            {(activityData?.activities ?? []).slice(0, 10).map((a: {
+              id: string; type: string; note?: string; authorName?: string;
+              task?: { title: string; id: string }; createdAt: string
+            }) => (
+              <div key={a.id} className="flex gap-3 items-start">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground truncate">
+                    {a.type === 'comment'
+                      ? <><span className="font-semibold">{a.authorName ?? 'Someone'}</span>{' commented on '}<span className="text-primary">{a.task?.title}</span></>
+                      : <><span className="text-primary">{a.task?.title ?? 'Task'}</span>{' — '}{a.type.replace(/_/g, ' ')}</>
+                    }
+                  </p>
+                  <p className="text-[11px] text-[var(--outline)]">
+                    {formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {!(activityData?.activities?.length) && (
+              <p className="text-sm text-[var(--outline)]">No activity yet.</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6. This Week's Cadences ──────────────────────────────────────── */}
       <section>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
@@ -414,7 +447,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ── 6. Automation Status (Failsafe Panel) ────────────────────────── */}
+      {/* ── 7. Automation Status (Failsafe Panel) ────────────────────────── */}
       <section>
         <button
           className="w-full flex items-center justify-between bg-card rounded-xl shadow-[var(--shadow-glass)] px-6 py-4 text-left hover:bg-[var(--surface-container-low)] transition-colors"

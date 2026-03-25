@@ -42,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { TaskComments } from '@/components/ui/task-comments'
 
 import { cn, PRIORITIES, STATUS_LABELS, TASK_STATUSES, formatDate, formatRelative, isOverdue, isDueToday } from '@/lib/utils'
 import type { ActivityType, Priority, TaskStatus } from '@/types'
@@ -450,6 +451,11 @@ export default function TaskDetailPage() {
               <Trash2 className="h-4 w-4" />
               Delete Task
             </Button>
+          </div>
+
+          {/* Comments */}
+          <div className="mt-6 pt-6 border-t border-[var(--outline-variant)]/15">
+            <TaskComments taskId={t.id} />
           </div>
         </div>
 
