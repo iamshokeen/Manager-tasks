@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
+import { useSession } from 'next-auth/react'
 import { useTasks } from '@/hooks/use-tasks'
 import { useTeam } from '@/hooks/use-team'
 import { useCadences } from '@/hooks/use-cadences'
@@ -11,11 +12,10 @@ import { PriorityBadge } from '@/components/ui/priority-badge'
 import { MemberAvatar } from '@/components/ui/member-avatar'
 import { Button } from '@/components/ui/button'
 import { TextShimmer } from '@/components/ui/text-shimmer'
-import { BentoGrid, BentoCard } from '@/components/ui/bento-grid'
 import { isOverdue, isDueToday, isDueSoon, formatDate } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
 import { formatCrore } from '@/lib/format'
-import { RefreshCw, Zap, Mail, ChevronDown, ChevronUp, BarChart3, TrendingUp, Hotel, Users, FileText, BookOpen } from 'lucide-react'
+import { RefreshCw, Zap, Mail, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import { TaskCalendarSection } from '@/components/dashboard/task-calendar-section'
 
@@ -23,26 +23,22 @@ const fetcher = (url: string) => fetch(url).then(r => r.json())
 
 interface Member { id: string; name: string; role: string; department: string; status: string }
 
-const BENTO_FEATURES = [
-  { name: 'Metrics', description: 'FY27 KPIs — funnel, revenue, OTA attainment', href: '/metrics', cta: 'View metrics', Icon: BarChart3, className: 'col-span-1' },
-  { name: 'OTA Assessment', description: 'Gross GMV, channel mix, region split vs targets', href: '/assessment/ota', cta: 'View OTA', Icon: TrendingUp, className: 'col-span-1' },
-  { name: 'Check-in GMV', description: 'CI revenue, ARR, weekday vs weekend breakdown', href: '/assessment/checkin', cta: 'View check-in', Icon: Hotel, className: 'col-span-1' },
-  { name: 'Team', description: 'Member profiles, roles, and open task counts', href: '/team', cta: 'View team', Icon: Users, className: 'col-span-1' },
-  { name: 'Reports', description: 'Weekly snapshots and stakeholder summaries', href: '/reports', cta: 'View reports', Icon: FileText, className: 'col-span-1' },
-  { name: 'Playbook', description: 'SOPs, onboarding guides, and team references', href: '/playbook', cta: 'View playbook', Icon: BookOpen, className: 'col-span-1' },
-]
-
-
 const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
 
 export default function DashboardPage() {
+  const { data: session } = useSession()
   const { tasks, isLoading: tasksLoading } = useTasks()
+  const myName = session?.user?.name ?? undefined
+  const { tasks: assignedByMeTasks, isLoading: assignedByMeLoading } = useTasks(
+    myName ? { assignedByName: myName } : {}
+  )
   const { members, isLoading: teamLoading } = useTeam()
   const { data: metricsData, isLoading: numbersLoading } = useSWR('/api/metrics', fetcher)
   const { data: targetsData } = useSWR('/api/targets', fetcher)
   const { data: activityData } = useSWR('/api/activity', fetcher)
   const { cadences, isLoading: cadencesLoading } = useCadences()
 
+  const [priorityTab, setPriorityTab] = useState<'all' | 'assigned_by_me'>('all')
   const [automationOpen, setAutomationOpen] = useState(false)
   const [syncingSheets, setSyncingSheets] = useState(false)
   const [generatingPrep, setGeneratingPrep] = useState(false)
@@ -71,7 +67,13 @@ export default function DashboardPage() {
   const OTA_TARGET: number = targetsData?.targets?.ota?.ytd?.revenue ?? 34_319_608
 
   // ── Priority tasks (top 5 open by priority) ────────────────────────────
-  const priorityTasks = [...openTasks]
+  const assignedByMeOpen = (assignedByMeTasks as Array<{ status: string; dueDate: string | null; priority: string; assigneeId?: string | null }>)
+    .filter(t => t.status !== 'done')
+
+  const activePriorityPool = priorityTab === 'assigned_by_me' ? assignedByMeOpen : openTasks
+  const activeLoading = priorityTab === 'assigned_by_me' ? assignedByMeLoading : tasksLoading
+
+  const priorityTasks = [...activePriorityPool]
     .sort((a: { priority: string; dueDate?: string | null }, b: { priority: string; dueDate?: string | null }) => {
       const pa = PRIORITY_ORDER[a.priority] ?? 99
       const pb = PRIORITY_ORDER[b.priority] ?? 99
@@ -169,15 +171,6 @@ export default function DashboardPage() {
         </TextShimmer>
         <p className="text-muted-foreground text-sm mt-1">Lohono Revenue &amp; Team Dashboard</p>
       </div>
-
-      {/* ── 0. Quick Nav ─────────────────────────────────────────────────── */}
-      <section>
-        <BentoGrid className="grid-cols-3 auto-rows-[9rem]">
-          {BENTO_FEATURES.map((f) => (
-            <BentoCard key={f.href} {...f} background={null} />
-          ))}
-        </BentoGrid>
-      </section>
 
       {/* ── 1. Stat Row ──────────────────────────────────────────────────── */}
       <section>
@@ -289,12 +282,28 @@ export default function DashboardPage() {
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
             Priority Tasks
           </h2>
-          <Link href="/tasks" className="text-xs text-primary hover:underline">
-            View all
-          </Link>
+          <div className="flex items-center gap-3">
+            <div className="flex rounded-lg border border-border overflow-hidden">
+              <button
+                onClick={() => setPriorityTab('all')}
+                className={`px-3 py-1 text-xs font-medium transition-colors ${priorityTab === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                All tasks
+              </button>
+              <button
+                onClick={() => setPriorityTab('assigned_by_me')}
+                className={`px-3 py-1 text-xs font-medium transition-colors ${priorityTab === 'assigned_by_me' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                Assigned by me
+              </button>
+            </div>
+            <Link href="/tasks" className="text-xs text-primary hover:underline">
+              View all
+            </Link>
+          </div>
         </div>
         <div className="bg-card rounded-xl p-6 shadow-[var(--shadow-glass)]">
-          {tasksLoading ? (
+          {activeLoading ? (
             <div className="p-4 text-sm text-muted-foreground">Loading tasks…</div>
           ) : priorityTasks.length === 0 ? (
             <div className="p-4 text-sm text-muted-foreground">No open tasks. Nice work!</div>

@@ -29,4 +29,5 @@ export interface TaskFilters {
   projectId?: string
   stakeholderId?: string
   search?: string
+  assignedByName?: string
 }

@@ -13,6 +13,8 @@ export async function getTasks(filters: TaskFilters = {}) {
   if (filters.projectId) where.projectId = filters.projectId
   if (filters.stakeholderId) where.stakeholderId = filters.stakeholderId
   if (filters.search) where.title = { contains: filters.search, mode: 'insensitive' }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (filters.assignedByName) (where as any).assignedByName = filters.assignedByName
 
   return prisma.task.findMany({
     where,

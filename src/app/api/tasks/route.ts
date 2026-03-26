@@ -14,6 +14,7 @@ export async function GET(req: Request) {
     projectId: searchParams.get('projectId') ?? undefined,
     stakeholderId: searchParams.get('stakeholderId') ?? undefined,
     search: searchParams.get('search') ?? undefined,
+    assignedByName: searchParams.get('assignedByName') ?? undefined,
   }
   try {
     const tasks = await getTasks(filters)

@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { useProjects } from '@/hooks/use-projects'
 import { useTeam } from '@/hooks/use-team'
 import { useStakeholders } from '@/hooks/use-stakeholders'
+import { useDepartments } from '@/hooks/use-departments'
 import { PageHeader } from '@/components/ui/page-header'
 import { DepartmentBadge } from '@/components/ui/department-badge'
 import { MemberAvatar } from '@/components/ui/member-avatar'
@@ -30,7 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-import { cn, DEPARTMENTS, formatDate } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 
 const STAGES = [
   { key: 'planning', label: 'Planning', color: 'border-t-[#6B7280]' },
@@ -146,6 +147,7 @@ export default function ProjectsPage() {
   const { projects, mutate, isLoading } = useProjects()
   const { members } = useTeam()
   const { stakeholders } = useStakeholders()
+  const { departments } = useDepartments()
 
   function openCreateDialog(stage: Stage) {
     setDefaultStage(stage)
@@ -166,7 +168,7 @@ export default function ProjectsPage() {
         stage: form.stage,
       }
       if (form.department) body.department = form.department
-      if (form.ownerId) body.ownerId = form.ownerId
+      if (form.ownerId && form.ownerId !== '__self__') body.ownerId = form.ownerId
       if (form.stakeholderId) body.stakeholderId = form.stakeholderId
       if (form.dueDate) body.dueDate = new Date(form.dueDate).toISOString()
       if (form.description) body.description = form.description
@@ -284,7 +286,7 @@ export default function ProjectsPage() {
                     <SelectValue placeholder="Select…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DEPARTMENTS.map(d => (
+                    {departments.map(d => (
                       <SelectItem key={d} value={d}>{d}</SelectItem>
                     ))}
                   </SelectContent>
@@ -310,7 +312,7 @@ export default function ProjectsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Owner</label>
+                <label className="text-xs font-medium text-muted-foreground">Assigned To / Owner</label>
                 <Select
                   value={form.ownerId}
                   onValueChange={v => setForm(f => ({ ...f, ownerId: v ?? '' }))}
@@ -319,8 +321,9 @@ export default function ProjectsPage() {
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="__self__">— Me (Saksham) —</SelectItem>
                     {(members as Array<{ id: string; name: string }>).map(m => (
-                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                      <SelectItem key={`${m.id}-${m.name}`} value={m.id}>{m.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

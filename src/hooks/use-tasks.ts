@@ -13,6 +13,7 @@ export function useTasks(filters: TaskFilters = {}) {
   if (filters.projectId) params.set('projectId', filters.projectId)
   if (filters.stakeholderId) params.set('stakeholderId', filters.stakeholderId)
   if (filters.search) params.set('search', filters.search)
+  if (filters.assignedByName) params.set('assignedByName', filters.assignedByName)
 
   const query = params.toString()
   const { data, error, mutate, isLoading } = useSWR(`/api/tasks${query ? `?${query}` : ''}`, fetcher)

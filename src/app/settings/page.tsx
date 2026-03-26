@@ -3,10 +3,12 @@ import { useState } from 'react'
 import useSWR from 'swr'
 import { PageHeader } from '@/components/ui/page-header'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/utils'
-import { RefreshCw, Download, Send } from 'lucide-react'
+import { RefreshCw, Download, Send, X, Plus } from 'lucide-react'
 import { ThemeSelector } from '@/components/ui/theme-selector'
+import { useDepartments } from '@/hooks/use-departments'
 
 function TargetsUpload() {
   const [loading, setLoading] = useState(false)
@@ -55,6 +57,91 @@ interface NumbersData {
 }
 
 const fetcher = (url: string) => fetch(url).then(r => r.json()).then(r => r.data)
+
+function DepartmentsCard() {
+  const { departments, mutate } = useDepartments()
+  const [newDept, setNewDept] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function handleAdd() {
+    const trimmed = newDept.trim()
+    if (!trimmed || departments.includes(trimmed)) return
+    const updated = [...departments, trimmed]
+    setSaving(true)
+    try {
+      await fetch('/api/settings/departments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ departments: updated }),
+      })
+      await mutate()
+      setNewDept('')
+      toast.success('Department added')
+    } catch {
+      toast.error('Failed to save')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleRemove(dept: string) {
+    const updated = departments.filter(d => d !== dept)
+    setSaving(true)
+    try {
+      await fetch('/api/settings/departments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ departments: updated }),
+      })
+      await mutate()
+      toast.success('Department removed')
+    } catch {
+      toast.error('Failed to save')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-5 mb-4">
+      <h2 className="text-sm font-semibold text-foreground mb-1 uppercase tracking-wider">
+        Departments
+      </h2>
+      <p className="text-xs text-muted-foreground mb-4">Manage department tags used across tasks and team members</p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {departments.map(dept => (
+          <span
+            key={dept}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-foreground border border-border"
+          >
+            {dept}
+            <button
+              onClick={() => handleRemove(dept)}
+              disabled={saving}
+              className="ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={`Remove ${dept}`}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <Input
+          placeholder="New department name…"
+          value={newDept}
+          onChange={e => setNewDept(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAdd() } }}
+          className="max-w-xs"
+        />
+        <Button size="sm" onClick={handleAdd} disabled={saving || !newDept.trim()}>
+          <Plus className="h-4 w-4" />
+          Add
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 export default function SettingsPage() {
   const { data: numbersData, mutate: mutateNumbers } = useSWR<NumbersData>('/api/numbers', fetcher)
@@ -181,6 +268,9 @@ export default function SettingsPage() {
         <p className="text-xs text-muted-foreground mb-5">Choose a theme for the interface</p>
         <ThemeSelector />
       </div>
+
+      {/* Departments */}
+      <DepartmentsCard />
 
       {/* Revenue Targets Upload */}
       <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-5 mb-4">

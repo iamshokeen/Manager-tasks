@@ -6,6 +6,7 @@ import { Plus, Users, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useTeam } from '@/hooks/use-team'
+import { useDepartments } from '@/hooks/use-departments'
 import { PageHeader } from '@/components/ui/page-header'
 import { MemberAvatar } from '@/components/ui/member-avatar'
 import { DepartmentBadge } from '@/components/ui/department-badge'
@@ -28,7 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-import { cn, DEPARTMENTS, DELEGATION_LEVELS } from '@/lib/utils'
+import { cn, DELEGATION_LEVELS } from '@/lib/utils'
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as const
 
@@ -147,6 +148,7 @@ function MemberCard({ member, onClick }: { member: MemberSummary; onClick: () =>
 export default function TeamPage() {
   const router = useRouter()
   const { members, mutate, isLoading } = useTeam()
+  const { departments } = useDepartments()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState<AddMemberForm>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
@@ -272,7 +274,7 @@ export default function TeamPage() {
                     <SelectValue placeholder="Select…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DEPARTMENTS.map(d => (
+                    {departments.map(d => (
                       <SelectItem key={d} value={d}>{d}</SelectItem>
                     ))}
                   </SelectContent>

@@ -26,6 +26,7 @@ import { CSS } from '@dnd-kit/utilities'
 
 import { useTasks } from '@/hooks/use-tasks'
 import { useTeam } from '@/hooks/use-team'
+import { useDepartments } from '@/hooks/use-departments'
 import { PageHeader } from '@/components/ui/page-header'
 import { PriorityBadge } from '@/components/ui/priority-badge'
 import { DepartmentBadge } from '@/components/ui/department-badge'
@@ -50,7 +51,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-import { cn, DEPARTMENTS, PRIORITIES, formatDate, isOverdue, isDueToday } from '@/lib/utils'
+import { cn, PRIORITIES, formatDate, isOverdue, isDueToday } from '@/lib/utils'
 import type { TaskFilters } from '@/types'
 
 // ---------------------------------------------------------------------------
@@ -240,7 +241,8 @@ export default function TasksPage() {
   if (assignedToMe && myTeamMemberId) filters.assigneeId = myTeamMemberId
 
   const { tasks, mutate, isLoading } = useTasks(filters)
-  const { members } = useTeam()
+  const { members, mutate: mutateTeam } = useTeam()
+  const { departments } = useDepartments()
 
   // Group tasks by column
   const columns: Record<ColumnKey, TaskShape[]> = {
@@ -313,14 +315,15 @@ export default function TasksPage() {
     }
     setSubmitting(true)
     try {
+      const isSelf = form.assigneeId === '__self__'
       const body: Record<string, unknown> = {
         title: form.title.trim(),
         priority: form.priority || 'medium',
-        isSelfTask: form.isSelfTask,
+        isSelfTask: isSelf ? true : form.isSelfTask,
         assignedByName: session?.user?.name ?? 'Saksham',
       }
       if (form.department) body.department = form.department
-      if (form.assigneeId) body.assigneeId = form.assigneeId
+      if (!isSelf && form.assigneeId) body.assigneeId = form.assigneeId
       if (form.dueDate) body.dueDate = new Date(form.dueDate).toISOString()
       if (form.description) body.description = form.description
 
@@ -331,6 +334,7 @@ export default function TasksPage() {
       })
       if (!res.ok) throw new Error('Failed to create task')
       await mutate()
+      mutateTeam()
       setDialogOpen(false)
       setForm(EMPTY_FORM)
       toast.success('Task created')
@@ -373,7 +377,7 @@ export default function TasksPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All departments</SelectItem>
-            {DEPARTMENTS.map(d => (
+            {departments.map(d => (
               <SelectItem key={d} value={d}>{d}</SelectItem>
             ))}
           </SelectContent>
@@ -476,7 +480,7 @@ export default function TasksPage() {
                     <SelectValue placeholder="Select…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DEPARTMENTS.map(d => (
+                    {departments.map(d => (
                       <SelectItem key={d} value={d}>{d}</SelectItem>
                     ))}
                   </SelectContent>
@@ -499,14 +503,15 @@ export default function TasksPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Assignee</label>
+                <label className="text-xs font-medium text-muted-foreground">Assigned To</label>
                 <Select value={form.assigneeId} onValueChange={(v: string | null) => setForm(f => ({ ...f, assigneeId: v ?? '' }))}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="__self__">— Me (Saksham) —</SelectItem>
                     {(members as Array<{ id: string; name: string }>).map(m => (
-                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                      <SelectItem key={`${m.id}-${m.name}`} value={m.id}>{m.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
