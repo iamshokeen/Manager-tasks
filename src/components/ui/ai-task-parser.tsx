@@ -212,7 +212,7 @@ export function AiTaskParser({ open, onClose, onTasksCreated, departments }: AiT
                         <div className="grid grid-cols-3 gap-3">
                           <div className="flex flex-col gap-1">
                             <label className="text-xs font-medium text-muted-foreground">Priority</label>
-                            <Select value={task.priority} onValueChange={v => updateTask(idx, { priority: v })}>
+                            <Select value={task.priority} onValueChange={v => updateTask(idx, { priority: v ?? task.priority })}>
                               <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 {PRIORITIES.map(p => <SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>)}
@@ -221,7 +221,7 @@ export function AiTaskParser({ open, onClose, onTasksCreated, departments }: AiT
                           </div>
                           <div className="flex flex-col gap-1">
                             <label className="text-xs font-medium text-muted-foreground">Department</label>
-                            <Select value={task.department} onValueChange={v => updateTask(idx, { department: v })}>
+                            <Select value={task.department} onValueChange={v => updateTask(idx, { department: v ?? task.department })}>
                               <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
