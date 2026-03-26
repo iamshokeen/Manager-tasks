@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Plus, Search, Calendar, ClipboardList, User, Archive } from 'lucide-react'
+import { Plus, Search, Calendar, ClipboardList, User, Archive, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
 
@@ -53,6 +53,7 @@ import {
 import { cn, PRIORITIES, formatDate, isOverdue, isDueToday } from '@/lib/utils'
 import type { TaskFilters } from '@/types'
 import { TaskDetailSheet } from '@/components/ui/task-detail-sheet'
+import { AiTaskParser } from '@/components/ui/ai-task-parser'
 
 // ---------------------------------------------------------------------------
 // Kanban column definitions
@@ -279,6 +280,7 @@ export default function TasksPage() {
   const [deptFilter, setDeptFilter] = useState<string>('all')
   const [assignedToMe, setAssignedToMe] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [aiParserOpen, setAiParserOpen] = useState(false)
   const [form, setForm] = useState<CreateTaskForm>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
@@ -422,10 +424,16 @@ export default function TasksPage() {
       <PageHeader
         title="Tasks"
         action={
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4" />
-            New Task
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setAiParserOpen(true)} className="gap-1.5">
+              <Sparkles className="h-4 w-4 text-primary" />
+              AI Parse
+            </Button>
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus className="h-4 w-4" />
+              New Task
+            </Button>
+          </div>
         }
       />
 
@@ -542,6 +550,14 @@ export default function TasksPage() {
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         onTaskUpdated={() => mutate()}
+      />
+
+      {/* AI Task Parser */}
+      <AiTaskParser
+        open={aiParserOpen}
+        onClose={() => setAiParserOpen(false)}
+        onTasksCreated={() => { mutate(); mutateTeam() }}
+        departments={departments}
       />
 
       {/* Create Task Dialog */}
