@@ -6,9 +6,23 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/utils'
-import { RefreshCw, Download, Send, X, Plus } from 'lucide-react'
+import { RefreshCw, Download, Send, X, Plus, Users, ShieldCheck } from 'lucide-react'
 import { ThemeSelector } from '@/components/ui/theme-selector'
 import { useDepartments } from '@/hooks/use-departments'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 function TargetsUpload() {
   const [loading, setLoading] = useState(false)
@@ -143,6 +157,216 @@ function DepartmentsCard() {
   )
 }
 
+interface UserRecord {
+  id: string
+  email: string
+  name: string | null
+  role: string
+  teamMemberId: string | null
+  teamMember: { name: string } | null
+}
+
+interface TeamMember {
+  id: string
+  name: string
+}
+
+interface AddUserForm {
+  name: string
+  email: string
+  password: string
+  role: 'MANAGER' | 'JUNIOR'
+  teamMemberId: string
+}
+
+const EMPTY_USER_FORM: AddUserForm = {
+  name: '',
+  email: '',
+  password: '',
+  role: 'JUNIOR',
+  teamMemberId: '',
+}
+
+function TeamAccessCard() {
+  const { data: users, mutate: mutateUsers } = useSWR<UserRecord[]>('/api/users', (url: string) =>
+    fetch(url).then(r => r.json()).then(r => r.data ?? [])
+  )
+  const { data: membersData } = useSWR<TeamMember[]>('/api/team', (url: string) =>
+    fetch(url).then(r => r.json()).then(r => r.data ?? [])
+  )
+  const members: TeamMember[] = membersData ?? []
+
+  const [addOpen, setAddOpen] = useState(false)
+  const [form, setForm] = useState<AddUserForm>(EMPTY_USER_FORM)
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
+      toast.error('Name, email, and password are required')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const body: Record<string, unknown> = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role: form.role,
+      }
+      if (form.teamMemberId) body.teamMemberId = form.teamMemberId
+
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Failed to create user')
+      await mutateUsers()
+      setAddOpen(false)
+      setForm(EMPTY_USER_FORM)
+      toast.success('User created')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create user')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-5 mb-4">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+          <Users className="h-4 w-4" />
+          Team Access
+        </h2>
+        <Button size="sm" onClick={() => setAddOpen(true)} className="gap-1.5">
+          <Plus className="h-3.5 w-3.5" />
+          Add User
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground mb-4">Manage user accounts and roles for the command center</p>
+
+      <div className="flex flex-col gap-2">
+        {!users || users.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No users found.</p>
+        ) : (
+          users.map(user => (
+            <div
+              key={user.id}
+              className="flex items-center justify-between gap-3 px-3 py-2.5 border border-border rounded-lg"
+            >
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-sm font-medium text-foreground truncate">
+                  {user.name ?? '—'}
+                </span>
+                <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                {user.teamMember && (
+                  <span className="text-xs text-muted-foreground">
+                    Linked: {user.teamMember.name}
+                  </span>
+                )}
+              </div>
+              <span
+                className={
+                  user.role === 'MANAGER'
+                    ? 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800'
+                    : 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-700'
+                }
+              >
+                <ShieldCheck className="h-3 w-3" />
+                {user.role}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Add User Dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="bg-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add User</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Name *</label>
+              <Input
+                placeholder="Full name"
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Email *</label>
+              <Input
+                type="email"
+                placeholder="user@example.com"
+                value={form.email}
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Password *</label>
+              <Input
+                type="password"
+                placeholder="Minimum 8 characters"
+                value={form.password}
+                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Role</label>
+                <Select
+                  value={form.role}
+                  onValueChange={v => setForm(f => ({ ...f, role: (v as 'MANAGER' | 'JUNIOR') ?? 'JUNIOR' }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MANAGER">Manager</SelectItem>
+                    <SelectItem value="JUNIOR">Junior</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Team Member</label>
+                <Select
+                  value={form.teamMemberId}
+                  onValueChange={v => setForm(f => ({ ...f, teamMemberId: v ?? '' }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {members.map(m => (
+                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setAddOpen(false)} disabled={submitting}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? 'Creating…' : 'Create User'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const { data: numbersData, mutate: mutateNumbers } = useSWR<NumbersData>('/api/numbers', fetcher)
 
@@ -271,6 +495,9 @@ export default function SettingsPage() {
 
       {/* Departments */}
       <DepartmentsCard />
+
+      {/* Team Access */}
+      <TeamAccessCard />
 
       {/* Revenue Targets Upload */}
       <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] p-5 mb-4">

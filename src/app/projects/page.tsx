@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Layers, Calendar } from 'lucide-react'
+import { Plus, Layers, Calendar, Archive, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useProjects } from '@/hooks/use-projects'
@@ -143,6 +143,8 @@ export default function ProjectsPage() {
   const [defaultStage, setDefaultStage] = useState<Stage>('planning')
   const [form, setForm] = useState<CreateProjectForm>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const [reopening, setReopening] = useState<string | null>(null)
 
   const { projects, mutate, isLoading } = useProjects()
   const { members } = useTeam()
@@ -203,13 +205,33 @@ export default function ProjectsPage() {
     }
   })
 
+  const closedProjects = projectsByStage.closed
+
+  async function handleReopen(projectId: string) {
+    setReopening(projectId)
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: 'active' }),
+      })
+      if (!res.ok) throw new Error('Failed to reopen project')
+      await mutate()
+      toast.success('Project reopened as Active')
+    } catch {
+      toast.error('Failed to reopen project')
+    } finally {
+      setReopening(null)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Projects" description="Lifecycle board across all stages" />
 
-      {/* 4-column kanban board */}
-      <div className="grid grid-cols-4 gap-4 flex-1 min-h-0">
-        {STAGES.map(col => {
+      {/* 3-column kanban board (excludes closed — those are in Archive) */}
+      <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
+        {STAGES.filter(col => col.key !== 'closed').map(col => {
           const colProjects = projectsByStage[col.key]
           return (
             <div key={col.key} className="flex flex-col min-h-0">
@@ -256,6 +278,57 @@ export default function ProjectsPage() {
             </div>
           )
         })}
+      </div>
+
+      {/* Archive toggle */}
+      <div className="mt-4 border-t border-border pt-4">
+        <button
+          onClick={() => setArchiveOpen(prev => !prev)}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Archive className="h-4 w-4" />
+          <span>Archive ({closedProjects.length} closed project{closedProjects.length !== 1 ? 's' : ''})</span>
+          {archiveOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+
+        {archiveOpen && (
+          <div className="mt-3 flex flex-col gap-2">
+            {closedProjects.length === 0 ? (
+              <p className="text-xs text-muted-foreground pl-6">No closed projects.</p>
+            ) : (
+              closedProjects.map(project => (
+                <div
+                  key={project.id}
+                  className="flex items-center justify-between gap-3 px-4 py-2.5 bg-card border border-border rounded-lg"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {project.department && <DepartmentBadge department={project.department} />}
+                    <span
+                      className="text-sm text-muted-foreground truncate cursor-pointer hover:text-foreground transition-colors"
+                      onClick={() => router.push(`/projects/${project.id}`)}
+                    >
+                      {project.title}
+                    </span>
+                    {project.dueDate && (
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {formatDate(project.dueDate)}
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleReopen(project.id)}
+                    disabled={reopening === project.id}
+                    className="shrink-0"
+                  >
+                    {reopening === project.id ? 'Reopening…' : 'Reopen'}
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Create Project Dialog */}

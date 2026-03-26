@@ -1,8 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Plus, Search, Calendar, ClipboardList, User } from 'lucide-react'
+import { Plus, Search, Calendar, ClipboardList, User, Archive } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
 
@@ -53,6 +52,7 @@ import {
 
 import { cn, PRIORITIES, formatDate, isOverdue, isDueToday } from '@/lib/utils'
 import type { TaskFilters } from '@/types'
+import { TaskDetailSheet } from '@/components/ui/task-detail-sheet'
 
 // ---------------------------------------------------------------------------
 // Kanban column definitions
@@ -64,6 +64,9 @@ const KANBAN_COLUMNS: Array<{ key: 'todo' | 'in_progress' | 'review' | 'done'; l
   { key: 'review',      label: 'Review',      color: 'border-t-[#F59E0B]', dotColor: '#F59E0B' },
   { key: 'done',        label: 'Done',        color: 'border-t-[#10B981]', dotColor: '#10B981' },
 ]
+
+// Columns shown in the active Kanban board (done is archived separately)
+const ACTIVE_COLUMNS = KANBAN_COLUMNS.filter(c => c.key !== 'done')
 
 type ColumnKey = 'todo' | 'in_progress' | 'review' | 'done'
 
@@ -219,11 +222,57 @@ const EMPTY_FORM: CreateTaskForm = {
 }
 
 // ---------------------------------------------------------------------------
+// ArchiveList — compact list of done tasks
+// ---------------------------------------------------------------------------
+
+interface ArchiveListProps {
+  tasks: TaskShape[]
+  onRestore: (task: TaskShape) => void
+}
+
+function ArchiveList({ tasks, onRestore }: ArchiveListProps) {
+  if (tasks.length === 0) {
+    return <p className="text-sm text-muted-foreground py-3">No completed tasks.</p>
+  }
+  return (
+    <div className="mt-3 space-y-1.5">
+      {tasks.map(task => (
+        <div
+          key={task.id}
+          className="flex items-center gap-3 bg-card border border-border rounded-lg px-3 py-2"
+        >
+          <p className="flex-1 text-sm text-muted-foreground line-through truncate">{task.title}</p>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <PriorityBadge priority={task.priority} />
+            {task.assignee && (
+              <div className="flex items-center gap-1">
+                <MemberAvatar name={task.assignee.name} size="sm" />
+              </div>
+            )}
+            {task.dueDate && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span>{formatDate(task.dueDate)}</span>
+              </div>
+            )}
+            <button
+              onClick={() => onRestore(task)}
+              className="text-xs text-primary hover:underline transition-colors"
+            >
+              Restore
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
 export default function TasksPage() {
-  const router = useRouter()
   const { data: session } = useSession()
 
   const [search, setSearch] = useState('')
@@ -232,6 +281,9 @@ export default function TasksPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState<CreateTaskForm>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [showArchive, setShowArchive] = useState(false)
 
   const myTeamMemberId = (session?.user as { teamMemberId?: string } | undefined)?.teamMemberId
 
@@ -250,6 +302,23 @@ export default function TasksPage() {
     in_progress: (tasks as TaskShape[]).filter(t => t.status === 'in_progress'),
     review:      (tasks as TaskShape[]).filter(t => t.status === 'review'),
     done:        (tasks as TaskShape[]).filter(t => t.status === 'done'),
+  }
+
+  const doneTasks = columns.done
+
+  async function handleRestore(task: TaskShape) {
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'todo' }),
+      })
+      if (!res.ok) throw new Error('Failed to restore task')
+      await mutate()
+      toast.success('Task restored')
+    } catch {
+      toast.error('Failed to restore task')
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -401,8 +470,8 @@ export default function TasksPage() {
         collisionDetection={closestCorners}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-4 gap-4 flex-1 min-h-0">
-          {KANBAN_COLUMNS.map(col => {
+        <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
+          {ACTIVE_COLUMNS.map(col => {
             const colTasks = columns[col.key]
             return (
               <div key={col.key} className="flex flex-col min-h-0">
@@ -443,7 +512,7 @@ export default function TasksPage() {
                         <SortableTaskCard
                           key={task.id}
                           task={task}
-                          onClick={() => router.push(`/tasks/${task.id}`)}
+                          onClick={() => { setSelectedTaskId(task.id); setSheetOpen(true) }}
                         />
                       ))
                     )}
@@ -454,6 +523,26 @@ export default function TasksPage() {
           })}
         </div>
       </DndContext>
+
+      {/* Archive bar */}
+      <div className="mt-4 pt-4 border-t border-border">
+        <button
+          onClick={() => setShowArchive(v => !v)}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Archive className="h-4 w-4" />
+          Archive ({doneTasks.length} completed tasks) {showArchive ? '▲' : '▼'}
+        </button>
+        {showArchive && <ArchiveList tasks={doneTasks} onRestore={handleRestore} />}
+      </div>
+
+      {/* Task Detail Sheet */}
+      <TaskDetailSheet
+        taskId={selectedTaskId}
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onTaskUpdated={() => mutate()}
+      />
 
       {/* Create Task Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

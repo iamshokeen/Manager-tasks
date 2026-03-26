@@ -4,19 +4,15 @@ import React, { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { ArrowLeft, Plus, Trash2, Calendar } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
 import { useProject } from '@/hooks/use-projects'
 import { useTeam } from '@/hooks/use-team'
-import { PageHeader } from '@/components/ui/page-header'
-import { DepartmentBadge } from '@/components/ui/department-badge'
-import { MemberAvatar } from '@/components/ui/member-avatar'
-import { PriorityBadge } from '@/components/ui/priority-badge'
-import { StatusBadge } from '@/components/ui/status-badge'
-import { EmptyState } from '@/components/ui/empty-state'
+import { ProjectDetailView } from '@/components/ui/project-detail-view'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -31,22 +27,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { formatDate, PRIORITIES } from '@/lib/utils'
+import { PRIORITIES } from '@/lib/utils'
 
 const STAGE_LABELS: Record<string, string> = {
   planning: 'Planning',
   active: 'Active',
   review: 'Review',
   closed: 'Closed',
-}
-
-interface TaskRow {
-  id: string
-  title: string
-  status: string
-  priority: string
-  dueDate?: string | null
-  assignee?: { id: string; name: string } | null
 }
 
 interface AddTaskForm {
@@ -63,6 +50,13 @@ const EMPTY_TASK_FORM: AddTaskForm = {
   dueDate: '',
 }
 
+interface EditProjectForm {
+  title: string
+  description: string
+  stage: string
+  dueDate: string
+}
+
 export default function ProjectDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -71,30 +65,64 @@ export default function ProjectDetailPage() {
   const { project, mutate, isLoading } = useProject(id)
   const { members } = useTeam()
 
+  // Edit dialog state
+  const [editOpen, setEditOpen] = useState(false)
+  const [editForm, setEditForm] = useState<EditProjectForm>({
+    title: '',
+    description: '',
+    stage: 'planning',
+    dueDate: '',
+  })
+  const [editSubmitting, setEditSubmitting] = useState(false)
+
+  // Add task dialog state
   const [taskDialogOpen, setTaskDialogOpen] = useState(false)
   const [taskForm, setTaskForm] = useState<AddTaskForm>(EMPTY_TASK_FORM)
   const [taskSubmitting, setTaskSubmitting] = useState(false)
 
+  // Delete state
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  const [stageChanging, setStageChanging] = useState(false)
+  function openEditDialog() {
+    if (!project) return
+    setEditForm({
+      title: project.title,
+      description: project.description ?? '',
+      stage: project.stage,
+      dueDate: project.dueDate ? project.dueDate.split('T')[0] : '',
+    })
+    setEditOpen(true)
+  }
 
-  async function handleStageChange(newStage: string) {
-    setStageChanging(true)
+  async function handleEditSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editForm.title.trim()) {
+      toast.error('Title is required')
+      return
+    }
+    setEditSubmitting(true)
     try {
+      const body: Record<string, unknown> = {
+        title: editForm.title.trim(),
+        stage: editForm.stage,
+      }
+      if (editForm.description) body.description = editForm.description
+      if (editForm.dueDate) body.dueDate = new Date(editForm.dueDate).toISOString()
+
       const res = await fetch(`/api/projects/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stage: newStage }),
+        body: JSON.stringify(body),
       })
-      if (!res.ok) throw new Error('Failed to update stage')
+      if (!res.ok) throw new Error('Failed to update project')
       await mutate()
-      toast.success('Stage updated')
+      setEditOpen(false)
+      toast.success('Project updated')
     } catch {
-      toast.error('Failed to update stage')
+      toast.error('Failed to update project')
     } finally {
-      setStageChanging(false)
+      setEditSubmitting(false)
     }
   }
 
@@ -157,128 +185,102 @@ export default function ProjectDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <p className="text-muted-foreground text-sm">Project not found.</p>
-        <Link href="/projects" className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Projects</Link>
+        <Link href="/projects" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          ← Back to Projects
+        </Link>
       </div>
     )
   }
 
-  const tasks: TaskRow[] = project.tasks ?? []
-
   return (
-    <div className="flex flex-col gap-6 max-w-4xl">
-      {/* Back link */}
-      <Link
-        href="/projects"
-        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Projects
-      </Link>
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-foreground mb-2">{project.title}</h1>
-          <div className="flex items-center gap-3 flex-wrap">
-            {project.department && <DepartmentBadge department={project.department} />}
-            {project.dueDate && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="h-3.5 w-3.5" />
-                <span>{formatDate(project.dueDate)}</span>
-              </div>
-            )}
-            {project.owner && (
-              <div className="flex items-center gap-1.5">
-                <MemberAvatar name={project.owner.name} size="sm" />
-                <span className="text-xs text-muted-foreground">{project.owner.name}</span>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Stage selector */}
-          <Select
-            value={project.stage}
-            onValueChange={handleStageChange}
-            disabled={stageChanging}
-          >
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(STAGE_LABELS).map(([key, label]) => (
-                <SelectItem key={key} value={key}>{label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setDeleteOpen(true)}
-            className="text-muted-foreground hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+    <div className="flex flex-col gap-6 w-full">
+      {/* Danger actions row */}
+      <div className="flex justify-end gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setTaskDialogOpen(true)}
+          className="gap-1.5"
+        >
+          <Plus className="h-4 w-4" />
+          Add Task
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setDeleteOpen(true)}
+          className="text-muted-foreground hover:text-destructive"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
 
-      {/* Description */}
-      {project.description && (
-        <p className="text-sm text-muted-foreground">{project.description}</p>
-      )}
+      {/* Main detail view */}
+      <ProjectDetailView
+        project={project}
+        onEdit={openEditDialog}
+      />
 
-      {/* Tasks section */}
-      <div>
-        <PageHeader
-          title="Tasks"
-          action={
-            <Button size="sm" onClick={() => setTaskDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Task
-            </Button>
-          }
-        />
-
-        {tasks.length === 0 ? (
-          <EmptyState
-            title="No tasks yet"
-            description="Add tasks to track work for this project."
-            action={
-              <Button size="sm" onClick={() => setTaskDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                Add Task
-              </Button>
-            }
-          />
-        ) : (
-          <div className="flex flex-col gap-2">
-            {tasks.map((task) => (
-              <Link
-                key={task.id}
-                href={`/tasks/${task.id}`}
-                className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg hover:border-[#C9A84C]/50 transition-colors"
+      {/* Edit Project Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="bg-card border-border max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Title *</label>
+              <Input
+                placeholder="Project title"
+                value={editForm.title}
+                onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Stage</label>
+              <Select
+                value={editForm.stage}
+                onValueChange={v => setEditForm(f => ({ ...f, stage: v ?? 'planning' }))}
               >
-                <StatusBadge status={task.status} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-foreground truncate">{task.title}</div>
-                  {task.assignee && (
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <MemberAvatar name={task.assignee.name} size="sm" />
-                      <span className="text-xs text-muted-foreground">{task.assignee.name}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <PriorityBadge priority={task.priority} />
-                  {task.dueDate && (
-                    <span className="text-xs text-muted-foreground">{formatDate(task.dueDate)}</span>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(STAGE_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Due Date</label>
+              <Input
+                type="date"
+                value={editForm.dueDate}
+                onChange={e => setEditForm(f => ({ ...f, dueDate: e.target.value }))}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Description</label>
+              <Textarea
+                placeholder="Project description…"
+                rows={3}
+                value={editForm.description}
+                onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setEditOpen(false)} disabled={editSubmitting}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editSubmitting}>
+                {editSubmitting ? 'Saving…' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Task Dialog */}
       <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
@@ -308,7 +310,9 @@ export default function ProjectDetailPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {PRIORITIES.map(p => (
-                      <SelectItem key={p} value={p} className="capitalize">{p.charAt(0).toUpperCase() + p.slice(1)}</SelectItem>
+                      <SelectItem key={p} value={p} className="capitalize">
+                        {p.charAt(0).toUpperCase() + p.slice(1)}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

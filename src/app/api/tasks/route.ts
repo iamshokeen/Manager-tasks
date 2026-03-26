@@ -1,9 +1,13 @@
 // src/app/api/tasks/route.ts
 import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { getTasks, createTask } from '@/lib/services/tasks'
 import type { TaskFilters } from '@/types'
 
 export async function GET(req: Request) {
+  const session = await getServerSession(authOptions)
+
   const { searchParams } = new URL(req.url)
   const filters: TaskFilters = {
     assigneeId: searchParams.get('assigneeId') ?? undefined,
@@ -16,10 +20,19 @@ export async function GET(req: Request) {
     search: searchParams.get('search') ?? undefined,
     assignedByName: searchParams.get('assignedByName') ?? undefined,
   }
+
+  // RBAC: Junior users can only see tasks assigned to themselves
+  if (session?.user) {
+    const user = session.user as { role?: string; teamMemberId?: string }
+    if (user.role === 'JUNIOR' && user.teamMemberId) {
+      filters.assigneeId = user.teamMemberId
+    }
+  }
+
   try {
     const tasks = await getTasks(filters)
     return NextResponse.json({ data: tasks })
-  } catch (e) {
+  } catch (_e) {
     return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
   }
 }
@@ -32,7 +45,7 @@ export async function POST(req: Request) {
     }
     const task = await createTask(body)
     return NextResponse.json({ data: task }, { status: 201 })
-  } catch (e) {
+  } catch (_e) {
     return NextResponse.json({ error: 'Failed to create task' }, { status: 500 })
   }
 }
