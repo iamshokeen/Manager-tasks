@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
 import { cn, formatDate } from '@/lib/utils'
+import { SummarizeButton, SummaryCard } from '@/components/ui/summarize-button'
 
 const MOOD_CONFIG = {
   great: { label: 'Great', color: '#10B981' },
@@ -63,11 +64,13 @@ interface EditableSectionProps {
   label: string
   value: string
   onSave: (val: string) => Promise<void>
+  summarizable?: boolean
 }
 
-function EditableSection({ label, value, onSave }: EditableSectionProps) {
+function EditableSection({ label, value, onSave, summarizable }: EditableSectionProps) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value)
+  const [summary, setSummary] = useState<string | null>(null)
 
   useEffect(() => {
     setDraft(value)
@@ -83,15 +86,21 @@ function EditableSection({ label, value, onSave }: EditableSectionProps) {
     <div className="bg-card border border-border rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</span>
-        {!editing && (
-          <button
-            onClick={() => setEditing(true)}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Edit
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {summarizable && !editing && value.trim().length >= 100 && (
+            <SummarizeButton getText={() => value} onSummary={s => setSummary(s)} />
+          )}
+          {!editing && (
+            <button
+              onClick={() => setEditing(true)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Edit
+            </button>
+          )}
+        </div>
       </div>
+      {summary && <div className="mb-3"><SummaryCard summary={summary} onDismiss={() => setSummary(null)} /></div>}
       {editing ? (
         <Textarea
           value={draft}
@@ -236,21 +245,25 @@ export default function OneOnOneDetailPage() {
             label="Their Updates"
             value={record.theirUpdates ?? ''}
             onSave={val => patchField('theirUpdates', val)}
+            summarizable
           />
           <EditableSection
             label="My Updates / Coaching Points"
             value={record.myUpdates ?? ''}
             onSave={val => patchField('myUpdates', val)}
+            summarizable
           />
           <EditableSection
             label="Feedback Given (SBI)"
             value={record.feedbackGiven ?? ''}
             onSave={val => patchField('feedbackGiven', val)}
+            summarizable
           />
           <EditableSection
             label="Development Notes"
             value={record.developmentNotes ?? ''}
             onSave={val => patchField('developmentNotes', val)}
+            summarizable
           />
         </div>
 

@@ -5,6 +5,7 @@ import useSWR from 'swr'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { ExternalLink, Calendar, X } from 'lucide-react'
+import { SummarizeButton, SummaryCard } from '@/components/ui/summarize-button'
 
 import {
   Sheet,
@@ -77,6 +78,9 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
 
   // Priority dropdown
   const [priorityOpen, setPriorityOpen] = useState(false)
+
+  // AI summary
+  const [summary, setSummary] = useState<string | null>(null)
 
   // Sync state when task loads
   useEffect(() => {
@@ -275,7 +279,14 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
 
               {/* Description */}
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Description</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Description</h3>
+                  <SummarizeButton
+                    getText={() => descValue.replace(/<[^>]+>/g, ' ').trim()}
+                    onSummary={s => setSummary(s)}
+                  />
+                </div>
+                {summary && <SummaryCard summary={summary} onDismiss={() => setSummary(null)} />}
                 <RichTextEditor
                   content={descValue}
                   onChange={html => {
