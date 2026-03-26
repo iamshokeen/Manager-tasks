@@ -8,6 +8,7 @@ import { Plus, Trash2 } from 'lucide-react'
 
 import { useProject } from '@/hooks/use-projects'
 import { useTeam } from '@/hooks/use-team'
+import { useDepartments } from '@/hooks/use-departments'
 import { ProjectDetailView } from '@/components/ui/project-detail-view'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Button } from '@/components/ui/button'
@@ -54,6 +55,7 @@ interface EditProjectForm {
   title: string
   description: string
   stage: string
+  department: string
   dueDate: string
 }
 
@@ -64,6 +66,7 @@ export default function ProjectDetailPage() {
 
   const { project, mutate, isLoading } = useProject(id)
   const { members } = useTeam()
+  const { departments } = useDepartments()
 
   // Edit dialog state
   const [editOpen, setEditOpen] = useState(false)
@@ -71,6 +74,7 @@ export default function ProjectDetailPage() {
     title: '',
     description: '',
     stage: 'planning',
+    department: '',
     dueDate: '',
   })
   const [editSubmitting, setEditSubmitting] = useState(false)
@@ -90,6 +94,7 @@ export default function ProjectDetailPage() {
       title: project.title,
       description: project.description ?? '',
       stage: project.stage,
+      department: project.department ?? '',
       dueDate: project.dueDate ? project.dueDate.split('T')[0] : '',
     })
     setEditOpen(true)
@@ -107,6 +112,7 @@ export default function ProjectDetailPage() {
         title: editForm.title.trim(),
         stage: editForm.stage,
       }
+      if (editForm.department) body.department = editForm.department
       if (editForm.description) body.description = editForm.description
       if (editForm.dueDate) body.dueDate = new Date(editForm.dueDate).toISOString()
 
@@ -237,21 +243,39 @@ export default function ProjectDetailPage() {
                 required
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Stage</label>
-              <Select
-                value={editForm.stage}
-                onValueChange={v => setEditForm(f => ({ ...f, stage: v ?? 'planning' }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(STAGE_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Stage</label>
+                <Select
+                  value={editForm.stage}
+                  onValueChange={v => setEditForm(f => ({ ...f, stage: v ?? 'planning' }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(STAGE_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Department</label>
+                <Select
+                  value={editForm.department}
+                  onValueChange={v => setEditForm(f => ({ ...f, department: v ?? '' }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map(d => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-muted-foreground">Due Date</label>
