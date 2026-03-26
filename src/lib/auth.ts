@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from './prisma'
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET ?? 'lohono-cmd-secret-fy27-change-in-prod',
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
   providers: [
