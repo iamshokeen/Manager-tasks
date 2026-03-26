@@ -17,8 +17,11 @@ import { formatDistanceToNow } from 'date-fns'
 import { formatCrore } from '@/lib/format'
 import { RefreshCw, Zap, Mail, ChevronDown, ChevronUp, BarChart3, TrendingUp, Hotel, Users, FileText, BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
+import { TaskCalendarSection } from '@/components/dashboard/task-calendar-section'
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
+
+interface Member { id: string; name: string; role: string; department: string; status: string }
 
 const BENTO_FEATURES = [
   { name: 'Metrics', description: 'FY27 KPIs — funnel, revenue, OTA attainment', href: '/metrics', cta: 'View metrics', Icon: BarChart3, className: 'col-span-1' },
@@ -335,6 +338,9 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      {/* ── 3b. Task Calendar ────────────────────────────────────────────── */}
+      <TaskCalendarSection tasks={tasks} members={members as Member[]} />
+
       {/* ── 4. Team Snapshot ─────────────────────────────────────────────── */}
       <section>
         <div className="bg-card rounded-xl p-6 shadow-[var(--shadow-glass)]">
@@ -349,7 +355,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {teamLoading ? (
             <div className="col-span-full text-sm text-muted-foreground">Loading team…</div>
-          ) : (members as Array<{ id: string; name: string; role: string; department: string; status: string }>)
+          ) : (members as Member[])
               .filter((m) => m.status === 'active')
               .map((member) => (
                 <Link
