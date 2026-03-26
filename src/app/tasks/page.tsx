@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, Calendar, ClipboardList } from 'lucide-react'
+import { Plus, Search, Calendar, ClipboardList, User } from 'lucide-react'
 import { toast } from 'sonner'
+import { useSession } from 'next-auth/react'
 
 import {
   DndContext,
@@ -12,6 +13,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
   type DragEndEvent,
 } from '@dnd-kit/core'
 import {
@@ -76,6 +78,23 @@ interface TaskShape {
   department?: string
   dueDate?: string | null
   assignee?: { id: string; name: string } | null
+  assignedByName?: string | null
+}
+
+// Droppable column wrapper — enables empty columns to accept drops
+function DroppableColumn({ id, children }: { id: string; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id })
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'flex flex-col gap-2 overflow-y-auto max-h-[calc(100vh-280px)] pr-0.5 min-h-[80px] rounded-lg transition-colors',
+        isOver && 'bg-primary/5 ring-1 ring-primary/20'
+      )}
+    >
+      {children}
+    </div>
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +145,12 @@ function TaskCard({ task, onClick }: TaskCardProps) {
           </div>
         )}
       </div>
+      {task.assignedByName && (
+        <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-border/40">
+          <User className="h-3 w-3 text-muted-foreground/60" />
+          <span className="text-[11px] text-muted-foreground/60">by {task.assignedByName}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -198,16 +223,21 @@ const EMPTY_FORM: CreateTaskForm = {
 
 export default function TasksPage() {
   const router = useRouter()
+  const { data: session } = useSession()
 
   const [search, setSearch] = useState('')
   const [deptFilter, setDeptFilter] = useState<string>('all')
+  const [assignedToMe, setAssignedToMe] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState<CreateTaskForm>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
 
+  const myTeamMemberId = (session?.user as { teamMemberId?: string } | undefined)?.teamMemberId
+
   const filters: TaskFilters = {}
   if (search) filters.search = search
   if (deptFilter && deptFilter !== 'all') filters.department = deptFilter
+  if (assignedToMe && myTeamMemberId) filters.assigneeId = myTeamMemberId
 
   const { tasks, mutate, isLoading } = useTasks(filters)
   const { members } = useTeam()
@@ -287,6 +317,7 @@ export default function TasksPage() {
         title: form.title.trim(),
         priority: form.priority || 'medium',
         isSelfTask: form.isSelfTask,
+        assignedByName: session?.user?.name ?? 'Saksham',
       }
       if (form.department) body.department = form.department
       if (form.assigneeId) body.assigneeId = form.assigneeId
@@ -326,7 +357,7 @@ export default function TasksPage() {
       />
 
       {/* Filter bar */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-6 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
@@ -347,6 +378,17 @@ export default function TasksPage() {
             ))}
           </SelectContent>
         </Select>
+        {myTeamMemberId && (
+          <Button
+            variant={assignedToMe ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setAssignedToMe(v => !v)}
+            className="gap-1.5"
+          >
+            <User className="h-3.5 w-3.5" />
+            Assigned to me
+          </Button>
+        )}
       </div>
 
       {/* Kanban board — drag-and-drop */}
@@ -385,7 +427,7 @@ export default function TasksPage() {
                   items={colTasks.map(t => t.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="flex flex-col gap-2 overflow-y-auto max-h-[calc(100vh-280px)] pr-0.5 min-h-[80px]">
+                  <DroppableColumn id={col.key}>
                     {colTasks.length === 0 && !isLoading ? (
                       <EmptyState
                         icon={<ClipboardList className="h-8 w-8" />}
@@ -401,7 +443,7 @@ export default function TasksPage() {
                         />
                       ))
                     )}
-                  </div>
+                  </DroppableColumn>
                 </SortableContext>
               </div>
             )
