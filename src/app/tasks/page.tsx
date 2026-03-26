@@ -53,6 +53,7 @@ import {
 import { cn, PRIORITIES, formatDate, isOverdue, isDueToday } from '@/lib/utils'
 import type { TaskFilters } from '@/types'
 import { TaskDetailSheet } from '@/components/ui/task-detail-sheet'
+import { BacklogAlert } from '@/components/ui/backlog-alert'
 import { AiTaskParser } from '@/components/ui/ai-task-parser'
 
 // ---------------------------------------------------------------------------
@@ -473,6 +474,9 @@ export default function TasksPage() {
       </div>
 
       {/* Kanban board — drag-and-drop */}
+      {/* Backlog alert — computed from live task data, no AI */}
+      <BacklogAlert tasks={tasks} className="mb-2" />
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}

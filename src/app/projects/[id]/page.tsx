@@ -225,6 +225,7 @@ export default function ProjectDetailPage() {
       <ProjectDetailView
         project={project}
         onEdit={openEditDialog}
+        onTasksGenerated={() => mutate()}
       />
 
       {/* Edit Project Dialog */}

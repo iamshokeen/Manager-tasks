@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { ExternalLink, Calendar, X } from 'lucide-react'
 import { SummarizeButton, SummaryCard } from '@/components/ui/summarize-button'
+import { Sparkles } from 'lucide-react'
 
 import {
   Sheet,
@@ -81,6 +82,29 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
 
   // AI summary
   const [summary, setSummary] = useState<string | null>(null)
+
+  // AI progress report (from comments)
+  const [progressReport, setProgressReport] = useState<string | null>(null)
+  const [loadingProgress, setLoadingProgress] = useState(false)
+
+  async function fetchProgressReport() {
+    if (!taskId) return
+    setLoadingProgress(true)
+    try {
+      const res = await fetch('/api/ai/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'comments', taskId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed')
+      setProgressReport(data.summary)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Failed to generate report')
+    } finally {
+      setLoadingProgress(false)
+    }
+  }
 
   // Sync state when task loads
   useEffect(() => {
@@ -310,7 +334,24 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
 
               {/* Comments */}
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Comments</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Comments</h3>
+                  <button
+                    onClick={fetchProgressReport}
+                    disabled={loadingProgress}
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                    title="Generate progress report from comments"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    {loadingProgress ? 'Generating…' : 'Progress Report'}
+                  </button>
+                </div>
+                {progressReport && (
+                  <SummaryCard
+                    summary={progressReport}
+                    onDismiss={() => setProgressReport(null)}
+                  />
+                )}
                 <TaskComments taskId={task.id} />
               </div>
 

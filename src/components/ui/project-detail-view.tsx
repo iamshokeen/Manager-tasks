@@ -1,18 +1,32 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Edit, Share2, Calendar, User, Building2, Tag } from 'lucide-react'
+import { Edit, Share2, Calendar, User, Building2, Tag, Sparkles, Loader2, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
-
+import { SummaryCard } from '@/components/ui/summarize-button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { MemberAvatar } from '@/components/ui/member-avatar'
 import { DepartmentBadge } from '@/components/ui/department-badge'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { PriorityBadge } from '@/components/ui/priority-badge'
-import { formatDate } from '@/lib/utils'
-import { cn } from '@/lib/utils'
+import { formatDate, cn } from '@/lib/utils'
 
 interface ProjectDetailViewProps {
   project: {
@@ -85,7 +99,110 @@ function StageBadge({ stage }: { stage: string }) {
   )
 }
 
-export function ProjectDetailView({ project, onEdit }: ProjectDetailViewProps) {
+const PRIORITIES_LIST = ['urgent', 'high', 'medium', 'low']
+const DEPARTMENTS_DEFAULT = ['Analytics', 'Revenue', 'OTA', 'Marketing', 'Financial Modelling', 'Program Management']
+
+interface GeneratedTask {
+  title: string
+  description: string | null
+  assigneeId: string | null
+  assigneeName: string | null
+  isSelfTask: boolean
+  department: string
+  priority: string
+  dueDate: string | null
+}
+
+export function ProjectDetailView({ project, onEdit, onTasksGenerated }: ProjectDetailViewProps & { onTasksGenerated?: () => void }) {
+  const [aiSummary, setAiSummary] = useState<string | null>(null)
+  const [loadingSummary, setLoadingSummary] = useState(false)
+  const [generatorOpen, setGeneratorOpen] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [generatedTasks, setGeneratedTasks] = useState<GeneratedTask[]>([])
+  const [assignedByName, setAssignedByName] = useState('')
+  const [creatingTasks, setCreatingTasks] = useState(false)
+  const [expandedTaskIdx, setExpandedTaskIdx] = useState<number | null>(null)
+
+  async function handleAiSummary() {
+    setLoadingSummary(true)
+    try {
+      const res = await fetch('/api/ai/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'project', projectId: project.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed')
+      setAiSummary(data.summary)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Failed to generate summary')
+    } finally {
+      setLoadingSummary(false)
+    }
+  }
+
+  async function handleGenerateTasks() {
+    if (!project.description?.trim()) {
+      toast.error('Add a project description first — AI uses it to generate tasks')
+      return
+    }
+    setGenerating(true)
+    try {
+      const res = await fetch('/api/ai/generate-project-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: project.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed')
+      setGeneratedTasks(data.tasks ?? [])
+      setAssignedByName(data.assignedByName)
+      setGeneratorOpen(true)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Failed to generate tasks')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  async function handleCreateGeneratedTasks() {
+    setCreatingTasks(true)
+    let ok = 0, fail = 0
+    for (const task of generatedTasks) {
+      try {
+        const body: Record<string, unknown> = {
+          title: task.title,
+          department: task.department,
+          priority: task.priority,
+          projectId: project.id,
+          assignedByName,
+          source: 'ai',
+        }
+        if (task.description) body.description = task.description
+        if (task.isSelfTask) body.isSelfTask = true
+        else if (task.assigneeId) body.assigneeId = task.assigneeId
+        if (task.dueDate) body.dueDate = new Date(task.dueDate).toISOString()
+        const res = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+        if (!res.ok) throw new Error()
+        ok++
+      } catch { fail++ }
+    }
+    setCreatingTasks(false)
+    setGeneratorOpen(false)
+    setGeneratedTasks([])
+    onTasksGenerated?.()
+    if (fail === 0) toast.success(`${ok} task${ok !== 1 ? 's' : ''} created`)
+    else toast.warning(`${ok} created, ${fail} failed`)
+  }
+
+  function updateGeneratedTask(idx: number, patch: Partial<GeneratedTask>) {
+    setGeneratedTasks(t => t.map((task, i) => i === idx ? { ...task, ...patch } : task))
+  }
+
   async function handleShare() {
     const url = `${window.location.origin}/projects/${project.id}`
     try {
@@ -97,6 +214,7 @@ export function ProjectDetailView({ project, onEdit }: ProjectDetailViewProps) {
   }
 
   return (
+    <>
     <motion.div
       className="flex flex-col gap-6 w-full"
       initial="hidden"
@@ -124,6 +242,26 @@ export function ProjectDetailView({ project, onEdit }: ProjectDetailViewProps) {
           <Button
             variant="ghost"
             size="sm"
+            onClick={handleAiSummary}
+            disabled={loadingSummary}
+            className="gap-1.5"
+          >
+            {loadingSummary ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-primary" />}
+            {loadingSummary ? 'Summarizing…' : 'AI Summary'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGenerateTasks}
+            disabled={generating}
+            className="gap-1.5"
+          >
+            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-primary" />}
+            {generating ? 'Generating…' : 'Generate Tasks'}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleShare}
             className="gap-1.5"
           >
@@ -146,6 +284,13 @@ export function ProjectDetailView({ project, onEdit }: ProjectDetailViewProps) {
       >
         {project.title}
       </motion.h1>
+
+      {/* AI Summary card */}
+      {aiSummary && (
+        <motion.div variants={itemVariants}>
+          <SummaryCard summary={aiSummary} onDismiss={() => setAiSummary(null)} />
+        </motion.div>
+      )}
 
       {/* Meta grid */}
       <motion.div
@@ -300,5 +445,76 @@ export function ProjectDetailView({ project, onEdit }: ProjectDetailViewProps) {
         )}
       </motion.div>
     </motion.div>
+
+    {/* Generate Tasks Dialog */}
+    <Dialog open={generatorOpen} onOpenChange={v => !v && setGeneratorOpen(false)}>
+      <DialogContent className="bg-card border-border max-w-2xl max-h-[88vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Generated Tasks for &ldquo;{project.title}&rdquo;
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3 min-h-0">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">{generatedTasks.length}</span> task{generatedTasks.length !== 1 ? 's' : ''} suggested from the project description. Review and create.
+          </p>
+          {generatedTasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">No tasks extracted. Try adding more detail to the project description.</p>
+          ) : (
+            <div className="flex flex-col gap-2 overflow-y-auto pr-1">
+              {generatedTasks.map((task, idx) => (
+                <div key={idx} className="border border-border rounded-lg bg-[var(--surface-container-low)] overflow-hidden">
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{task.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <PriorityBadge priority={task.priority} />
+                        {(task.assigneeName || task.isSelfTask) && (
+                          <span className="text-xs text-muted-foreground">→ {task.isSelfTask ? 'Me' : task.assigneeName}</span>
+                        )}
+                        {task.dueDate && <span className="text-xs text-muted-foreground">due {task.dueDate}</span>}
+                        <span className="text-xs text-muted-foreground">{task.department}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => setExpandedTaskIdx(expandedTaskIdx === idx ? null : idx)} className="p-1 rounded hover:bg-[var(--surface-container-high)] text-muted-foreground transition-colors">
+                        {expandedTaskIdx === idx ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                      </button>
+                      <button onClick={() => setGeneratedTasks(t => t.filter((_, i) => i !== idx))} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  {expandedTaskIdx === idx && (
+                    <div className="border-t border-border px-4 pb-4 pt-3 flex flex-col gap-3">
+                      <Input value={task.title} onChange={e => updateGeneratedTask(idx, { title: e.target.value })} className="h-8 text-sm" placeholder="Title" />
+                      <div className="grid grid-cols-3 gap-3">
+                        <Select value={task.priority} onValueChange={v => updateGeneratedTask(idx, { priority: v ?? task.priority })}>
+                          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>{PRIORITIES_LIST.map(p => <SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={task.department} onValueChange={v => updateGeneratedTask(idx, { department: v ?? task.department })}>
+                          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>{DEPARTMENTS_DEFAULT.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Input type="date" value={task.dueDate ?? ''} onChange={e => updateGeneratedTask(idx, { dueDate: e.target.value || null })} className="h-8 text-sm" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter className="pt-1">
+            <Button variant="ghost" onClick={() => setGeneratorOpen(false)} disabled={creatingTasks}>Cancel</Button>
+            <Button onClick={handleCreateGeneratedTasks} disabled={generatedTasks.length === 0 || creatingTasks} className="gap-2">
+              {creatingTasks ? <><Loader2 className="h-4 w-4 animate-spin" />Creating…</> : <><Plus className="h-4 w-4" />Create {generatedTasks.length} Task{generatedTasks.length !== 1 ? 's' : ''}</>}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }

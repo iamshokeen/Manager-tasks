@@ -18,6 +18,7 @@ import { formatCrore } from '@/lib/format'
 import { RefreshCw, Zap, Mail, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import { TaskCalendarSection } from '@/components/dashboard/task-calendar-section'
+import { BacklogAlert } from '@/components/ui/backlog-alert'
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
@@ -346,6 +347,9 @@ export default function DashboardPage() {
           )}
         </div>
       </section>
+
+      {/* ── Backlog Alert ────────────────────────────────────────────────── */}
+      <BacklogAlert tasks={tasks} />
 
       {/* ── 3b. Task Calendar ────────────────────────────────────────────── */}
       <TaskCalendarSection tasks={tasks} members={members as Member[]} />
