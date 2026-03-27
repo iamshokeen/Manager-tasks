@@ -1,7 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import { AppShell } from '@/components/layout/app-shell'
+import { ConditionalShell } from '@/components/layout/conditional-shell'
 import { Toaster } from '@/components/ui/sonner'
 import { Providers } from '@/components/providers'
 
@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="min-h-screen bg-background text-foreground antialiased">
         <Providers>
-          <AppShell>{children}</AppShell>
+          <ConditionalShell>{children}</ConditionalShell>
           <Toaster />
         </Providers>
       </body>

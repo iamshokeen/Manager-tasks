@@ -1,6 +1,12 @@
 // src/app/api/auth/[...nextauth]/route.ts
-import NextAuth from 'next-auth'
-import { authOptions } from '@/lib/auth'
+// NextAuth has been replaced with custom OTP auth.
+// This stub returns 404 to prevent import errors.
+import { NextResponse } from 'next/server'
 
-const handler = NextAuth(authOptions)
-export { handler as GET, handler as POST }
+export async function GET() {
+  return NextResponse.json({ error: 'Not found' }, { status: 404 })
+}
+
+export async function POST() {
+  return NextResponse.json({ error: 'Not found' }, { status: 404 })
+}

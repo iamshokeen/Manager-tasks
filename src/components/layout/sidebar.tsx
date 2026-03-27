@@ -7,10 +7,16 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, FolderKanban, CheckSquare, ListTodo, RefreshCw,
   Users, MessageSquare, Handshake, BarChart3, TrendingUp, Hotel,
-  FileText, BookOpen, Settings, StickyNote, Bell
+  FileText, BookOpen, Settings, StickyNote, Bell, ShieldCheck,
+  UserCheck, Building2, Activity
 } from 'lucide-react'
 
-const NAV_ITEMS = [
+type Role = 'SUPER_ADMIN' | 'MANAGER' | 'SENIOR_IC' | 'DIRECT_REPORT' | 'EXEC_VIEWER' | 'GUEST'
+
+interface NavItem { href: string; label: string; Icon: React.ElementType }
+interface NavGroup { group: string; items: NavItem[] }
+
+const BASE_NAV: NavGroup[] = [
   {
     group: 'Overview',
     items: [{ href: '/', label: 'Dashboard', Icon: LayoutDashboard }],
@@ -55,9 +61,54 @@ const NAV_ITEMS = [
   },
 ]
 
-export function Sidebar() {
+const ADMIN_NAV: NavGroup = {
+  group: 'Admin',
+  items: [
+    { href: '/dashboard/admin/users', label: 'Users', Icon: UserCheck },
+    { href: '/dashboard/admin/approvals', label: 'Approvals', Icon: ShieldCheck },
+    { href: '/dashboard/admin/workspaces', label: 'Workspaces', Icon: Building2 },
+    { href: '/dashboard/admin/activity-log', label: 'Activity', Icon: Activity },
+  ],
+}
+
+// Items filtered based on role
+const ROLE_HIDDEN: Record<string, Role[]> = {
+  '/cadence': ['DIRECT_REPORT', 'EXEC_VIEWER', 'GUEST'],
+  '/one-on-ones': ['EXEC_VIEWER', 'GUEST'],
+  '/stakeholders': ['DIRECT_REPORT', 'EXEC_VIEWER', 'GUEST'],
+  '/assessment/ota': ['DIRECT_REPORT', 'SENIOR_IC', 'EXEC_VIEWER', 'GUEST'],
+  '/assessment/checkin': ['DIRECT_REPORT', 'SENIOR_IC', 'EXEC_VIEWER', 'GUEST'],
+  '/metrics': ['EXEC_VIEWER', 'GUEST'],
+  '/reports': ['EXEC_VIEWER', 'GUEST'],
+  '/projects': ['EXEC_VIEWER', 'GUEST'],
+}
+
+function filterNavForRole(role: Role): NavGroup[] {
+  const filtered = BASE_NAV.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      const hiddenFor = ROLE_HIDDEN[item.href]
+      return !hiddenFor || !hiddenFor.includes(role)
+    }),
+  })).filter((group) => group.items.length > 0)
+
+  if (role === 'SUPER_ADMIN') {
+    filtered.push(ADMIN_NAV)
+  }
+
+  return filtered
+}
+
+interface SidebarProps {
+  userRole?: string | null
+}
+
+export function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname()
   const [expanded, setExpanded] = useState(false)
+
+  const role = (userRole as Role) ?? 'DIRECT_REPORT'
+  const navGroups = filterNavForRole(role)
 
   return (
     <aside
@@ -83,7 +134,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-4">
-        {NAV_ITEMS.map(({ group, items }) => (
+        {navGroups.map(({ group, items }) => (
           <div key={group} className="mb-1">
             {expanded && (
               <div className="px-3 py-2 text-[10px] font-bold tracking-widest text-[var(--outline)] uppercase whitespace-nowrap">

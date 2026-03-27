@@ -2,8 +2,7 @@
 // GPT-4o mini — ~$0.0001 per call (300 token output cap)
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getSession } from '@/lib/auth'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -11,7 +10,7 @@ const SYSTEM = `You are a summarizer. Return a concise bullet-point summary of t
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { text } = await req.json()

@@ -1,10 +1,15 @@
 // src/app/api/users/route.ts
+// Legacy user management route — now managed via /api/admin/users
+// This endpoint is kept for backward compatibility (read-only GET)
 import { NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/auth'
 
 export async function GET() {
   try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const users = await prisma.user.findMany({
       select: {
         id: true,
@@ -19,54 +24,7 @@ export async function GET() {
       orderBy: { name: 'asc' },
     })
     return NextResponse.json({ data: users })
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
-  }
-}
-
-export async function POST(req: Request) {
-  try {
-    const body = await req.json()
-    const { name, email, password, role, teamMemberId } = body
-
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        { error: 'name, email, and password are required' },
-        { status: 400 }
-      )
-    }
-
-    const validRoles = ['MANAGER', 'JUNIOR']
-    if (role && !validRoles.includes(role)) {
-      return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10)
-
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-        role: role ?? 'JUNIOR',
-        ...(teamMemberId ? { teamMemberId } : {}),
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        teamMemberId: true,
-      },
-    })
-
-    return NextResponse.json({ data: user }, { status: 201 })
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Failed to create user'
-    // Handle unique constraint violation (duplicate email)
-    if (msg.includes('Unique constraint') || msg.includes('unique')) {
-      return NextResponse.json({ error: 'Email already in use' }, { status: 409 })
-    }
-    return NextResponse.json({ error: 'Failed to create user' }, { status: 500 })
   }
 }

@@ -1,12 +1,11 @@
 // src/app/api/tasks/route.ts
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getSession } from '@/lib/auth'
 import { getTasks, createTask } from '@/lib/services/tasks'
 import type { TaskFilters } from '@/types'
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
 
   const { searchParams } = new URL(req.url)
   const filters: TaskFilters = {

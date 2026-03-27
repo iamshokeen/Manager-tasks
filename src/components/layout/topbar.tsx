@@ -1,7 +1,8 @@
 // src/components/layout/topbar.tsx
 'use client'
-import { usePathname } from 'next/navigation'
-import { Search, Bell } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { Search, Bell, LogOut } from 'lucide-react'
+import { useState } from 'react'
 
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Dashboard',
@@ -21,6 +22,14 @@ const PAGE_TITLES: Record<string, string> = {
 
 export function Topbar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const [loggingOut, setLoggingOut] = useState(false)
+
+  async function handleLogout() {
+    setLoggingOut(true)
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/auth/login')
+  }
   const baseRoute = '/' + (pathname.split('/')[1] ?? '')
   const title = PAGE_TITLES[baseRoute] ?? 'Lohono CMD'
 
@@ -64,6 +73,14 @@ export function Topbar() {
           title="Download as PDF"
         >
           ↓ PDF
+        </button>
+        <button
+          onClick={handleLogout}
+          disabled={loggingOut}
+          title="Log out"
+          className="w-8 h-8 flex items-center justify-center text-[var(--outline)] hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-40"
+        >
+          <LogOut size={15} />
         </button>
       </div>
     </header>

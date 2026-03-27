@@ -7,25 +7,166 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  MANAGER
+  SENIOR_IC
+  DIRECT_REPORT
+  EXEC_VIEWER
+  GUEST
+}
+
+enum WorkspaceType {
+  PLATFORM
+  DEPARTMENT
+  PROJECT
+  PERSONAL
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+// ─── User & Auth ──────────────────────────────────────────────────────────────
+
+model User {
+  id                   String            @id @default(cuid())
+  email                String            @unique
+  name                 String
+  avatarUrl            String?
+  role                 Role              @default(DIRECT_REPORT)
+  isActive             Boolean           @default(true)
+  emailVerified        Boolean           @default(false)
+  verifyToken          String?
+  verifyExpiry         DateTime?
+  approvalStatus       ApprovalStatus    @default(PENDING)
+  approvedBy           String?
+  approvedAt           DateTime?
+  lastLoginAt          DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  managerId            String?
+  manager              User?             @relation("ManagerToReports", fields: [managerId], references: [id])
+  reports              User[]            @relation("ManagerToReports")
+  // backward-compat link to existing TeamMember
+  teamMemberId         String?           @unique
+  teamMember           TeamMember?       @relation(fields: [teamMemberId], references: [id])
+  workspaceMemberships WorkspaceMember[]
+  sentInvites          Invite[]          @relation("InviteSender")
+  kpiOverrides         KpiVisibility[]
+  activityLogs         ActivityLog[]
+}
+
+// ─── Workspaces ───────────────────────────────────────────────────────────────
+
+model Workspace {
+  id          String            @id @default(cuid())
+  name        String
+  slug        String            @unique
+  type        WorkspaceType
+  description String?
+  isArchived  Boolean           @default(false)
+  createdBy   String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  members     WorkspaceMember[]
+  invites     Invite[]
+  kpiSettings KpiSetting[]
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        Role
+  joinedAt    DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@unique([workspaceId, userId])
+}
+
+// ─── Invites ──────────────────────────────────────────────────────────────────
+
+model Invite {
+  id          String       @id @default(cuid())
+  email       String
+  workspaceId String?
+  role        Role
+  token       String       @unique @default(cuid())
+  status      InviteStatus @default(PENDING)
+  expiresAt   DateTime
+  sentById    String
+  createdAt   DateTime     @default(now())
+  workspace   Workspace?   @relation(fields: [workspaceId], references: [id])
+  sentBy      User         @relation("InviteSender", fields: [sentById], references: [id])
+}
+
+// ─── KPI Visibility ───────────────────────────────────────────────────────────
+
+model KpiSetting {
+  id          String    @id @default(cuid())
+  workspaceId String
+  kpiKey      String
+  visibleTo   Role[]
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, kpiKey])
+}
+
+model KpiVisibility {
+  id        String  @id @default(cuid())
+  userId    String
+  kpiKey    String
+  isVisible Boolean @default(true)
+  user      User    @relation(fields: [userId], references: [id])
+
+  @@unique([userId, kpiKey])
+}
+
+// ─── Activity Log ─────────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+// ─── Existing models (unchanged except TeamMember adds User relation) ─────────
+
 model TeamMember {
-  id              String       @id @default(cuid())
+  id              String        @id @default(cuid())
   name            String
   role            String
   department      String
-  status          String       @default("active")
+  status          String        @default("active")
   skills          String?
   oneOnOneDay     String?
   oneOnOneTime    String?
-  coachingNotes   String?      @db.Text
+  coachingNotes   String?       @db.Text
   hireDate        DateTime?
-  delegationLevel Int          @default(1)
+  delegationLevel Int           @default(1)
   tasks           Task[]
   oneOnOnes       OneOnOne[]
   emailThreads    EmailThread[]
   projects        Project[]
   followUps       FollowUp[]
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   user            User?
 }
 
@@ -47,61 +188,61 @@ model Project {
 }
 
 model Task {
-  id            String          @id @default(cuid())
-  title         String
-  description   String?         @db.Text
-  assigneeId    String?
-  assignee      TeamMember?     @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
-  isSelfTask    Boolean         @default(false)
-  projectId     String?
-  project       Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  department    String
-  priority      String          @default("medium")
-  status        String          @default("todo")
-  dueDate       DateTime?
-  completedAt   DateTime?
-  stakeholderId String?
-  stakeholder   Stakeholder?    @relation(fields: [stakeholderId], references: [id], onDelete: SetNull)
-  cadenceId     String?
-  cadence       Cadence?        @relation(fields: [cadenceId], references: [id], onDelete: SetNull)
-  emailThreads  TaskEmailLink[]
-  activities    TaskActivity[]
-  source           String          @default("manual")
-  tags             String[]        @default([])
-  assignedByName   String?
-  followUps        FollowUp[]
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  id             String          @id @default(cuid())
+  title          String
+  description    String?         @db.Text
+  assigneeId     String?
+  assignee       TeamMember?     @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  isSelfTask     Boolean         @default(false)
+  projectId      String?
+  project        Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  department     String
+  priority       String          @default("medium")
+  status         String          @default("todo")
+  dueDate        DateTime?
+  completedAt    DateTime?
+  stakeholderId  String?
+  stakeholder    Stakeholder?    @relation(fields: [stakeholderId], references: [id], onDelete: SetNull)
+  cadenceId      String?
+  cadence        Cadence?        @relation(fields: [cadenceId], references: [id], onDelete: SetNull)
+  emailThreads   TaskEmailLink[]
+  activities     TaskActivity[]
+  source         String          @default("manual")
+  tags           String[]        @default([])
+  assignedByName String?
+  followUps      FollowUp[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model TaskActivity {
-  id        String   @id @default(cuid())
-  taskId    String
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  type      String
-  from      String?
-  to        String?
-  note      String?  @db.Text
+  id         String   @id @default(cuid())
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  type       String
+  from       String?
+  to         String?
+  note       String?  @db.Text
   source     String   @default("user")
   authorName String?
   createdAt  DateTime @default(now())
 }
 
 model Stakeholder {
-  id        String    @id @default(cuid())
+  id        String     @id @default(cuid())
   name      String
   title     String?
   frequency String
   channel   String
-  priority  String    @default("high")
-  context   String?   @db.Text
-  strategy  String?   @db.Text
+  priority  String     @default("high")
+  context   String?    @db.Text
+  strategy  String?    @db.Text
   email     String?
   tasks     Task[]
   projects  Project[]
   followUps FollowUp[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model OneOnOne {
@@ -217,22 +358,6 @@ model Setting {
   updatedAt DateTime @updatedAt
 }
 
-model User {
-  id           String      @id @default(cuid())
-  email        String      @unique
-  name         String
-  passwordHash String
-  role         Role        @default(JUNIOR)
-  teamMemberId String?     @unique
-  teamMember   TeamMember? @relation(fields: [teamMemberId], references: [id])
-  createdAt    DateTime    @default(now())
-}
-
-enum Role {
-  MANAGER
-  JUNIOR
-}
-
 model Note {
   id        String   @id @default(cuid())
   content   String   @db.Text
@@ -268,10 +393,10 @@ model FollowUp {
 }
 
 model FollowUpNote {
-  id          String    @id @default(cuid())
-  followUpId  String
-  followUp    FollowUp  @relation(fields: [followUpId], references: [id], onDelete: Cascade)
-  content     String    @db.Text
-  authorName  String?
-  createdAt   DateTime  @default(now())
+  id         String   @id @default(cuid())
+  followUpId String
+  followUp   FollowUp @relation(fields: [followUpId], references: [id], onDelete: Cascade)
+  content    String   @db.Text
+  authorName String?
+  createdAt  DateTime @default(now())
 }
