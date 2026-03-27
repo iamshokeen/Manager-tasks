@@ -13,11 +13,12 @@ import { Label } from '@/components/ui/label'
 
 interface OtpInputProps {
   onComplete: (otp: string) => void
+  digits: string[]
+  setDigits: (digits: string[]) => void
   disabled?: boolean
 }
 
-function OtpInput({ onComplete, disabled }: OtpInputProps) {
-  const [digits, setDigits] = useState<string[]>(Array(6).fill(''))
+function OtpInput({ onComplete, digits, setDigits, disabled }: OtpInputProps) {
   const refs = useRef<Array<HTMLInputElement | null>>(Array(6).fill(null))
 
   const focusAt = (index: number) => {
@@ -159,6 +160,7 @@ export default function LoginPage() {
 
   const [step, setStep] = useState<Step>('email')
   const [email, setEmail] = useState('')
+  const [digits, setDigits] = useState<string[]>(Array(6).fill(''))
   const [loading, setLoading] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const [error, setError] = useState('')
@@ -312,7 +314,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <OtpInput onComplete={handleVerify} disabled={verifying} />
+          <OtpInput onComplete={handleVerify} digits={digits} setDigits={setDigits} disabled={verifying} />
 
           {error && (
             <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 text-center">{error}</p>
@@ -322,10 +324,9 @@ export default function LoginPage() {
             type="button"
             size="lg"
             className="w-full h-10"
-            disabled={verifying}
+            disabled={verifying || digits.some(d => d === '')}
             onClick={() => {
-              const inputs = document.querySelectorAll<HTMLInputElement>('input[inputmode="numeric"]')
-              const otp = Array.from(inputs).map(i => i.value).join('')
+              const otp = digits.join('')
               if (otp.length === 6) handleVerify(otp)
             }}
           >
@@ -337,7 +338,7 @@ export default function LoginPage() {
 
             <button
               type="button"
-              onClick={() => { setStep('email'); setError('') }}
+              onClick={() => { setStep('email'); setError(''); setDigits(Array(6).fill('')) }}
               className="text-sm text-[var(--outline)] hover:text-foreground transition-colors"
             >
               ← Use a different email
