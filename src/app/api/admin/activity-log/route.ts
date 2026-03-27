@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       take: 500,
     })
 
-    return NextResponse.json({ logs })
+    return NextResponse.json({ data: logs })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

@@ -29,7 +29,7 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({ invites })
+    return NextResponse.json({ data: invites })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

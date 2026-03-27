@@ -49,10 +49,10 @@ export async function GET() {
       createdBy: ws.createdBy,
       createdAt: ws.createdAt,
       updatedAt: ws.updatedAt,
-      memberCount: ws._count.members,
+      _count: ws._count,
     }))
 
-    return NextResponse.json({ workspaces: formatted })
+    return NextResponse.json({ data: formatted })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

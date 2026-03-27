@@ -66,7 +66,7 @@ const ACTION_COLORS: Record<ActionType, string> = {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function fetcher(url: string) {
-  return fetch(url).then((r) => r.json())
+  return fetch(url).then((r) => r.json()).then((r) => r.data)
 }
 
 function actionLabel(action: string): string {

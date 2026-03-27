@@ -21,7 +21,11 @@ export async function GET(request: NextRequest) {
     const users = await prisma.user.findMany({
       where,
       include: {
-        workspaceMemberships: true,
+        workspaceMemberships: {
+          include: {
+            workspace: { select: { name: true } },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -35,10 +39,12 @@ export async function GET(request: NextRequest) {
       approvalStatus: u.approvalStatus,
       lastLoginAt: u.lastLoginAt,
       createdAt: u.createdAt,
-      workspaceCount: u.workspaceMemberships.length,
+      workspaceMemberships: u.workspaceMemberships.map((m) => ({
+        workspace: { name: m.workspace.name },
+      })),
     }))
 
-    return NextResponse.json({ users: formatted })
+    return NextResponse.json({ data: formatted })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

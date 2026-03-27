@@ -60,7 +60,7 @@ interface KpiOverrideRow {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
+const fetcher = (url: string) => fetch(url).then((r) => r.json()).then((r) => r.data)
 
 const ROLES: Role[] = ['SUPER_ADMIN', 'MANAGER', 'SENIOR_IC', 'DIRECT_REPORT', 'EXEC_VIEWER', 'GUEST']
 

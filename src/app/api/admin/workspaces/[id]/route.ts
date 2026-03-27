@@ -45,7 +45,7 @@ export async function GET(
 
     if (!workspace) return NextResponse.json({ error: 'Workspace not found' }, { status: 404 })
 
-    return NextResponse.json({ workspace })
+    return NextResponse.json({ data: workspace })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
