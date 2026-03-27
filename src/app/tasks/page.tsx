@@ -432,7 +432,7 @@ export default function TasksPage() {
             </Button>
             <Button onClick={() => setDialogOpen(true)}>
               <Plus className="h-4 w-4" />
-              New Task
+              Drop a Task
             </Button>
           </div>
         }
@@ -516,7 +516,7 @@ export default function TasksPage() {
                     {colTasks.length === 0 && !isLoading ? (
                       <EmptyState
                         icon={<ClipboardList className="h-8 w-8" />}
-                        title="No tasks"
+                        title="Nothing queued. Add the first task."
                         description={`No ${col.label.toLowerCase()} tasks`}
                       />
                     ) : (
@@ -568,7 +568,7 @@ export default function TasksPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
-            <DialogTitle>New Task</DialogTitle>
+            <DialogTitle>Drop a Task</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">

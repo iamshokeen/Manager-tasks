@@ -122,7 +122,7 @@ export default function NotesPage() {
             )}
             <Button size="sm" onClick={createNote} disabled={saving || !newText.trim()} className="gap-1.5">
               <Plus className="h-3.5 w-3.5" />
-              {saving ? 'Saving…' : 'Save Note'}
+              {saving ? 'Saving…' : 'New Note'}
             </Button>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function NotesPage() {
       ) : notes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
           <FileText className="h-10 w-10 opacity-30" />
-          <p className="text-sm">No notes yet. Write your first note above.</p>
+          <p className="text-sm">No notes yet. Write something down.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">

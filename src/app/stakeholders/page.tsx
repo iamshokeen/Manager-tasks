@@ -162,12 +162,12 @@ export default function StakeholdersPage() {
   return (
     <div className="flex flex-col">
       <PageHeader
-        title="Stakeholders"
+        title="The Table"
         description="Stakeholder map and relationship tracker"
         action={
           <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />
-            Add Stakeholder
+            Add to The Table
           </Button>
         }
       />
@@ -179,12 +179,12 @@ export default function StakeholdersPage() {
       ) : (stakeholders as StakeholderCard[]).length === 0 ? (
         <EmptyState
           icon={<Users className="h-10 w-10" />}
-          title="No stakeholders yet"
-          description="Add stakeholders to manage relationships and communication."
+          title="Nobody at the table yet. Fix that."
+          description="Add the people who have a seat. Map the relationships."
           action={
             <Button size="sm" onClick={() => setDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />
-              Add Stakeholder
+              Add to The Table
             </Button>
           }
         />
@@ -243,7 +243,7 @@ export default function StakeholdersPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-card border-border max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add Stakeholder</DialogTitle>
+            <DialogTitle>Add to The Table</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
@@ -332,7 +332,7 @@ export default function StakeholdersPage() {
                 Cancel
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting ? 'Adding…' : 'Add Stakeholder'}
+                {submitting ? 'Adding…' : 'Add to The Table'}
               </Button>
             </DialogFooter>
           </form>

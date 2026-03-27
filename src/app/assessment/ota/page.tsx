@@ -35,8 +35,8 @@ export default function OTAAssessmentPage() {
   return (
     <div className="p-6 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">OTA Assessment</h1>
-        <p className="text-muted-foreground text-sm mt-1">FY 2026-27 — Targets vs Actuals</p>
+        <h1 className="text-2xl font-bold text-foreground">Channel Pulse</h1>
+        <p className="text-muted-foreground text-sm mt-1">FY 2026-27 — How your revenue channels are performing.</p>
       </div>
 
       {!targets ? (

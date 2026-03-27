@@ -197,11 +197,11 @@ export default function TeamPage() {
   return (
     <div className="flex flex-col">
       <PageHeader
-        title="Team"
+        title="Your People"
         action={
           <Button onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4" />
-            Add Member
+            Add to Your People
           </Button>
         }
       />
@@ -215,12 +215,12 @@ export default function TeamPage() {
       ) : (members as MemberSummary[]).length === 0 ? (
         <EmptyState
           icon={<Users className="h-10 w-10" />}
-          title="No team members yet"
-          description="Add your first team member to get started."
+          title="Nobody on your team yet."
+          description="Add the first person. Build the roster."
           action={
             <Button onClick={() => setDialogOpen(true)}>
               <Plus className="h-4 w-4" />
-              Add Member
+              Add to Your People
             </Button>
           }
         />
@@ -240,7 +240,7 @@ export default function TeamPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-card max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Team Member</DialogTitle>
+            <DialogTitle>Add to Your People</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
             {/* Name */}
@@ -372,7 +372,7 @@ export default function TeamPage() {
                 Cancel
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting ? 'Adding…' : 'Add Member'}
+                {submitting ? 'Adding…' : 'Add to Your People'}
               </Button>
             </DialogFooter>
           </form>

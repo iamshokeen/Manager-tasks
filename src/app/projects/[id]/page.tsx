@@ -209,7 +209,7 @@ export default function ProjectDetailPage() {
           className="gap-1.5"
         >
           <Plus className="h-4 w-4" />
-          Add Task
+          Drop a Task
         </Button>
         <Button
           variant="ghost"
@@ -311,7 +311,7 @@ export default function ProjectDetailPage() {
       <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Task to Project</DialogTitle>
+            <DialogTitle>Drop a Task</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAddTask} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
@@ -372,7 +372,7 @@ export default function ProjectDetailPage() {
                 Cancel
               </Button>
               <Button type="submit" disabled={taskSubmitting}>
-                {taskSubmitting ? 'Adding…' : 'Add Task'}
+                {taskSubmitting ? 'Adding…' : 'Drop a Task'}
               </Button>
             </DialogFooter>
           </form>

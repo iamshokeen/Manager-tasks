@@ -262,7 +262,7 @@ export default function ProjectsPage() {
                 {colProjects.length === 0 && !isLoading ? (
                   <EmptyState
                     icon={<Layers className="h-7 w-7" />}
-                    title="No projects"
+                    title="No projects yet. Start one."
                     description={`No ${col.label.toLowerCase()} projects`}
                   />
                 ) : (
@@ -335,7 +335,7 @@ export default function ProjectsPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-card max-w-lg">
           <DialogHeader>
-            <DialogTitle>New Project</DialogTitle>
+            <DialogTitle>Start a Project</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">

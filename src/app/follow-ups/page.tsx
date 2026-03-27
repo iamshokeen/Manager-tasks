@@ -174,7 +174,7 @@ function CreateFollowUpDialog({
       <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {parentTitle ? `Add follow-up under "${parentTitle}"` : 'New Follow-up'}
+            {parentTitle ? `Open a loop under "${parentTitle}"` : 'Open a Loop'}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -250,7 +250,7 @@ function CreateFollowUpDialog({
           </label>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create Follow-up'}</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Open a Loop'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -652,7 +652,7 @@ function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, project
       {followUp.children.length > 0 && (
         <div className="px-5 py-3 border-t border-border flex-shrink-0">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            Child follow-ups ({followUp.children.length})
+            Child loops ({followUp.children.length})
           </p>
           <div className="flex flex-col gap-1">
             {followUp.children.map(c => (
@@ -671,7 +671,7 @@ function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, project
       <ConvertDialog open={convertOpen} onOpenChange={setConvertOpen} followUp={followUp}
         onConverted={onMutate} tasks={tasks} members={members} departments={departments} />
       <ConfirmDialog open={deleteOpen} onOpenChange={setDeleteOpen}
-        title="Delete follow-up?" description="This will delete the follow-up and all its notes. Children will also be deleted."
+        title="Delete loop?" description="This will delete the loop and all its notes. Children will also be deleted."
         onConfirm={handleDelete} loading={deleting} />
     </div>
   )
@@ -784,7 +784,7 @@ export default function FollowUpsPage() {
       {/* Page header */}
       <div className="flex-shrink-0 mb-4">
         <PageHeader
-          title="Follow-ups"
+          title="Open Loops"
           description="Track things you're waiting on — chase updates, schedule reminders, convert to tasks"
           action={
             <div className="flex items-center gap-2">
@@ -796,7 +796,7 @@ export default function FollowUpsPage() {
               )}
               <Button size="sm" onClick={() => { setSpawnParentId(undefined); setSpawnParentTitle(undefined); setCreateOpen(true) }} className="gap-1.5">
                 <Plus className="h-4 w-4" />
-                New Follow-up
+                Open a Loop
               </Button>
             </div>
           }
@@ -822,7 +822,7 @@ export default function FollowUpsPage() {
             <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground p-6">
               <CheckCircle2 className="h-10 w-10 opacity-20" />
               <p className="text-sm text-center">
-                {filter === 'open' ? 'No active follow-ups. All caught up!' : `No ${filter} follow-ups.`}
+                {filter === 'open' ? 'Nothing open. Rare. Enjoy it.' : `No ${filter} loops.`}
               </p>
             </div>
           ) : (
@@ -866,7 +866,7 @@ export default function FollowUpsPage() {
           ) : (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
               <Bell className="h-10 w-10 opacity-20" />
-              <p className="text-sm">Select a follow-up to see details</p>
+              <p className="text-sm">Select a loop to see details</p>
             </div>
           )}
         </div>

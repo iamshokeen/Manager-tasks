@@ -136,7 +136,7 @@ export default function MyTasksPage() {
         action={
           <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />
-            New Task
+            Drop a Task
           </Button>
         }
       />
@@ -148,12 +148,12 @@ export default function MyTasksPage() {
       ) : totalTasks === 0 ? (
         <EmptyState
           icon={<ListTodo className="h-10 w-10" />}
-          title="No personal tasks"
-          description="Create a task to start tracking your work."
+          title="Nothing assigned to you. Good."
+          description="Tasks assigned to you land here."
           action={
             <Button size="sm" onClick={() => setDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />
-              New Task
+              Drop a Task
             </Button>
           }
         />

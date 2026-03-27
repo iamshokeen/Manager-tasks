@@ -151,17 +151,17 @@ export default function CadencePage() {
 
   return (
     <div className="flex flex-col">
-      <PageHeader title="Cadence" />
+      <PageHeader title="Rounds" />
 
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="text-sm text-muted-foreground">Loading cadences…</div>
+          <div className="text-sm text-muted-foreground">Loading rounds…</div>
         </div>
       ) : (cadences as Cadence[]).length === 0 ? (
         <EmptyState
           icon={<Calendar className="h-8 w-8" />}
-          title="No cadences found"
-          description="Cadences are pre-seeded. Contact your admin to set them up."
+          title="No rounds scheduled. Set the rhythm."
+          description="Recurring meetings, auto-scheduled. Never miss a beat."
         />
       ) : (
         <div className="flex flex-col gap-3">

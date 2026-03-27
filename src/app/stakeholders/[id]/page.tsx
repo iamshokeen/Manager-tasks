@@ -129,7 +129,7 @@ export default function StakeholderDetailPage() {
 
   async function patchField(field: string, value: string) {
     try {
-      const res = await fetch(`/api/stakeholders/${id}`, {
+      const res = await fetch(`/api/stakeholders/${id}`, { // KAIROS-TODO
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value }),
@@ -145,7 +145,7 @@ export default function StakeholderDetailPage() {
   async function handleDelete() {
     setDeleting(true)
     try {
-      const res = await fetch(`/api/stakeholders/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/stakeholders/${id}`, { method: 'DELETE' }) // KAIROS-TODO
       if (!res.ok) throw new Error('Failed to delete')
       toast.success('Stakeholder deleted')
       router.push('/stakeholders')
@@ -166,8 +166,8 @@ export default function StakeholderDetailPage() {
   if (!stakeholder) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <p className="text-muted-foreground text-sm">Stakeholder not found.</p>
-        <Link href="/stakeholders" className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Stakeholders</Link>
+        <p className="text-muted-foreground text-sm">Contact not found.</p>
+        <Link href="/stakeholders" className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to The Table</Link>
       </div>
     )
   }
@@ -184,7 +184,7 @@ export default function StakeholderDetailPage() {
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
       >
         <ArrowLeft className="h-4 w-4" />
-        Stakeholders
+        The Table
       </Link>
 
       {/* 2-column layout */}
