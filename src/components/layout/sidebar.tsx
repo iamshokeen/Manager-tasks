@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, FolderKanban, CheckSquare, ListTodo, RefreshCw,
   Users, MessageSquare, Handshake, BarChart3, TrendingUp, Hotel,
-  FileText, BookOpen, Settings
+  FileText, BookOpen, Settings, StickyNote
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -21,6 +21,7 @@ const NAV_ITEMS = [
       { href: '/tasks', label: 'Tasks', Icon: CheckSquare },
       { href: '/my-tasks', label: 'My Tasks', Icon: ListTodo },
       { href: '/cadence', label: 'Cadence', Icon: RefreshCw },
+      { href: '/notes', label: 'Notes', Icon: StickyNote },
     ],
   },
   {

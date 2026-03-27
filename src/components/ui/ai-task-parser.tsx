@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sparkles, Loader2, CheckCircle2, Trash2, Pencil, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -36,17 +36,25 @@ interface ParsedTask {
 
 interface AiTaskParserProps {
   open: boolean
-  onClose: () => void
-  onTasksCreated: () => void
-  departments: string[]
+  onClose?: () => void
+  onOpenChange?: (v: boolean) => void
+  onTasksCreated?: () => void
+  onCreated?: () => void
+  departments?: string[]
+  initialText?: string
 }
 
 const PRIORITIES = ['urgent', 'high', 'medium', 'low']
 
-export function AiTaskParser({ open, onClose, onTasksCreated, departments }: AiTaskParserProps) {
+export function AiTaskParser({ open, onClose, onOpenChange, onTasksCreated, onCreated, departments = [], initialText }: AiTaskParserProps) {
   const [step, setStep] = useState<'input' | 'preview'>('input')
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initialText ?? '')
   const [parsing, setParsing] = useState(false)
+
+  // Sync initialText whenever the dialog opens with new content
+  useEffect(() => {
+    if (open && initialText) setText(initialText)
+  }, [open, initialText])
   const [tasks, setTasks] = useState<ParsedTask[]>([])
   const [assignedByName, setAssignedByName] = useState('')
   const [creating, setCreating] = useState(false)
@@ -103,15 +111,17 @@ export function AiTaskParser({ open, onClose, onTasksCreated, departments }: AiT
       } catch { fail++ }
     }
     setCreating(false)
-    onTasksCreated()
+    onTasksCreated?.()
+    onCreated?.()
     if (fail === 0) toast.success(`${ok} task${ok !== 1 ? 's' : ''} created`)
     else toast.warning(`${ok} created, ${fail} failed`)
     handleClose()
   }
 
   function handleClose() {
-    onClose()
-    setTimeout(() => { setStep('input'); setText(''); setTasks([]); setExpandedIdx(null) }, 200)
+    onClose?.()
+    onOpenChange?.(false)
+    setTimeout(() => { setStep('input'); setText(initialText ?? ''); setTasks([]); setExpandedIdx(null) }, 200)
   }
 
   function removeTask(idx: number) {

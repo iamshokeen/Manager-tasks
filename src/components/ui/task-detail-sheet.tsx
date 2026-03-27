@@ -17,12 +17,14 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { TaskComments } from '@/components/ui/task-comments'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { PriorityBadge } from '@/components/ui/priority-badge'
+import { DepartmentBadge } from '@/components/ui/department-badge'
 import { MemberAvatar } from '@/components/ui/member-avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn, STATUS_LABELS, TASK_STATUSES, PRIORITIES, formatDate } from '@/lib/utils'
+import { useDepartments } from '@/hooks/use-departments'
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+const fetcher = (url: string) => fetch(url).then(r => r.json()).then(r => r.data)
 
 interface TaskDetail {
   id: string
@@ -56,7 +58,7 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
     fetcher
   )
 
-  const { data: activitiesData } = useSWR<{ activities: Activity[] }>(
+  const { data: activitiesData } = useSWR<Activity[]>(
     taskId && open ? `/api/tasks/${taskId}/activities` : null,
     fetcher,
     { onError: () => {} }
@@ -80,12 +82,17 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
   // Priority dropdown
   const [priorityOpen, setPriorityOpen] = useState(false)
 
+  // Department dropdown
+  const [deptOpen, setDeptOpen] = useState(false)
+
   // AI summary
   const [summary, setSummary] = useState<string | null>(null)
 
   // AI progress report (from comments)
   const [progressReport, setProgressReport] = useState<string | null>(null)
   const [loadingProgress, setLoadingProgress] = useState(false)
+
+  const { departments } = useDepartments()
 
   async function fetchProgressReport() {
     if (!taskId) return
@@ -171,7 +178,13 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
     toast.success('Priority updated')
   }
 
-  const activities = activitiesData?.activities?.slice(0, 5) ?? []
+  async function changeDepartment(dept: string) {
+    setDeptOpen(false)
+    await patchTask({ department: dept })
+    toast.success('Department updated')
+  }
+
+  const activities = activitiesData?.slice(0, 5) ?? []
 
   return (
     <Sheet open={open} onOpenChange={v => { if (!v) onClose() }}>
@@ -233,7 +246,7 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
                 {/* Status */}
                 <div className="relative">
                   <button
-                    onClick={() => { setStatusOpen(v => !v); setPriorityOpen(false) }}
+                    onClick={() => { setStatusOpen(v => !v); setPriorityOpen(false); setDeptOpen(false) }}
                     className="cursor-pointer"
                     title="Change status"
                   >
@@ -260,7 +273,7 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
                 {/* Priority */}
                 <div className="relative">
                   <button
-                    onClick={() => { setPriorityOpen(v => !v); setStatusOpen(false) }}
+                    onClick={() => { setPriorityOpen(v => !v); setStatusOpen(false); setDeptOpen(false) }}
                     className="cursor-pointer"
                     title="Change priority"
                   >
@@ -278,6 +291,33 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
                           )}
                         >
                           {p}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Department */}
+                <div className="relative">
+                  <button
+                    onClick={() => { setDeptOpen(v => !v); setStatusOpen(false); setPriorityOpen(false) }}
+                    className="cursor-pointer"
+                    title="Change department"
+                  >
+                    <DepartmentBadge department={task.department ?? 'None'} />
+                  </button>
+                  {deptOpen && (
+                    <div className="absolute top-full left-0 mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[150px]">
+                      {departments?.map(d => (
+                        <button
+                          key={d}
+                          onClick={() => changeDepartment(d)}
+                          className={cn(
+                            'w-full text-left px-3 py-1.5 text-sm hover:bg-muted transition-colors',
+                            task.department === d && 'text-primary font-medium'
+                          )}
+                        >
+                          {d}
                         </button>
                       ))}
                     </div>
@@ -363,12 +403,12 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
                     {activities.map(a => (
                       <div key={a.id} className="flex items-start gap-2 text-sm">
                         <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-muted-foreground mt-0.5">
-                          {(a.authorName ?? 'U').charAt(0).toUpperCase()}
+                          {(a.authorName ?? 'S').charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <span className="text-foreground/80">{a.note}</span>
                           <span className="text-xs text-muted-foreground ml-2">
-                            {a.authorName ?? 'Unknown'}
+                            {a.authorName ?? 'System'}
                           </span>
                         </div>
                       </div>
