@@ -5,19 +5,20 @@ import { Search, Bell, LogOut } from 'lucide-react'
 import { useState } from 'react'
 
 const PAGE_TITLES: Record<string, string> = {
-  '/': 'Dashboard',
+  '/': 'Kairos',
   '/projects': 'Projects',
   '/tasks': 'Tasks',
   '/my-tasks': 'My Tasks',
-  '/team': 'Team',
+  '/team': 'Your People',
   '/one-on-ones': '1:1s',
-  '/cadence': 'Cadence',
-  '/stakeholders': 'Stakeholders',
+  '/cadence': 'Rounds',
+  '/stakeholders': 'The Table',
   '/reports': 'Reports',
   '/playbook': 'Playbook',
   '/settings': 'Settings',
   '/metrics': 'Metrics',
-  '/assessment': 'Assessment',
+  '/assessment': 'Channel Pulse',
+  '/follow-ups': 'Open Loops',
 }
 
 export function Topbar() {
@@ -31,7 +32,7 @@ export function Topbar() {
     router.push('/auth/login')
   }
   const baseRoute = '/' + (pathname.split('/')[1] ?? '')
-  const title = PAGE_TITLES[baseRoute] ?? 'Lohono CMD'
+  const title = PAGE_TITLES[baseRoute] ?? 'Kairos'
 
   const today = new Date().toLocaleDateString('en-IN', {
     weekday: 'short',
@@ -46,7 +47,7 @@ export function Topbar() {
       {/* Left: brand on mobile, page title on desktop */}
       <div className="flex items-center gap-4">
         <span className="text-base font-black tracking-tight text-foreground lg:hidden">
-          Lohono Stays
+          Kairos
         </span>
         <h1 className="hidden lg:block text-sm font-semibold text-foreground">{title}</h1>
       </div>
