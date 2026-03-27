@@ -168,9 +168,9 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div>
         <TextShimmer as="h1" className="text-2xl font-bold" duration={3}>
-          Command Center
+          Kairos
         </TextShimmer>
-        <p className="text-muted-foreground text-sm mt-1">Lohono Revenue &amp; Team Dashboard</p>
+        <p className="text-muted-foreground text-sm mt-1">Welcome to Kairos. Let's see what's open.</p>
       </div>
 
       {/* ── 1. Stat Row ──────────────────────────────────────────────────── */}

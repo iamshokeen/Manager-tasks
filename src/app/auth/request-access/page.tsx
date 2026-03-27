@@ -388,7 +388,7 @@ export default function RequestAccessPage() {
             className="w-full h-10"
             disabled={loading}
           >
-            {loading ? 'Submitting…' : 'Submit Request'}
+            {loading ? 'Submitting…' : 'Lock It In'}
           </Button>
 
           <p className="text-center text-sm text-[var(--outline)]">

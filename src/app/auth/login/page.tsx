@@ -253,10 +253,10 @@ export default function LoginPage() {
         </div>
         <div className="text-center">
           <h1 className="text-xl font-semibold text-foreground tracking-tight">
-            Lohono Command Center
+            Kairos
           </h1>
           {step === 'email' && (
-            <p className="text-sm text-[var(--outline)] mt-1">Sign in to your workspace</p>
+            <p className="text-sm text-[var(--outline)] mt-1">Know the moment. Own the purpose.</p>
           )}
         </div>
       </div>

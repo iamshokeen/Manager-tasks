@@ -42,7 +42,7 @@ function RejectedContent() {
 
       {/* Body */}
       <p className="text-sm text-[var(--outline)] leading-relaxed mb-4">
-        Your request to access Lohono Command Center was not approved.
+        Your request to access Kairos was not approved.
       </p>
 
       {/* Rejection reason (if provided) */}
