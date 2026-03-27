@@ -39,9 +39,8 @@ function OtpInput({ onComplete, disabled }: OtpInputProps) {
       focusAt(index + 1)
     }
 
-    const assembled = next.join('')
-    if (assembled.length === 6 && !assembled.includes('')) {
-      onComplete(assembled)
+    if (next.every(d => d !== '')) {
+      onComplete(next.join(''))
     }
   }
 

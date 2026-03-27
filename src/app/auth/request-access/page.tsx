@@ -38,9 +38,8 @@ function OtpInput({ onComplete, disabled }: OtpInputProps) {
       focusAt(index + 1)
     }
 
-    const assembled = next.join('')
-    if (assembled.length === 6 && !assembled.includes('')) {
-      onComplete(assembled)
+    if (next.every(d => d !== '')) {
+      onComplete(next.join(''))
     }
   }
 
@@ -206,8 +205,8 @@ export default function RequestAccessPage() {
         body: JSON.stringify({
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
-          role: formData.role,
-          team: formData.team.trim(),
+          roleRequested: formData.role,
+          teamName: formData.team.trim(),
           message: formData.message.trim() || undefined,
         }),
       })
@@ -264,8 +263,8 @@ export default function RequestAccessPage() {
         body: JSON.stringify({
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
-          role: formData.role,
-          team: formData.team.trim(),
+          roleRequested: formData.role,
+          teamName: formData.team.trim(),
           message: formData.message.trim() || undefined,
         }),
       })
