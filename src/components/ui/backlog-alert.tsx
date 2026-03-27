@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertTriangle, Clock, TrendingDown, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { AlertTriangle, Clock, TrendingDown, X, ChevronDown, ChevronUp, Bell } from 'lucide-react'
+import useSWR from 'swr'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { addDays, isPast } from 'date-fns'
 
 interface Task {
   id: string
@@ -14,6 +16,17 @@ interface Task {
   createdAt?: string
   updatedAt?: string
   assignee?: { name: string } | null
+}
+
+interface FollowUpItem {
+  id: string
+  title: string
+  contactName: string
+  status: string
+  reminderAt: string | null
+  snoozedUntil: string | null
+  autoRemind: boolean
+  lastActivityAt: string
 }
 
 interface BacklogAlertProps {
@@ -30,6 +43,18 @@ export function BacklogAlert({ tasks, className }: BacklogAlertProps) {
   const [dismissed, setDismissed] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
+  const { data: followUpsData } = useSWR<FollowUpItem[]>('/api/follow-ups',
+    (url: string) => fetch(url).then(r => r.json()).then(r => {
+      const flat: FollowUpItem[] = []
+      for (const fu of (r.data ?? [])) {
+        flat.push(fu)
+        for (const child of (fu.children ?? [])) flat.push(child)
+      }
+      return flat
+    }),
+    { onError: () => {} }
+  )
+
   if (dismissed) return null
 
   const now = new Date()
@@ -43,8 +68,15 @@ export function BacklogAlert({ tasks, className }: BacklogAlertProps) {
   const stuck = tasks.filter(
     t => t.status === 'in_progress' && daysSince(t.updatedAt) > 14
   )
+  const needsFollowUp = (followUpsData ?? []).filter(fu => {
+    if (fu.status !== 'open') return false
+    if (fu.snoozedUntil && !isPast(new Date(fu.snoozedUntil))) return false
+    if (fu.reminderAt && isPast(new Date(fu.reminderAt))) return true
+    if (fu.autoRemind && isPast(addDays(new Date(fu.lastActivityAt), 1))) return true
+    return false
+  })
 
-  if (overdue.length === 0 && staleTodo.length === 0 && stuck.length === 0) return null
+  if (overdue.length === 0 && staleTodo.length === 0 && stuck.length === 0 && needsFollowUp.length === 0) return null
 
   const urgentCount = overdue.filter(t => t.priority === 'urgent' || t.priority === 'high').length
 
@@ -79,6 +111,11 @@ export function BacklogAlert({ tasks, className }: BacklogAlertProps) {
             {stuck.length > 0 && (
               <span className="text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-1.5 py-0.5 rounded-full">
                 {stuck.length} stuck
+              </span>
+            )}
+            {needsFollowUp.length > 0 && (
+              <span className="text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 px-1.5 py-0.5 rounded-full">
+                {needsFollowUp.length} follow-up{needsFollowUp.length !== 1 ? 's' : ''}
               </span>
             )}
           </div>
@@ -124,6 +161,23 @@ export function BacklogAlert({ tasks, className }: BacklogAlertProps) {
               label="Stuck in progress (> 14 days)"
               tasks={stuck.slice(0, 4)}
             />
+          )}
+          {needsFollowUp.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Bell className="h-3.5 w-3.5 text-orange-500" />
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Follow-ups needing attention</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                {needsFollowUp.slice(0, 4).map(fu => (
+                  <Link key={fu.id} href="/follow-ups"
+                    className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-[var(--surface-container-low)] hover:bg-[var(--surface-container-high)] transition-colors group">
+                    <span className="text-xs text-foreground group-hover:text-primary transition-colors truncate">{fu.title}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{fu.contactName}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       )}
