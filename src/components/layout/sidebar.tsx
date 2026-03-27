@@ -19,7 +19,7 @@ interface NavGroup { group: string; items: NavItem[] }
 const BASE_NAV: NavGroup[] = [
   {
     group: 'Overview',
-    items: [{ href: '/', label: 'Dashboard', Icon: LayoutDashboard }],
+    items: [{ href: '/', label: 'Kairos', Icon: LayoutDashboard }],
   },
   {
     group: 'Work',
@@ -27,24 +27,24 @@ const BASE_NAV: NavGroup[] = [
       { href: '/projects', label: 'Projects', Icon: FolderKanban },
       { href: '/tasks', label: 'Tasks', Icon: CheckSquare },
       { href: '/my-tasks', label: 'My Tasks', Icon: ListTodo },
-      { href: '/cadence', label: 'Cadence', Icon: RefreshCw },
+      { href: '/cadence', label: 'Rounds', Icon: RefreshCw },
       { href: '/notes', label: 'Notes', Icon: StickyNote },
-      { href: '/follow-ups', label: 'Follow-ups', Icon: Bell },
+      { href: '/follow-ups', label: 'Open Loops', Icon: Bell },
     ],
   },
   {
     group: 'People',
     items: [
-      { href: '/team', label: 'Team', Icon: Users },
+      { href: '/team', label: 'Your People', Icon: Users },
       { href: '/one-on-ones', label: '1:1s', Icon: MessageSquare },
-      { href: '/stakeholders', label: 'Stakeholders', Icon: Handshake },
+      { href: '/stakeholders', label: 'The Table', Icon: Handshake },
     ],
   },
   {
-    group: 'Assessment',
+    group: 'Revenue',
     items: [
       { href: '/metrics', label: 'Metrics', Icon: BarChart3 },
-      { href: '/assessment/ota', label: 'OTA Assessment', Icon: TrendingUp },
+      { href: '/assessment/ota', label: 'Channel Pulse', Icon: TrendingUp },
       { href: '/assessment/checkin', label: 'Check-in GMV', Icon: Hotel },
     ],
   },
@@ -121,12 +121,12 @@ export function Sidebar({ userRole }: SidebarProps) {
     >
       {/* Brand */}
       <div className="px-4 py-5 flex items-center gap-3 min-w-0">
-        <span className="text-xl font-bold tracking-tighter text-primary shrink-0">L</span>
+        <span className="text-xl font-bold tracking-tighter text-primary shrink-0">K</span>
         {expanded && (
           <div className="min-w-0">
-            <h1 className="text-xl font-bold tracking-tighter text-primary whitespace-nowrap">Lohono Stays</h1>
+            <h1 className="text-xl font-bold tracking-tighter text-primary whitespace-nowrap">Kairos</h1>
             <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--outline)] font-bold mt-0.5 whitespace-nowrap">
-              Management Ecosystem
+              Know the moment. Own the purpose.
             </p>
           </div>
         )}
@@ -168,7 +168,7 @@ export function Sidebar({ userRole }: SidebarProps) {
       {/* Footer */}
       {expanded && (
         <div className="px-5 py-4 border-t border-[var(--outline-variant)]/20">
-          <div className="text-[10px] text-[var(--outline)] font-medium whitespace-nowrap">FY27 · Lohono Stays</div>
+          <div className="text-[10px] text-[var(--outline)] font-medium whitespace-nowrap">FY27 · Kairos</div>
         </div>
       )}
     </aside>
