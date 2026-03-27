@@ -7,7 +7,7 @@ import { sendEmail } from '@/lib/mailer'
 import { WorkspaceInvite } from '../../../../../emails/workspace-invite'
 import type { Role } from '@prisma/client'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://lohono-command-center.vercel.app'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://lohono-command-center.vercel.app' // KAIROS-TODO: Update fallback URL
 
 // ─── GET: list all invites ────────────────────────────────────────────────────
 
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const workspaceName = invite.workspace?.name ?? 'Lohono Command Center'
+    const workspaceName = invite.workspace?.name ?? 'Kairos'
     const acceptUrl = `${APP_URL}/auth/accept-invite?token=${token}`
 
     try {
@@ -166,7 +166,7 @@ export async function PATCH(request: NextRequest) {
         },
       })
 
-      const workspaceName = invite.workspace?.name ?? 'Lohono Command Center'
+      const workspaceName = invite.workspace?.name ?? 'Kairos'
       const acceptUrl = `${APP_URL}/auth/accept-invite?token=${newToken}`
 
       try {

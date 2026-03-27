@@ -40,7 +40,7 @@ export async function PATCH(
       )
       await sendEmail({
         to: target.email,
-        subject: 'Update on your Lohono Command Center access request',
+        subject: 'Update on your Kairos access request',
         html,
       })
     } catch {

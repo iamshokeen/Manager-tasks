@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     const html = await render(React.createElement(LoginOtp, { name: user.name, otp }))
     await sendEmail({
       to: emailLower,
-      subject: 'Your Lohono Command Center login code',
+      subject: 'Your Kairos login code',
       html,
     })
 

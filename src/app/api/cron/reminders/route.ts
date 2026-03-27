@@ -42,7 +42,7 @@ function buildReminderHtml(overdue: any[], dueSoon: any[]): string {
 
   return `<!DOCTYPE html><html><body style="background:#0A0B0F;color:#E8E9ED;font-family:'DM Sans',sans-serif;padding:32px;max-width:600px;margin:0 auto;">
   <div style="border-bottom:1px solid #1E2028;padding-bottom:16px;margin-bottom:24px;">
-    <span style="color:#C9A84C;font-weight:700;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">Lohono CMD — Task Reminders</span>
+    <span style="color:#C9A84C;font-weight:700;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">Kairos — Task Reminders</span>
   </div>
   ${overdue.length > 0 ? `<h3 style="color:#EF4444;font-size:13px;margin-bottom:8px;">Overdue (${overdue.length})</h3><table style="width:100%;border-collapse:collapse;margin-bottom:20px;">${overdue.map(t => row(t, true)).join('')}</table>` : ''}
   ${dueSoon.length > 0 ? `<h3 style="color:#F59E0B;font-size:13px;margin-bottom:8px;">Due in 24h (${dueSoon.length})</h3><table style="width:100%;border-collapse:collapse;">${dueSoon.map(t => row(t, false)).join('')}</table>` : ''}

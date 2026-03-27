@@ -40,7 +40,7 @@ function buildTaskEmailHtml(task: any, body: string): string {
 <head><meta charset="utf-8"></head>
 <body style="background:#0A0B0F;color:#E8E9ED;font-family:'DM Sans',sans-serif;padding:32px;max-width:600px;margin:0 auto;">
   <div style="border-bottom:1px solid #1E2028;padding-bottom:16px;margin-bottom:24px;">
-    <span style="color:#C9A84C;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;">Lohono Command Center</span>
+    <span style="color:#C9A84C;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;">Kairos</span>
   </div>
   <p style="font-size:15px;line-height:1.6;margin-bottom:24px;">${body}</p>
   <div style="background:#111318;border:1px solid #1E2028;border-radius:8px;padding:16px;margin-bottom:24px;">

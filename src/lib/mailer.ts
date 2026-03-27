@@ -21,7 +21,7 @@ export async function sendEmail({
   html: string
 }) {
   await transporter.sendMail({
-    from: `Lohono CMD <${process.env.SMTP_USER}>`,
+    from: `Kairos <${process.env.SMTP_USER}>`,
     to,
     subject,
     html,

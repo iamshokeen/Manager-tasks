@@ -62,7 +62,7 @@ function buildReportHtml(data: any): string {
 <html>
 <body style="background:#0A0B0F;color:#E8E9ED;font-family:'DM Sans',sans-serif;padding:32px;max-width:600px;margin:0 auto;">
   <div style="border-bottom:1px solid #1E2028;padding-bottom:16px;margin-bottom:24px;">
-    <span style="color:#C9A84C;font-weight:700;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">Lohono CMD — Weekly Report</span>
+    <span style="color:#C9A84C;font-weight:700;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">Kairos — Weekly Report</span>
     <div style="font-size:12px;color:#6B7280;margin-top:4px;">${formatPeriod(data.period)}</div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">

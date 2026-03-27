@@ -149,7 +149,7 @@ export async function POST(req: Request) {
       )
       await sendEmail({
         to: invite.email,
-        subject: 'Your Lohono Command Center access has been approved',
+        subject: 'Your Kairos access has been approved',
         html,
       })
     } catch (emailErr) {

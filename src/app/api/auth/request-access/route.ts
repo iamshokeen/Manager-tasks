@@ -102,7 +102,7 @@ export async function POST(req: Request) {
     const html = await render(React.createElement(VerifyEmail, { name: name.trim(), otp }))
     await sendEmail({
       to: emailLower,
-      subject: 'Verify your email — Lohono Command Center',
+      subject: 'Verify your email — Kairos',
       html,
     })
 

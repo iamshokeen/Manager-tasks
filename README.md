@@ -1,8 +1,18 @@
-# Lohono Command Center
+# Kairos
 
-> A personal management operating system built for a first-time people manager overseeing 5 direct reports across 6 departments at Lohono Stays — replacing scattered spreadsheets and Slack threads with a single, always-available command center.
+> The command center for managers who know why the work matters. Built for a people manager overseeing 5 direct reports across 6 departments — replacing scattered spreadsheets and Slack threads with one always-available operating system.
 
 **Live:** [lohono-command-center.vercel.app](https://lohono-command-center.vercel.app)
+
+---
+
+## Changelog
+
+### v2.0 — Kairos rebrand
+- App renamed from "Lohono Command Center" to **Kairos**
+- AI layer renamed to **Telos** — Telos persona injected into output-facing AI routes
+- Section renames: Cadences → Rounds, Follow-ups → Open Loops, Stakeholders → The Table, OTA Assessment → Channel Pulse, Team → Your People
+- All UI copy rewritten in brand voice: sharp, active, operator-toned
 
 ---
 
@@ -11,12 +21,12 @@
 This is a full-stack web app (installable as a PWA on Android, iOS, and Windows) that centralises everything a revenue-focused people manager needs day-to-day:
 
 - **Revenue tracking** — FY27 OTA Gross GMV and Check-in revenue actuals vs targets, pulled live from Google Sheets
-- **Team management** — profiles, 1:1 logs, open task counts per member
+- **Your People** — profiles, 1:1 logs, open task counts per member
 - **Task & project tracking** — prioritised task list with owner assignment and due dates
-- **Meeting cadences** — weekly standups, dept reviews, monthly and quarterly reviews with auto-generated prep tasks
-- **Stakeholder CRM** — contact list with influence/interest mapping and interaction log
+- **Rounds** — weekly standups, dept reviews, monthly and quarterly reviews with auto-generated prep tasks
+- **The Table** — contact list with influence/interest mapping and interaction log
 - **Reports** — auto-generated weekly summaries sent via email
-- **AI context** — local MCP server that gives Claude Desktop full visibility into the live app (tasks, team pulse, revenue status, risks) via natural language
+- **Telos** — local MCP server that gives Claude Desktop full visibility into the live app (tasks, team pulse, revenue status, risks) via natural language
 
 ---
 
@@ -40,7 +50,7 @@ I became a people manager for the first time in FY27, managing a team of 5 acros
 | Email | Resend |
 | Cron | cron-job.org (4 scheduled jobs) |
 | PWA | @ducanh2912/next-pwa (Workbox) |
-| AI context | Model Context Protocol (MCP) server |
+| Telos | Model Context Protocol (MCP) server |
 
 ---
 
@@ -52,7 +62,7 @@ I became a people manager for the first time in FY27, managing a team of 5 acros
 - Quick-nav BentoGrid to all major sections
 - Animated shimmer title
 
-### OTA Assessment
+### Channel Pulse
 - YTD Gross GMV, Net Revenue, MMT channel actuals
 - Monthly breakdown table with target vs actual
 - % attainment per month
@@ -70,17 +80,17 @@ I became a people manager for the first time in FY27, managing a team of 5 acros
 - Assign to team members, set due dates
 - Filter by assignee, status, project
 
-### Team
+### Your People
 - Member profiles with department, role, and contact info
 - Per-member task count and open items
 - 1:1 history log
 
-### Cadences
+### Rounds
 - Pre-seeded recurring meetings (weekly standup, dept review, monthly, quarterly)
 - Animated prep item checklist with lead time per item
 - One-click prep task generation — creates tasks in the task list before each meeting
 
-### Stakeholders
+### The Table
 - Internal and external stakeholder directory
 - Influence/interest classification
 - Interaction log
@@ -109,7 +119,7 @@ Google Sheets (source of truth for actuals)
 ```
 
 ```
-MCP Server (local, stdio)
+Telos MCP Server (local, stdio)
     ↓ 16 tools (get_dashboard_snapshot, get_revenue_status, create_task, etc.)
     ↓ HTTP → Vercel app (with CRON_SECRET auth)
     ↓ Claude Desktop — natural language queries against live data
@@ -130,7 +140,7 @@ All jobs send `Authorization: Bearer <CRON_SECRET>` header.
 
 ---
 
-## MCP Server
+## Telos
 
 A local MCP server at `lohono-mcp/server.js` gives Claude Desktop 16 tools to query the live app:
 
@@ -172,11 +182,11 @@ src/
 │   ├── projects/                   # Project tracking
 │   ├── team/                       # Team profiles + 1:1s
 │   ├── one-on-ones/                # 1:1 meeting logs
-│   ├── cadence/                    # Meeting cadences
-│   ├── stakeholders/               # Stakeholder CRM
+│   ├── cadence/                    # Rounds
+│   ├── stakeholders/               # The Table
 │   ├── metrics/                    # KPI dashboard
 │   ├── assessment/
-│   │   ├── ota/                    # OTA GMV assessment
+│   │   ├── ota/                    # Channel Pulse
 │   │   └── checkin/                # Check-in GMV assessment
 │   ├── reports/                    # Weekly reports
 │   ├── playbook/                   # SOPs and guides
@@ -195,7 +205,7 @@ public/
 scripts/
 └── generate-icons.js               # Sharp-based icon generator
 lohono-mcp/
-└── server.js                       # MCP server (16 tools)
+└── server.js                       # Telos server (16 tools)
 ```
 
 ---
