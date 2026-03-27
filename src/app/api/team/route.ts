@@ -1,8 +1,12 @@
 // src/app/api/team/route.ts
 import { NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
 import { getTeamMembers, createTeamMember } from '@/lib/services/team'
 
 export async function GET() {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const members = await getTeamMembers()
     return NextResponse.json({ data: members })
@@ -12,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const body = await req.json()
     if (!body.name || !body.role || !body.department) {

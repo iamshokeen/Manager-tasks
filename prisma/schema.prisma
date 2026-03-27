@@ -177,7 +177,7 @@ model Project {
   department    String
   stage         String       @default("planning")
   ownerId       String?
-  owner         TeamMember?  @relation(fields: [ownerId], references: [id])
+  owner         TeamMember?  @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   stakeholderId String?
   stakeholder   Stakeholder? @relation(fields: [stakeholderId], references: [id])
   dueDate       DateTime?
@@ -248,7 +248,7 @@ model Stakeholder {
 model OneOnOne {
   id               String           @id @default(cuid())
   memberId         String
-  member           TeamMember       @relation(fields: [memberId], references: [id])
+  member           TeamMember       @relation(fields: [memberId], references: [id], onDelete: Cascade)
   date             DateTime
   mood             String           @default("neutral")
   theirUpdates     String?          @db.Text
@@ -309,7 +309,7 @@ model EmailThread {
   status        String          @default("open")
   priority      String          @default("medium")
   assigneeId    String?
-  assignee      TeamMember?     @relation(fields: [assigneeId], references: [id])
+  assignee      TeamMember?     @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
   tasks         TaskEmailLink[]
   labels        String[]        @default([])
   isStarred     Boolean         @default(false)

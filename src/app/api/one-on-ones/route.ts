@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
 import { getOneOnOnes, createOneOnOne } from '@/lib/services/one-on-ones'
 
 export async function GET(req: Request) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { searchParams } = new URL(req.url)
   const memberId = searchParams.get('memberId') ?? undefined
   try {
@@ -13,6 +17,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const body = await req.json()
     if (!body.memberId || !body.date) {

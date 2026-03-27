@@ -1,8 +1,12 @@
 // src/app/api/tasks/[id]/activity/route.ts
 import { NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
 import { getTaskActivity, logActivity } from '@/lib/services/tasks'
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const { id } = await params
     const activities = await getTaskActivity(id)
@@ -13,6 +17,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const { id } = await params
     const { note } = await req.json()

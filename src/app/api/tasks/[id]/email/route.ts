@@ -1,10 +1,14 @@
 // src/app/api/tasks/[id]/email/route.ts
 import { NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
 import { sendEmail } from '@/lib/mailer'
 import { getTask, logActivity } from '@/lib/services/tasks'
 import { formatDate } from '@/lib/utils'
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = await params
   const { to, subject, body } = await req.json()
   if (!to || !subject || !body) {

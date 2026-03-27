@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
 import { getOneOnOne, updateOneOnOne, deleteOneOnOne } from '@/lib/services/one-on-ones'
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const { id } = await params
     const record = await getOneOnOne(id)
@@ -13,6 +17,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = await params
   try {
     const body = await req.json()
@@ -24,6 +31,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = await params
   try {
     await deleteOneOnOne(id)

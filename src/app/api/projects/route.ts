@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
 import { getProjects, createProject } from '@/lib/services/projects'
 
 export async function GET(req: Request) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { searchParams } = new URL(req.url)
   const filters = {
     stage: searchParams.get('stage') ?? undefined,
@@ -16,6 +20,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const body = await req.json()
     if (!body.title || !body.department) {

@@ -2,13 +2,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyOTP, signJWT, setAuthCookie } from '@/lib/auth'
-import { checkRateLimit, getRateLimitIp } from '@/lib/rate-limit'
+import { checkOtpVerifyLimit, resetOtpVerifyLimit, getRateLimitIp } from '@/lib/rate-limit'
 
 export async function POST(req: Request) {
   try {
-    // Rate limit
+    // Tighter rate limit for OTP verify — separate from login request limit
     const ip = getRateLimitIp(req)
-    const rl = checkRateLimit(ip)
+    const rl = checkOtpVerifyLimit(ip)
     if (!rl.allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
@@ -59,6 +59,9 @@ export async function POST(req: Request) {
     if (!valid) {
       return NextResponse.json({ error: invalidMsg }, { status: 401 })
     }
+
+    // Clear OTP verify rate limit on success
+    resetOtpVerifyLimit(ip)
 
     // Sign JWT and set cookie
     const token = await signJWT({ userId: user.id, email: user.email, role: user.role })

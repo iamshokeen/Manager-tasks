@@ -13,7 +13,11 @@ const store = new Map<string, RateLimitEntry>()
 const WINDOW_MS = 15 * 60 * 1000 // 15 minutes
 const MAX_REQUESTS = 5
 
-// Prune expired entries periodically to avoid memory leaks
+// Tighter limit for OTP verify attempts — 5 attempts per 15 min per IP.
+// Also invalidate OTP after too many failed attempts (handled in verify-login route).
+const OTP_VERIFY_MAX = 5
+const OTP_VERIFY_WINDOW_MS = 15 * 60 * 1000
+
 function pruneExpired() {
   const now = Date.now()
   for (const [key, entry] of store.entries()) {
@@ -21,24 +25,35 @@ function pruneExpired() {
   }
 }
 
-export function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetAt: number } {
+function check(key: string, max: number, windowMs: number): { allowed: boolean; remaining: number; resetAt: number } {
   pruneExpired()
   const now = Date.now()
-  const key = `auth:${ip}`
   const entry = store.get(key)
 
   if (!entry || entry.resetAt < now) {
-    store.set(key, { count: 1, resetAt: now + WINDOW_MS })
-    return { allowed: true, remaining: MAX_REQUESTS - 1, resetAt: now + WINDOW_MS }
+    store.set(key, { count: 1, resetAt: now + windowMs })
+    return { allowed: true, remaining: max - 1, resetAt: now + windowMs }
   }
 
   entry.count += 1
-  const remaining = Math.max(0, MAX_REQUESTS - entry.count)
+  const remaining = Math.max(0, max - entry.count)
   return {
-    allowed: entry.count <= MAX_REQUESTS,
+    allowed: entry.count <= max,
     remaining,
     resetAt: entry.resetAt,
   }
+}
+
+export function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetAt: number } {
+  return check(`auth:${ip}`, MAX_REQUESTS, WINDOW_MS)
+}
+
+export function checkOtpVerifyLimit(ip: string): { allowed: boolean; remaining: number; resetAt: number } {
+  return check(`otp-verify:${ip}`, OTP_VERIFY_MAX, OTP_VERIFY_WINDOW_MS)
+}
+
+export function resetOtpVerifyLimit(ip: string) {
+  store.delete(`otp-verify:${ip}`)
 }
 
 export function getRateLimitIp(req: Request): string {

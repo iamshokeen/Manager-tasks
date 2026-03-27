@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
 import { getCadence, updateCadence, deleteCadence } from '@/lib/services/cadence'
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = await params
   const cadence = await getCadence(id)
   if (!cadence) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -9,6 +13,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = await params
   try {
     const body = await req.json()
@@ -20,6 +27,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = await params
   try {
     await deleteCadence(id)

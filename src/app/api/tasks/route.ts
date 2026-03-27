@@ -6,6 +6,7 @@ import type { TaskFilters } from '@/types'
 
 export async function GET(req: Request) {
   const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const filters: TaskFilters = {
@@ -20,12 +21,10 @@ export async function GET(req: Request) {
     assignedByName: searchParams.get('assignedByName') ?? undefined,
   }
 
-  // RBAC: Junior users can only see tasks assigned to themselves
-  if (session?.user) {
-    const user = session.user as { role?: string; teamMemberId?: string }
-    if (user.role === 'JUNIOR' && user.teamMemberId) {
-      filters.assigneeId = user.teamMemberId
-    }
+  // RBAC: DIRECT_REPORT users can only see tasks assigned to themselves
+  const user = session.user as { role?: string; teamMemberId?: string }
+  if (user.role === 'DIRECT_REPORT' && user.teamMemberId) {
+    filters.assigneeId = user.teamMemberId
   }
 
   try {
@@ -37,6 +36,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const body = await req.json()
     if (!body.title || !body.department) {

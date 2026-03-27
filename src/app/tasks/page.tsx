@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Plus, Search, Calendar, ClipboardList, User, Archive, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
-import { useSession } from 'next-auth/react'
+import { useCurrentUser } from '@/hooks/use-current-user'
 
 import {
   DndContext,
@@ -275,7 +275,7 @@ function ArchiveList({ tasks, onRestore }: ArchiveListProps) {
 // ---------------------------------------------------------------------------
 
 export default function TasksPage() {
-  const { data: session } = useSession()
+  const currentUser = useCurrentUser()
 
   const [search, setSearch] = useState('')
   const [deptFilter, setDeptFilter] = useState<string>('all')
@@ -288,7 +288,7 @@ export default function TasksPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [showArchive, setShowArchive] = useState(false)
 
-  const myTeamMemberId = (session?.user as { teamMemberId?: string } | undefined)?.teamMemberId
+  const myTeamMemberId = currentUser?.teamMemberId
 
   const filters: TaskFilters = {}
   if (search) filters.search = search
@@ -392,7 +392,7 @@ export default function TasksPage() {
         title: form.title.trim(),
         priority: form.priority || 'medium',
         isSelfTask: isSelf ? true : form.isSelfTask,
-        assignedByName: session?.user?.name ?? 'Saksham',
+        assignedByName: currentUser?.name ?? 'Saksham',
       }
       if (form.department) body.department = form.department
       if (!isSelf && form.assigneeId) body.assigneeId = form.assigneeId

@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
 import { getTargets } from '@/lib/services/targets'
 
 export async function GET() {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const targets = await getTargets()
     return NextResponse.json({ targets }, {

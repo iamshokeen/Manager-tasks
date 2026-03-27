@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
 import { getStakeholders, createStakeholder } from '@/lib/services/stakeholders'
 
 export async function GET() {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const stakeholders = await getStakeholders()
     return NextResponse.json({ data: stakeholders })
@@ -11,6 +15,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const body = await req.json()
     if (!body.name || !body.frequency || !body.channel) {

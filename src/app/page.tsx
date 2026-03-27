@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
-import { useSession } from 'next-auth/react'
+import { useCurrentUser } from '@/hooks/use-current-user'
 import { useTasks } from '@/hooks/use-tasks'
 import { useTeam } from '@/hooks/use-team'
 import { useCadences } from '@/hooks/use-cadences'
@@ -27,9 +27,9 @@ interface Member { id: string; name: string; role: string; department: string; s
 const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
 
 export default function DashboardPage() {
-  const { data: session } = useSession()
+  const currentUser = useCurrentUser()
   const { tasks, isLoading: tasksLoading } = useTasks()
-  const myName = session?.user?.name ?? undefined
+  const myName = currentUser?.name ?? undefined
   const { tasks: assignedByMeTasks, isLoading: assignedByMeLoading } = useTasks(
     myName ? { assignedByName: myName } : {}
   )

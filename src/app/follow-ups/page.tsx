@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import useSWR from 'swr'
-import { useSession } from 'next-auth/react'
+import { useCurrentUser } from '@/hooks/use-current-user'
 import { toast } from 'sonner'
 import { formatDistanceToNow, isPast, addDays } from 'date-fns'
 import {
@@ -444,7 +444,7 @@ function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, project
   departments: string[]
   onSpawn: (parentId: string, parentTitle: string) => void
 }) {
-  const { data: session } = useSession()
+  const currentUser = useCurrentUser()
   const [noteText, setNoteText] = useState('')
   const [addingNote, setAddingNote] = useState(false)
   const [snoozeOpen, setSnoozeOpen] = useState(false)
@@ -460,7 +460,7 @@ function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, project
       const res = await fetch(`/api/follow-ups/${followUp.id}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: noteText.trim(), authorName: (session?.user as { name?: string })?.name ?? 'You' }),
+        body: JSON.stringify({ content: noteText.trim(), authorName: currentUser?.name ?? 'You' }),
       })
       if (!res.ok) throw new Error()
       setNoteText('')

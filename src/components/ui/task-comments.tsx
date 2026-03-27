@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { useSession } from 'next-auth/react'
+import { useCurrentUser } from '@/hooks/use-current-user'
 import useSWR from 'swr'
 import { formatDistanceToNow } from 'date-fns'
 import { Send } from 'lucide-react'
@@ -15,7 +15,7 @@ interface Comment {
 }
 
 export function TaskComments({ taskId }: { taskId: string }) {
-  const { data: session } = useSession()
+  const currentUser = useCurrentUser()
   const { data, mutate } = useSWR<{ activities: Comment[] }>(
     `/api/tasks/${taskId}/comments`,
     fetcher
@@ -30,7 +30,7 @@ export function TaskComments({ taskId }: { taskId: string }) {
     await fetch(`/api/tasks/${taskId}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note: text, authorName: session?.user?.name ?? 'You' }),
+      body: JSON.stringify({ note: text, authorName: currentUser?.name ?? 'You' }),
     })
     setText('')
     setSending(false)

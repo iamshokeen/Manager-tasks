@@ -318,9 +318,19 @@ export default function LoginPage() {
             <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 text-center">{error}</p>
           )}
 
-          {verifying && (
-            <p className="text-sm text-[var(--outline)] text-center">Verifying…</p>
-          )}
+          <Button
+            type="button"
+            size="lg"
+            className="w-full h-10"
+            disabled={verifying}
+            onClick={() => {
+              const inputs = document.querySelectorAll<HTMLInputElement>('input[inputmode="numeric"]')
+              const otp = Array.from(inputs).map(i => i.value).join('')
+              if (otp.length === 6) handleVerify(otp)
+            }}
+          >
+            {verifying ? 'Verifying…' : 'Verify Code'}
+          </Button>
 
           <div className="flex flex-col items-center gap-3">
             <ResendButton onResend={handleResend} disabled={verifying} />
