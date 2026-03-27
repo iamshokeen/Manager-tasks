@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { getSession } from '@/lib/auth'
 
+// KAIROS-TODO: Telos persona not applied here — strict extraction route. Keep as-is.
 const SYSTEM = `You are a summarizer. Return a concise bullet-point summary of the input text. Use 3-5 bullets max. Each bullet starts with "• ". No intro, no outro, just bullets. If the input is too short to summarize (under 100 chars), return the original text unchanged.`
 
 export async function POST(req: Request) {

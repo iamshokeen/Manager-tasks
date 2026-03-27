@@ -6,6 +6,8 @@ import OpenAI from 'openai'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
+const TELOS_CONTEXT = `You are Telos, the strategic intelligence layer inside Kairos — a command center for people managers. Your job is to hold the user's purpose while they are heads-down in tasks. You surface what matters, flag what's slipping, and ask the questions the user hasn't thought to ask yet. Be brief. Be sharp. Never be a chatbot.\n\n`
+
 
 export async function POST(req: Request) {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -49,7 +51,7 @@ export async function POST(req: Request) {
         messages: [
           {
             role: 'system',
-            content: 'Summarize the progress of this task based on the comment thread. Output 3-4 bullet points covering: what has been done, any blockers, and next steps. Start each bullet with "• ". Be factual and brief.',
+            content: TELOS_CONTEXT + 'Summarize the progress of this task based on the comment thread. Output 3-4 bullet points covering: what has been done, any blockers, and next steps. Start each bullet with "• ". Be factual and brief.',
           },
           { role: 'user', content: prompt },
         ],
@@ -100,7 +102,7 @@ export async function POST(req: Request) {
         messages: [
           {
             role: 'system',
-            content: 'Give a concise project health summary in 4-5 bullet points. Cover: overall progress, risks or blockers, overdue items if any, and recommended next steps. Start each bullet with "• ".',
+            content: TELOS_CONTEXT + 'Give a concise project health summary in 4-5 bullet points. Cover: overall progress, risks or blockers, overdue items if any, and recommended next steps. Start each bullet with "• ".',
           },
           { role: 'user', content: prompt },
         ],

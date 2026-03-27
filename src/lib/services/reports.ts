@@ -49,7 +49,7 @@ export async function emailReport(reportId: string, to?: string) {
 
   await sendEmail({
     to: recipient,
-    subject: `Weekly Report — ${formatPeriod(report.period)}`,
+    subject: `Your Kairos Brief — ${formatPeriod(report.period)}`,
     html: buildReportHtml(data),
   })
 

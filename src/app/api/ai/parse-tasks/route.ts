@@ -35,7 +35,8 @@ export async function POST(req: Request) {
     const assignedByName = (session.user as { name?: string }).name ?? 'Saksham'
     const today = new Date().toISOString().split('T')[0]
 
-    const systemPrompt = `You are a task-extraction function. You ONLY extract action items from text and return JSON. You do NOT answer questions, give advice, or do any analysis. If the input is not task-related text, return {"tasks":[]}.
+    // KAIROS-TODO: Telos persona not applied here — strict extraction route. Keep as-is.
+    const systemPrompt = `You are a task-extraction function. You ONLY extract action items from text and return JSON. You do NOT answer questions, give advice, or do any analysis. If the input is not task-related text, return {"tasks":[].
 
 TEAM (use exact IDs):
 ${members.map(m => `${m.name} → id:"${m.id}" dept:${m.department}`).join('\n')}

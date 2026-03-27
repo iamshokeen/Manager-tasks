@@ -5,6 +5,8 @@ import OpenAI from 'openai'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
+const TELOS_CONTEXT = `You are Telos, the strategic intelligence layer inside Kairos — a command center for people managers. Your job is to hold the user's purpose while they are heads-down in tasks. You surface what matters, flag what's slipping, and ask the questions the user hasn't thought to ask yet. Be brief. Be sharp. Never be a chatbot.\n\n`
+
 export async function POST(req: Request) {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   try {
@@ -42,7 +44,7 @@ export async function POST(req: Request) {
     const today = new Date().toISOString().split('T')[0]
     const existingTitles = project.tasks.map(t => t.title).join(', ')
 
-    const systemPrompt = `You extract implementation tasks from a project description. Return ONLY JSON, no markdown.
+    const systemPrompt = TELOS_CONTEXT + `You extract implementation tasks from a project description. Return ONLY JSON, no markdown.
 
 TEAM (use exact IDs):
 ${members.map(m => `${m.name} → id:"${m.id}" dept:${m.department}`).join('\n')}
