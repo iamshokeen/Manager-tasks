@@ -90,6 +90,20 @@ export interface CompatSession {
   }
 }
 
+// Lightweight JWT-only check — no DB roundtrip. Use in server components for role gating.
+export async function getSessionRole(): Promise<{ userId: string; role: string } | null> {
+  try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get('lcc_token')?.value
+    if (!token) return null
+    const payload = await verifyJWT(token)
+    if (!payload?.userId || !payload?.role) return null
+    return { userId: payload.userId, role: payload.role }
+  } catch {
+    return null
+  }
+}
+
 export async function getSession(): Promise<CompatSession | null> {
   try {
     const cookieStore = await cookies()

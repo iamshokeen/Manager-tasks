@@ -45,21 +45,17 @@ export async function POST(req: Request) {
     const user = await prisma.user.findUnique({ where: { email: emailLower } })
 
     if (!user) {
-      console.log('[verify-login] no user found for', emailLower)
       return NextResponse.json({ error: invalidMsg }, { status: 401 })
     }
     if (!user.verifyToken || !user.verifyExpiry) {
-      console.log('[verify-login] no verifyToken or expiry for', emailLower)
       return NextResponse.json({ error: invalidMsg }, { status: 401 })
     }
     if (user.verifyExpiry < new Date()) {
-      console.log('[verify-login] expired for', emailLower, 'expiry:', user.verifyExpiry)
       return NextResponse.json({ error: invalidMsg }, { status: 401 })
     }
 
     // Verify OTP
     const valid = await verifyOTP(otp.trim(), user.verifyToken)
-    console.log('[verify-login] bcrypt result:', valid, 'otp length:', otp.trim().length)
     if (!valid) {
       return NextResponse.json({ error: invalidMsg }, { status: 401 })
     }

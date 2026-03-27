@@ -1,10 +1,10 @@
 // src/app/dashboard/admin/activity-log/page.tsx
-import { getCurrentUser } from '@/lib/getCurrentUser'
+import { getSessionRole } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { ActivityLogClient } from './activity-log-client'
 
 export default async function AdminActivityLogPage() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'SUPER_ADMIN') redirect('/dashboard')
+  const session = await getSessionRole()
+  if (!session || session.role !== 'SUPER_ADMIN') redirect('/')
   return <ActivityLogClient />
 }

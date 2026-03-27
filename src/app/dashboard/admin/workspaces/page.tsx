@@ -1,10 +1,10 @@
 // src/app/dashboard/admin/workspaces/page.tsx
-import { getCurrentUser } from '@/lib/getCurrentUser'
+import { getSessionRole } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { WorkspacesClient } from './workspaces-client'
 
 export default async function AdminWorkspacesPage() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'SUPER_ADMIN') redirect('/dashboard')
+  const session = await getSessionRole()
+  if (!session || session.role !== 'SUPER_ADMIN') redirect('/')
   return <WorkspacesClient />
 }
