@@ -1,12 +1,8 @@
 // src/app/api/cron/reminders/route.ts
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { Resend } from 'resend'
+import { sendEmail } from '@/lib/mailer'
 import { isDueSoon, isOverdue, formatDate } from '@/lib/utils'
-
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY)
-}
 
 export async function GET(req: Request) {
   const cronSecret = process.env.CRON_SECRET
@@ -26,9 +22,7 @@ export async function GET(req: Request) {
   const dueSoon = tasks.filter(t => isDueSoon(t.dueDate))
 
   if (overdue.length > 0 || dueSoon.length > 0) {
-    const resend = getResend()
-    await resend.emails.send({
-      from: 'Lohono CMD <onboarding@resend.dev>',
+    await sendEmail({
       to,
       subject: `Task Alert — ${overdue.length} overdue, ${dueSoon.length} due soon`,
       html: buildReminderHtml(overdue, dueSoon),

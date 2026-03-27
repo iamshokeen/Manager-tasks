@@ -1,14 +1,12 @@
 // src/app/api/auth/verify-email/route.ts
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
 import { render } from '@react-email/render'
 import { prisma } from '@/lib/prisma'
 import { verifyOTP } from '@/lib/auth'
 import { checkRateLimit, getRateLimitIp } from '@/lib/rate-limit'
+import { sendEmail } from '@/lib/mailer'
 import { AccessRequestAdmin } from '../../../../../emails/access-request-admin'
 import React from 'react'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 // Human-readable role label for admin notification email
 function roleLabel(role: string): string {
@@ -109,8 +107,7 @@ export async function POST(req: Request) {
             appUrl,
           })
         )
-        await resend.emails.send({
-          from: 'Lohono <noreply@lohono.com>',
+        await sendEmail({
           to: adminEmail,
           subject: `New access request from ${user.name}`,
           html,

@@ -1,13 +1,11 @@
 // src/app/api/auth/accept-invite/route.ts
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
 import { render } from '@react-email/render'
 import { prisma } from '@/lib/prisma'
 import { signJWT, setAuthCookie } from '@/lib/auth'
+import { sendEmail } from '@/lib/mailer'
 import { AccessApproved } from '../../../../../emails/access-approved'
 import React from 'react'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
   try {
@@ -149,8 +147,7 @@ export async function POST(req: Request) {
       const html = await render(
         React.createElement(AccessApproved, { name: newUserName, appUrl })
       )
-      await resend.emails.send({
-        from: 'Lohono <noreply@lohono.com>',
+      await sendEmail({
         to: invite.email,
         subject: 'Your Lohono Command Center access has been approved',
         html,

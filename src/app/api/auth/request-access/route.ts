@@ -1,15 +1,13 @@
 // src/app/api/auth/request-access/route.ts
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
 import { render } from '@react-email/render'
 import { prisma } from '@/lib/prisma'
 import { generateOTP, hashOTP } from '@/lib/auth'
 import { checkRateLimit, getRateLimitIp } from '@/lib/rate-limit'
+import { sendEmail } from '@/lib/mailer'
 import { VerifyEmail } from '../../../../../emails/verify-email'
 import { Role } from '@prisma/client'
 import React from 'react'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 function mapRoleStringToEnum(roleRequested: string): Role {
   switch (roleRequested) {
@@ -102,8 +100,7 @@ export async function POST(req: Request) {
 
     // Send verification email
     const html = await render(React.createElement(VerifyEmail, { name: name.trim(), otp }))
-    await resend.emails.send({
-      from: 'Lohono <noreply@lohono.com>',
+    await sendEmail({
       to: emailLower,
       subject: 'Verify your email — Lohono Command Center',
       html,

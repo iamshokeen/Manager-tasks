@@ -1,12 +1,8 @@
 // src/app/api/tasks/[id]/email/route.ts
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
+import { sendEmail } from '@/lib/mailer'
 import { getTask, logActivity } from '@/lib/services/tasks'
 import { formatDate } from '@/lib/utils'
-
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY)
-}
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -19,9 +15,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 })
 
   try {
-    const resend = getResend()
-    await resend.emails.send({
-      from: 'Lohono CMD <onboarding@resend.dev>',
+    await sendEmail({
       to,
       subject,
       html: buildTaskEmailHtml(task, body),

@@ -2,12 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/getCurrentUser'
 import { prisma } from '@/lib/prisma'
-import { Resend } from 'resend'
 import { render } from '@react-email/render'
+import { sendEmail } from '@/lib/mailer'
 import { AccessApproved } from '../../../../../../../emails/access-approved'
 import type { Role } from '@prisma/client'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://lohono-command-center.vercel.app'
 
 export async function PATCH(
@@ -62,8 +61,7 @@ export async function PATCH(
 
     try {
       const html = await render(AccessApproved({ name: target.name, appUrl: APP_URL }))
-      await resend.emails.send({
-        from: `Lohono Command Center <${process.env.ADMIN_EMAIL || 'saksham.shokeen@lohono.com'}>`,
+      await sendEmail({
         to: target.email,
         subject: 'Your access has been approved',
         html,

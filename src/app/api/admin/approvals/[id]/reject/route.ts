@@ -2,11 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/getCurrentUser'
 import { prisma } from '@/lib/prisma'
-import { Resend } from 'resend'
 import { render } from '@react-email/render'
+import { sendEmail } from '@/lib/mailer'
 import { AccessRejected } from '../../../../../../../emails/access-rejected'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'saksham.shokeen@lohono.com'
 
 export async function PATCH(
@@ -39,8 +38,7 @@ export async function PATCH(
       const html = await render(
         AccessRejected({ name: target.name, reason: body.reason, adminEmail: ADMIN_EMAIL })
       )
-      await resend.emails.send({
-        from: `Lohono Command Center <${ADMIN_EMAIL}>`,
+      await sendEmail({
         to: target.email,
         subject: 'Update on your Lohono Command Center access request',
         html,

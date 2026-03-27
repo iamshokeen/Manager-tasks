@@ -2,14 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/getCurrentUser'
 import { prisma } from '@/lib/prisma'
-import { Resend } from 'resend'
 import { render } from '@react-email/render'
+import { sendEmail } from '@/lib/mailer'
 import { WorkspaceInvite } from '../../../../../emails/workspace-invite'
 import type { Role } from '@prisma/client'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://lohono-command-center.vercel.app'
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'saksham.shokeen@lohono.com'
 
 // ─── GET: list all invites ────────────────────────────────────────────────────
 
@@ -88,8 +86,7 @@ export async function POST(request: NextRequest) {
           expiresAt: expiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
         })
       )
-      await resend.emails.send({
-        from: `Lohono Command Center <${ADMIN_EMAIL}>`,
+      await sendEmail({
         to: body.email,
         subject: `You've been invited to ${workspaceName}`,
         html,
@@ -182,8 +179,7 @@ export async function PATCH(request: NextRequest) {
             expiresAt: newExpiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
           })
         )
-        await resend.emails.send({
-          from: `Lohono Command Center <${ADMIN_EMAIL}>`,
+        await sendEmail({
           to: invite.email,
           subject: `You've been invited to ${workspaceName}`,
           html,
