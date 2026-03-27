@@ -1,6 +1,5 @@
 // src/components/layout/sidebar.tsx
 'use client'
-import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -105,50 +104,36 @@ interface SidebarProps {
 
 export function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname()
-  const [expanded, setExpanded] = useState(false)
 
   const role = (userRole as Role) ?? 'DIRECT_REPORT'
   const navGroups = filterNavForRole(role)
 
   return (
-    <aside
-      className={cn(
-        'hidden lg:flex fixed left-0 top-0 h-screen flex-col bg-[var(--surface-container-low)] z-40 print:hidden transition-[width] duration-300 overflow-hidden',
-        expanded ? 'w-64' : 'w-16'
-      )}
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
-    >
+    <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-64 flex-col bg-[var(--surface-container-low)] z-40 print:hidden overflow-hidden">
       {/* Brand */}
       <div className="px-4 py-5 flex items-center gap-3 min-w-0">
         <span className="text-xl font-bold tracking-tighter text-primary shrink-0">K</span>
-        {expanded && (
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold tracking-tighter text-primary whitespace-nowrap">Kairos</h1>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--outline)] font-bold mt-0.5 whitespace-nowrap">
-              Know the moment. Own the purpose.
-            </p>
-          </div>
-        )}
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tighter text-primary whitespace-nowrap">Kairos</h1>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--outline)] font-bold mt-0.5 whitespace-nowrap">
+            Know the moment. Own the purpose.
+          </p>
+        </div>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-4">
         {navGroups.map(({ group, items }) => (
           <div key={group} className="mb-1">
-            {expanded && (
-              <div className="px-3 py-2 text-[10px] font-bold tracking-widest text-[var(--outline)] uppercase whitespace-nowrap">
-                {group}
-              </div>
-            )}
-            {!expanded && <div className="py-1" />}
+            <div className="px-3 py-2 text-[10px] font-bold tracking-widest text-[var(--outline)] uppercase whitespace-nowrap">
+              {group}
+            </div>
             {items.map(({ href, label, Icon }) => {
               const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
               return (
                 <Link
                   key={href}
                   href={href}
-                  title={label}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
                     active
@@ -157,7 +142,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                   )}
                 >
                   <Icon size={18} strokeWidth={active ? 2.5 : 1.75} className="shrink-0" />
-                  {expanded && <span className="whitespace-nowrap">{label}</span>}
+                  <span className="whitespace-nowrap">{label}</span>
                 </Link>
               )
             })}
@@ -166,11 +151,9 @@ export function Sidebar({ userRole }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      {expanded && (
-        <div className="px-5 py-4 border-t border-[var(--outline-variant)]/20">
-          <div className="text-[10px] text-[var(--outline)] font-medium whitespace-nowrap">FY27 · Kairos</div>
-        </div>
-      )}
+      <div className="px-5 py-4 border-t border-[var(--outline-variant)]/20">
+        <div className="text-[10px] text-[var(--outline)] font-medium whitespace-nowrap">FY27 · Kairos</div>
+      </div>
     </aside>
   )
 }

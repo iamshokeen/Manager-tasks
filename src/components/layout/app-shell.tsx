@@ -14,7 +14,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar userRole={session?.role ?? null} />
       <Topbar />
       <CommandPalette />
-      <main className="pt-14 lg:ml-16 min-h-screen pb-16 lg:pb-0 print:ml-0 print:pt-0">
+      <main className="pt-14 lg:ml-64 min-h-screen pb-16 lg:pb-0 print:ml-0 print:pt-0">
         <div className="p-4 lg:p-8">{children}</div>
       </main>
       <MobileBottomNav />
