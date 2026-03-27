@@ -1,14 +1,10 @@
 // src/middleware.ts
+// Runs in Edge Runtime — keep this import-free from jose/bcrypt/prisma.
+// JWT cryptographic verification happens in Node.js runtime (getSession/getSessionRole).
+// Middleware only gates on cookie presence; actual auth is enforced per-route.
 import { NextRequest, NextResponse } from 'next/server'
-import { jwtVerify } from 'jose'
 
-function getSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET
-  if (!secret) throw new Error('JWT_SECRET is not set')
-  return new TextEncoder().encode(secret)
-}
-
-export async function middleware(req: NextRequest) {
+export function middleware(req: NextRequest) {
   const token = req.cookies.get('lcc_token')?.value
 
   if (!token) {
@@ -17,16 +13,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  try {
-    await jwtVerify(token, getSecret())
-    const response = NextResponse.next()
-    response.headers.set('x-pathname', req.nextUrl.pathname)
-    return response
-  } catch {
-    const loginUrl = new URL('/auth/login', req.url)
-    loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname)
-    return NextResponse.redirect(loginUrl)
-  }
+  const response = NextResponse.next()
+  response.headers.set('x-pathname', req.nextUrl.pathname)
+  return response
 }
 
 
