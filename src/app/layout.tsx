@@ -10,8 +10,8 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Lohono Command Center',
-  description: 'People management & task tracking for Lohono Stays',
+  title: 'Kairos',
+  description: 'Kairos — the command center for managers who know why the work matters.',
   manifest: '/manifest.json',
   icons: { apple: '/icons/apple-touch-icon.png' },
 }
