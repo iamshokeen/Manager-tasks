@@ -24,13 +24,13 @@ export function WorkspaceInvite({ inviterName, workspaceName, role, acceptUrl, e
   return (
     <Html>
       <Head />
-      <Preview>{inviterName} invited you to {workspaceName} on Lohono Command Center</Preview>
+      <Preview>{inviterName} invited you to {workspaceName} on Kairos</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={heading}>You've been invited</Heading>
           <Text style={text}>
             <strong>{inviterName}</strong> has invited you to join{' '}
-            <strong>{workspaceName}</strong> on Lohono Command Center as a <strong>{role}</strong>.
+            <strong>{workspaceName}</strong> on Kairos as a <strong>{role}</strong>.
           </Text>
           <Section style={buttonSection}>
             <Button href={acceptUrl} style={button}>Accept Invitation</Button>

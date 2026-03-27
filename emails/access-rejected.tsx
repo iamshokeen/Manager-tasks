@@ -20,13 +20,13 @@ export function AccessRejected({ name, reason, adminEmail }: AccessRejectedProps
   return (
     <Html>
       <Head />
-      <Preview>Update on your Lohono Command Center access request</Preview>
+      <Preview>Update on your Kairos access request</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={heading}>Access Request Update</Heading>
           <Text style={text}>Hi {name},</Text>
           <Text style={text}>
-            After review, your request to access Lohono Command Center was not approved at this time.
+            After review, your request to access Kairos was not approved at this time.
           </Text>
           {reason && (
             <Text style={reasonText}>
@@ -38,7 +38,7 @@ export function AccessRejected({ name, reason, adminEmail }: AccessRejectedProps
             <a href={`mailto:${adminEmail}`} style={link}>{adminEmail}</a>.
           </Text>
           <Hr style={hr} />
-          <Text style={footer}>Lohono Command Center</Text>
+          <Text style={footer}>Kairos</Text>
         </Container>
       </Body>
     </Html>

@@ -50,7 +50,7 @@ export function AccessRequestAdmin({
             <Button href={approvalsUrl} style={button}>Review in Admin Panel</Button>
           </Section>
           <Hr style={hr} />
-          <Text style={footer}>Lohono Command Center · Admin Notification</Text>
+          <Text style={footer}>Kairos · Admin Notification</Text>
         </Container>
       </Body>
     </Html>

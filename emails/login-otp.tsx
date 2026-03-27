@@ -23,7 +23,7 @@ export function LoginOtp({ name, otp }: LoginOtpProps) {
       <Preview>Your login code: {otp}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={heading}>Lohono Command Center</Heading>
+          <Heading style={heading}>Kairos</Heading>
           <Text style={text}>Hi {name},</Text>
           <Text style={text}>Use the code below to sign in to your account.</Text>
           <Section style={otpSection}>

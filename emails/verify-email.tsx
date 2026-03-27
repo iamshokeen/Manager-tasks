@@ -20,10 +20,10 @@ export function VerifyEmail({ name, otp }: VerifyEmailProps) {
   return (
     <Html>
       <Head />
-      <Preview>Your Lohono Command Center verification code: {otp}</Preview>
+      <Preview>Your Kairos verification code: {otp}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={heading}>Lohono Command Center</Heading>
+          <Heading style={heading}>Kairos</Heading>
           <Text style={text}>Hi {name},</Text>
           <Text style={text}>
             Please use the code below to verify your email address and complete your access request.
@@ -34,7 +34,7 @@ export function VerifyEmail({ name, otp }: VerifyEmailProps) {
           <Text style={smallText}>This code expires in <strong>15 minutes</strong>.</Text>
           <Hr style={hr} />
           <Text style={footer}>
-            If you did not request access to Lohono Command Center, you can safely ignore this email.
+            If you did not request access to Kairos, you can safely ignore this email.
           </Text>
         </Container>
       </Body>

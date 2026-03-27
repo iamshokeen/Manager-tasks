@@ -23,19 +23,19 @@ export function AccessApproved({ name, appUrl }: AccessApprovedProps) {
   return (
     <Html>
       <Head />
-      <Preview>Your Lohono Command Center access has been approved</Preview>
+      <Preview>Your Kairos access has been approved</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={heading}>You're in.</Heading>
           <Text style={text}>Hi {name},</Text>
           <Text style={text}>
-            Your access to Lohono Command Center has been approved. You can now sign in and get started.
+            Your access to Kairos has been approved. You can now sign in and get started.
           </Text>
           <Section style={buttonSection}>
             <Button href={loginUrl} style={button}>Sign In</Button>
           </Section>
           <Hr style={hr} />
-          <Text style={footer}>Lohono Command Center · {appUrl}</Text>
+          <Text style={footer}>Kairos · {appUrl}</Text>
         </Container>
       </Body>
     </Html>
