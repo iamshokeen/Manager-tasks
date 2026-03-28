@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
 import useSWR from 'swr'
 import { motion } from 'framer-motion'
-import { useTheme } from 'next-themes'
+import { useTheme, THEMES } from '@/components/theme-provider'
 import { formatDistanceToNow, format } from 'date-fns'
 import { toast } from 'sonner'
 import {
@@ -139,7 +141,7 @@ function HeroCard({
           <div className="relative w-20 h-20 shrink-0">
             <div className="w-20 h-20 rounded-full ring-4 ring-white dark:ring-card bg-gradient-to-br from-[#004ac6] to-[#2563eb] flex items-center justify-center text-white text-xl font-bold shadow-lg overflow-hidden">
               {data.avatarUrl ? (
-                <img src={data.avatarUrl} alt={data.name} className="w-full h-full object-cover" />
+                <Image src={data.avatarUrl!} alt={data.name} fill className="object-cover" />
               ) : (
                 initials(data.name)
               )}
@@ -353,6 +355,8 @@ function ProfileHealth({ data }: { data: ProfileData }) {
 
   useEffect(() => { setMounted(true) }, [])
 
+  const isDark = THEMES.find(t => t.id === theme)?.group !== 'Light'
+
   const springTransition = { type: 'spring' as const, stiffness: 300, damping: 30 }
 
   const healthStats = [
@@ -368,8 +372,12 @@ function ProfileHealth({ data }: { data: ProfileData }) {
 
   async function handleSignOut() {
     setSigningOut(true)
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/auth/login')
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      router.push('/auth/login')
+    } catch {
+      setSigningOut(false)
+    }
   }
 
   return (
@@ -441,22 +449,22 @@ function ProfileHealth({ data }: { data: ProfileData }) {
           <div className="flex rounded-lg bg-muted p-1 mb-3">
             <motion.button
               className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-xs font-medium transition-colors ${
-                theme === 'light' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'
+                !isDark ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'
               }`}
-              onClick={() => setTheme('light')}
+              onClick={() => setTheme('azure')}
               whileTap={{ scale: 0.97 }}
             >
-              <Sun className={`w-3.5 h-3.5 ${theme === 'light' ? 'text-amber-500' : ''}`} />
+              <Sun className={`w-3.5 h-3.5 ${!isDark ? 'text-amber-500' : ''}`} />
               Light
             </motion.button>
             <motion.button
               className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-xs font-medium transition-colors ${
-                theme === 'dark' ? 'bg-neutral-700 shadow-sm text-white' : 'text-muted-foreground'
+                isDark ? 'bg-neutral-700 shadow-sm text-white' : 'text-muted-foreground'
               }`}
-              onClick={() => setTheme('dark')}
+              onClick={() => setTheme('gold')}
               whileTap={{ scale: 0.97 }}
             >
-              <Moon className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-indigo-300' : ''}`} />
+              <Moon className={`w-3.5 h-3.5 ${isDark ? 'text-indigo-300' : ''}`} />
               Dark
             </motion.button>
           </div>
@@ -465,15 +473,15 @@ function ProfileHealth({ data }: { data: ProfileData }) {
         {actionLinks
           .filter(item => !item.adminOnly || data.role === 'SUPER_ADMIN')
           .map(({ href, label, Icon }) => (
-            <motion.a
-              key={href}
-              href={href}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted transition-all hover:pl-5"
-              whileTap={{ scale: 0.98 }}
-            >
-              <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
-              {label}
-            </motion.a>
+            <Link key={href} href={href}>
+              <motion.div
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted transition-all hover:pl-5"
+                whileTap={{ scale: 0.98 }}
+              >
+                <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
+                {label}
+              </motion.div>
+            </Link>
           ))}
 
         <motion.button
@@ -566,7 +574,7 @@ export default function ProfilePage() {
   async function handleNameUpdate(name: string) {
     if (!data) return
     const optimistic: ProfileData = { ...data, name }
-    await mutateProfile(optimistic, false)
+    await mutateProfile(optimistic, { revalidate: false })
     try {
       const res = await fetch('/api/profile', {
         method: 'PATCH',
@@ -577,7 +585,7 @@ export default function ProfilePage() {
       await mutateProfile()
       toast.success('Name updated')
     } catch {
-      await mutateProfile(data, false)
+      await mutateProfile(data, { revalidate: false })
       toast.error('Failed to update name')
       throw new Error('update failed')
     }
