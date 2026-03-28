@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { KairosWordmark } from '@/components/ui/kairos-logo'
 import {
   LayoutDashboard, FolderKanban, CheckSquare, ListTodo, RefreshCw,
   Users, MessageSquare, Handshake, BarChart3, TrendingUp, Hotel,
@@ -111,14 +112,8 @@ export function Sidebar({ userRole }: SidebarProps) {
   return (
     <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-64 flex-col bg-[var(--surface-container-low)] z-40 print:hidden overflow-hidden">
       {/* Brand */}
-      <div className="px-4 py-5 flex items-center gap-3 min-w-0">
-        <span className="text-xl font-bold tracking-tighter text-primary shrink-0">K</span>
-        <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tighter text-primary whitespace-nowrap">Kairos</h1>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--outline)] font-bold mt-0.5 whitespace-nowrap">
-            Know the moment. Own the purpose.
-          </p>
-        </div>
+      <div className="px-4 py-5">
+        <KairosWordmark size="sm" showTagline />
       </div>
 
       {/* Nav */}

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { KairosMark } from '@/components/ui/kairos-logo'
 
 // ---------------------------------------------------------------------------
 // OTP Input Component
@@ -247,16 +248,16 @@ export default function LoginPage() {
     <div className="bg-[var(--surface-container-high)] border border-[var(--border)] rounded-2xl shadow-[var(--shadow-glass)] p-8 max-w-md w-full">
 
       {/* Logo + Heading */}
-      <div className="flex flex-col items-center mb-8 gap-3">
-        <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-          <span className="text-[var(--primary-foreground)] text-xl font-bold tracking-tight" style={{ fontFamily: 'Cormorant Garamond, serif' }}>K</span>
+      <div className="flex flex-col items-center mb-8 gap-4">
+        <div className="w-14 h-14 rounded-xl bg-[var(--surface-container)] border border-[var(--border)] flex items-center justify-center">
+          <KairosMark size={36} />
         </div>
         <div className="text-center">
-          <h1 className="text-xl font-semibold text-foreground tracking-tight">
+          <h1 className="text-xl font-subhead font-semibold text-[#c9a96e] tracking-[0.2em] uppercase">
             Kairos
           </h1>
           {step === 'email' && (
-            <p className="text-sm text-[var(--outline)] mt-1">Know the moment. Own the purpose.</p>
+            <p className="text-xs text-[var(--outline)] mt-1 tracking-wide">Know the moment. Own the purpose.</p>
           )}
         </div>
       </div>
