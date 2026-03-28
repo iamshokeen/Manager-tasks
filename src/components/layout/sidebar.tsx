@@ -7,7 +7,7 @@ import {
   LayoutDashboard, FolderKanban, CheckSquare, ListTodo, RefreshCw,
   Users, MessageSquare, Handshake, BarChart3, TrendingUp, Hotel,
   FileText, BookOpen, Settings, StickyNote, Bell, ShieldCheck,
-  UserCheck, Building2, Activity
+  UserCheck, Building2, Activity, UserCircle
 } from 'lucide-react'
 
 type Role = 'SUPER_ADMIN' | 'MANAGER' | 'SENIOR_IC' | 'DIRECT_REPORT' | 'EXEC_VIEWER' | 'GUEST'
@@ -151,8 +151,28 @@ export function Sidebar({ userRole }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-[var(--outline-variant)]/20">
-        <div className="text-[10px] text-[var(--outline)] font-medium whitespace-nowrap">FY27 · Kairos</div>
+      <div className="border-t border-[var(--outline-variant)]/20">
+        <div className="px-2 py-2">
+          <Link
+            href="/profile"
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+              pathname === '/profile'
+                ? 'text-primary bg-white/60 font-semibold'
+                : 'text-[var(--outline)] hover:text-[var(--foreground)] hover:bg-white/40'
+            )}
+          >
+            <UserCircle
+              size={18}
+              strokeWidth={pathname === '/profile' ? 2.5 : 1.75}
+              className="shrink-0"
+            />
+            <span className="whitespace-nowrap">Profile</span>
+          </Link>
+        </div>
+        <div className="px-5 py-3">
+          <div className="text-[10px] text-[var(--outline)] font-medium whitespace-nowrap">FY27 · Kairos</div>
+        </div>
       </div>
     </aside>
   )

@@ -6,6 +6,7 @@ import { useState } from 'react'
 
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Kairos',
+  '/profile': 'Profile',
   '/projects': 'Projects',
   '/tasks': 'Tasks',
   '/my-tasks': 'My Tasks',
