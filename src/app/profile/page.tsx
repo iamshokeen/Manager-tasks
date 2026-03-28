@@ -47,8 +47,17 @@ type ProfileData = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const fetcher = (url: string) =>
-  fetch(url).then(r => r.json()).then(r => r.data as ProfileData)
+const fetcher = async (url: string): Promise<ProfileData> => {
+  const res = await fetch(url)
+  if (!res.ok) {
+    if (res.status === 401) {
+      window.location.href = '/auth/login'
+    }
+    throw new Error('Failed to fetch profile')
+  }
+  const json = await res.json()
+  return json.data as ProfileData
+}
 
 function initials(name: string) {
   const parts = name.trim().split(' ')
@@ -356,6 +365,8 @@ function ProfileHealth({ data }: { data: ProfileData }) {
   useEffect(() => { setMounted(true) }, [])
 
   const isDark = THEMES.find(t => t.id === theme)?.group !== 'Light'
+  const lightTheme = THEMES.find(t => t.group === 'Light')?.id ?? 'azure'
+  const darkTheme = THEMES.find(t => t.group === 'Dark')?.id ?? 'gold'
 
   const springTransition = { type: 'spring' as const, stiffness: 300, damping: 30 }
 
@@ -377,6 +388,7 @@ function ProfileHealth({ data }: { data: ProfileData }) {
       router.push('/auth/login')
     } catch {
       setSigningOut(false)
+      toast.error('Sign out failed. Please try again.')
     }
   }
 
@@ -451,7 +463,7 @@ function ProfileHealth({ data }: { data: ProfileData }) {
               className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-xs font-medium transition-colors ${
                 !isDark ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'
               }`}
-              onClick={() => setTheme('azure')}
+              onClick={() => setTheme(lightTheme)}
               whileTap={{ scale: 0.97 }}
             >
               <Sun className={`w-3.5 h-3.5 ${!isDark ? 'text-amber-500' : ''}`} />
@@ -461,7 +473,7 @@ function ProfileHealth({ data }: { data: ProfileData }) {
               className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-xs font-medium transition-colors ${
                 isDark ? 'bg-neutral-700 shadow-sm text-white' : 'text-muted-foreground'
               }`}
-              onClick={() => setTheme('gold')}
+              onClick={() => setTheme(darkTheme)}
               whileTap={{ scale: 0.97 }}
             >
               <Moon className={`w-3.5 h-3.5 ${isDark ? 'text-indigo-300' : ''}`} />
