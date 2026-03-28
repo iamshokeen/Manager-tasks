@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/utils'
-import { RefreshCw, Download, X, Plus, Users, ShieldCheck, ChevronDown, Trash2 } from 'lucide-react'
+import { RefreshCw, Download, X, Plus, Users, ShieldCheck, ChevronDown, Trash2, BookOpen } from 'lucide-react'
+import { useOnboarding } from '@/context/onboarding-context'
 import { ThemeSelector } from '@/components/ui/theme-selector'
 import { useDepartments } from '@/hooks/use-departments'
 import {
@@ -593,6 +594,24 @@ export default function SettingsPage() {
           {exporting ? 'Exporting...' : 'Export All Data (JSON)'}
         </Button>
       </CollapsibleSection>
+
+      {/* Help */}
+      <CollapsibleSection title="Help" defaultOpen={false}>
+        <p className="text-xs text-muted-foreground mb-4">
+          Relaunch the onboarding tour at any time. The tour adapts to your role.
+        </p>
+        <HelpSection />
+      </CollapsibleSection>
     </div>
+  )
+}
+
+function HelpSection() {
+  const { launch } = useOnboarding()
+  return (
+    <Button variant="outline" onClick={launch} className="gap-2">
+      <BookOpen className="h-4 w-4" />
+      Relaunch Tour
+    </Button>
   )
 }

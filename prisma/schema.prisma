@@ -65,6 +65,7 @@ model User {
   sentInvites          Invite[]          @relation("InviteSender")
   kpiOverrides         KpiVisibility[]
   activityLogs         ActivityLog[]
+  onboardingCompleted  Boolean           @default(false)
 }
 
 // ─── Workspaces ───────────────────────────────────────────────────────────────

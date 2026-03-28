@@ -12,8 +12,9 @@ import { toast } from 'sonner'
 import {
   Pencil, Check, X, BadgeCheck, XCircle, UserCheck,
   CheckCircle, Activity, Star, Settings, LogOut,
-  Sun, Moon, Clock, User,
+  Sun, Moon, Clock, User, BookOpen,
 } from 'lucide-react'
+import { useOnboarding } from '@/context/onboarding-context'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -354,6 +355,22 @@ function AccountDetails({ data }: { data: ProfileData }) {
   )
 }
 
+// ─── Relaunch Tour Button ─────────────────────────────────────────────────────
+
+function RelaunchTourButton() {
+  const { launch } = useOnboarding()
+  return (
+    <motion.button
+      onClick={launch}
+      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-[#c9a96e] hover:bg-[var(--surface-container-high)] transition-all hover:pl-5"
+      whileTap={{ scale: 0.98 }}
+    >
+      <BookOpen className="w-4 h-4 shrink-0" />
+      Relaunch Tour
+    </motion.button>
+  )
+}
+
 // ─── Profile Health + Quick Actions ───────────────────────────────────────────
 
 function ProfileHealth({ data }: { data: ProfileData }) {
@@ -495,6 +512,8 @@ function ProfileHealth({ data }: { data: ProfileData }) {
               </motion.div>
             </Link>
           ))}
+
+        <RelaunchTourButton />
 
         <motion.button
           onClick={handleSignOut}
