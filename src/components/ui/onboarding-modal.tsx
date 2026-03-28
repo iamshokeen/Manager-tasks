@@ -1,6 +1,7 @@
 // src/components/ui/onboarding-modal.tsx
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useOnboarding } from '@/context/onboarding-context'
 import { KairosMark } from '@/components/ui/kairos-logo'
@@ -136,6 +137,7 @@ export function OnboardingModal() {
   const { open, close } = useOnboarding()
   const [step, setStep] = useState(0)
   const [role, setRole] = useState<Role>('DIRECT_REPORT')
+  const router = useRouter()
 
   // Reset step and fetch role each time modal opens
   useEffect(() => {
@@ -165,6 +167,18 @@ export function OnboardingModal() {
     await markComplete()
     close()
   }, [markComplete, close])
+
+  const handleStartTour = useCallback(async () => {
+    await markComplete()
+    close()
+    const firstRoute =
+      role === 'SUPER_ADMIN' || role === 'MANAGER'
+        ? '/?tour=1'
+        : role === 'EXEC_VIEWER' || role === 'GUEST'
+        ? '/?tour=1'
+        : '/my-tasks?tour=1'
+    router.push(firstRoute)
+  }, [markComplete, close, role, router])
 
   if (!open) return null
 
@@ -251,6 +265,15 @@ export function OnboardingModal() {
               >
                 <ArrowLeft size={13} />
                 Back
+              </button>
+            )}
+            {isLast && (
+              <button
+                onClick={handleStartTour}
+                className="flex items-center gap-2 px-4 py-1.5 text-sm text-[var(--outline)] hover:text-[#f2ede8] border border-[rgba(255,255,255,0.1)] rounded-lg transition-all cursor-pointer"
+              >
+                <Sparkles size={12} />
+                Start Tour
               </button>
             )}
             <button

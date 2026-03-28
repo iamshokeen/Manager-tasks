@@ -1,9 +1,11 @@
 // src/components/layout/app-shell.tsx
+import { Suspense } from 'react'
 import { Sidebar } from './sidebar'
 import { Topbar } from './topbar'
 import { MobileBottomNav } from './mobile-bottom-nav'
 import { CommandPalette } from '../ui/command-palette'
 import { OnboardingModal, OnboardingController } from '../ui/onboarding-modal'
+import { FloatingTourBanner } from '../ui/floating-tour-banner'
 import { OnboardingProvider } from '@/context/onboarding-context'
 import { getSessionRole } from '@/lib/auth'
 
@@ -19,6 +21,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <CommandPalette />
         <OnboardingController />
         <OnboardingModal />
+        <Suspense>
+          <FloatingTourBanner />
+        </Suspense>
         <main className="pt-14 lg:ml-64 min-h-screen pb-16 lg:pb-0 print:ml-0 print:pt-0">
           <div className="p-4 lg:p-8">{children}</div>
         </main>

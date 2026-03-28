@@ -30,4 +30,5 @@ export interface TaskFilters {
   stakeholderId?: string
   search?: string
   assignedByName?: string
+  contributorFilter?: { teamMemberId?: string; name: string }
 }

@@ -16,6 +16,14 @@ export async function getTasks(filters: TaskFilters = {}) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (filters.assignedByName) (where as any).assignedByName = filters.assignedByName
 
+  // Contributor RBAC: OR condition — tasks assigned TO them OR created BY them
+  if (filters.contributorFilter) {
+    const { teamMemberId, name } = filters.contributorFilter
+    const orClauses: Prisma.TaskWhereInput[] = [{ assignedByName: name }]
+    if (teamMemberId) orClauses.push({ assigneeId: teamMemberId })
+    where.OR = orClauses
+  }
+
   return prisma.task.findMany({
     where,
     include: {

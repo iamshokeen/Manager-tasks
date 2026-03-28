@@ -3,9 +3,16 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { getTeamMembers, createTeamMember } from '@/lib/services/team'
 
+const CONTRIBUTOR_ROLES = ['DIRECT_REPORT', 'SENIOR_IC', 'EXEC_VIEWER', 'GUEST']
+
 export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const userRole = (session.user as { role?: string }).role ?? ''
+  if (CONTRIBUTOR_ROLES.includes(userRole)) {
+    return NextResponse.json({ data: [] })
+  }
 
   try {
     const members = await getTeamMembers()

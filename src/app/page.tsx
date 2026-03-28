@@ -19,6 +19,7 @@ import { RefreshCw, Zap, Mail, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import { TaskCalendarSection } from '@/components/dashboard/task-calendar-section'
 import { BacklogAlert } from '@/components/ui/backlog-alert'
+import { KpiLockedSection } from '@/components/dashboard/kpi-locked-section'
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
@@ -28,6 +29,9 @@ const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2
 
 export default function DashboardPage() {
   const currentUser = useCurrentUser()
+  const role = currentUser?.role ?? 'DIRECT_REPORT'
+  const isOperator = ['SUPER_ADMIN', 'MANAGER'].includes(role)
+  const canViewKpis = ['SUPER_ADMIN', 'MANAGER', 'EXEC_VIEWER'].includes(role)
   const { tasks, isLoading: tasksLoading } = useTasks()
   const myName = currentUser?.name ?? undefined
   const { tasks: assignedByMeTasks, isLoading: assignedByMeLoading } = useTasks(
@@ -204,78 +208,82 @@ export default function DashboardPage() {
       </section>
 
       {/* ── 2. Revenue KPI ───────────────────────────────────────────────── */}
-      <section>
-        <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3">
-          Revenue KPIs
-        </h2>
-        <div className="bg-card rounded-xl p-6 shadow-[var(--shadow-glass)]">
-          {numbersLoading ? (
-            <div className="text-sm text-muted-foreground">Loading revenue data…</div>
-          ) : !hasRevenue ? (
-            <div className="text-sm text-muted-foreground italic">
-              No revenue data — sync from Sheets to populate KPIs.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {/* Check-in Revenue */}
-              <div>
-                <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">Check-in Revenue</span>
-                  <span className="text-xs text-muted-foreground">
-                    Target {formatCrore(CHECKIN_TARGET)}
-                  </span>
-                </div>
-                <div className="text-2xl font-bold font-mono text-primary mb-2">
-                  {checkinValue !== null ? formatCrore(checkinValue) : '—'}
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
-                    style={{
-                      width: checkinValue !== null
-                        ? `${Math.min(100, (checkinValue / CHECKIN_TARGET) * 100).toFixed(1)}%`
-                        : '0%',
-                    }}
-                  />
-                </div>
-                {checkinValue !== null && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {((checkinValue / CHECKIN_TARGET) * 100).toFixed(1)}% of target
-                  </div>
-                )}
+      {canViewKpis ? (
+        <section>
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3">
+            Revenue KPIs
+          </h2>
+          <div className="bg-card rounded-xl p-6 shadow-[var(--shadow-glass)]">
+            {numbersLoading ? (
+              <div className="text-sm text-muted-foreground">Loading revenue data…</div>
+            ) : !hasRevenue ? (
+              <div className="text-sm text-muted-foreground italic">
+                No revenue data — sync from Sheets to populate KPIs.
               </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Check-in Revenue */}
+                <div>
+                  <div className="flex items-baseline justify-between mb-1">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Check-in Revenue</span>
+                    <span className="text-xs text-muted-foreground">
+                      Target {formatCrore(CHECKIN_TARGET)}
+                    </span>
+                  </div>
+                  <div className="text-2xl font-bold font-mono text-primary mb-2">
+                    {checkinValue !== null ? formatCrore(checkinValue) : '—'}
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-500"
+                      style={{
+                        width: checkinValue !== null
+                          ? `${Math.min(100, (checkinValue / CHECKIN_TARGET) * 100).toFixed(1)}%`
+                          : '0%',
+                      }}
+                    />
+                  </div>
+                  {checkinValue !== null && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {((checkinValue / CHECKIN_TARGET) * 100).toFixed(1)}% of target
+                    </div>
+                  )}
+                </div>
 
-              {/* OTA Bookings */}
-              <div>
-                <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">OTA Gross GMV</span>
-                  <span className="text-xs text-muted-foreground">
-                    Target {formatCrore(OTA_TARGET)}
-                  </span>
-                </div>
-                <div className="text-2xl font-bold font-mono text-primary mb-2">
-                  {otaValue !== null ? formatCrore(otaValue) : '—'}
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
-                    style={{
-                      width: otaValue !== null
-                        ? `${Math.min(100, (otaValue / OTA_TARGET) * 100).toFixed(1)}%`
-                        : '0%',
-                    }}
-                  />
-                </div>
-                {otaValue !== null && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {((otaValue / OTA_TARGET) * 100).toFixed(1)}% of target
+                {/* OTA Bookings */}
+                <div>
+                  <div className="flex items-baseline justify-between mb-1">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">OTA Gross GMV</span>
+                    <span className="text-xs text-muted-foreground">
+                      Target {formatCrore(OTA_TARGET)}
+                    </span>
                   </div>
-                )}
+                  <div className="text-2xl font-bold font-mono text-primary mb-2">
+                    {otaValue !== null ? formatCrore(otaValue) : '—'}
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-500"
+                      style={{
+                        width: otaValue !== null
+                          ? `${Math.min(100, (otaValue / OTA_TARGET) * 100).toFixed(1)}%`
+                          : '0%',
+                      }}
+                    />
+                  </div>
+                  {otaValue !== null && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {((otaValue / OTA_TARGET) * 100).toFixed(1)}% of target
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </section>
+            )}
+          </div>
+        </section>
+      ) : (
+        <KpiLockedSection />
+      )}
 
       {/* ── 3. Priority Tasks ────────────────────────────────────────────── */}
       <section>
@@ -355,42 +363,44 @@ export default function DashboardPage() {
       <TaskCalendarSection tasks={tasks} members={members as Member[]} />
 
       {/* ── 4. Team Snapshot ─────────────────────────────────────────────── */}
-      <section>
-        <div className="bg-card rounded-xl p-6 shadow-[var(--shadow-glass)]">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
-              Team Snapshot
-            </h2>
-            <Link href="/team" className="text-xs text-primary hover:underline">
-              View all
-            </Link>
+      {isOperator && (
+        <section>
+          <div className="bg-card rounded-xl p-6 shadow-[var(--shadow-glass)]">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+                Team Snapshot
+              </h2>
+              <Link href="/team" className="text-xs text-primary hover:underline">
+                View all
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {teamLoading ? (
+              <div className="col-span-full text-sm text-muted-foreground">Loading team…</div>
+            ) : (members as Member[])
+                .filter((m) => m.status === 'active')
+                .map((member) => (
+                  <Link
+                    key={member.id}
+                    href={`/team/${member.id}`}
+                    className="bg-card rounded-xl p-3 flex items-center gap-3 shadow-[var(--shadow-glass)] hover:-translate-y-0.5 transition-all"
+                  >
+                    <MemberAvatar name={member.name} size="md" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-foreground truncate">{member.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{member.role}</div>
+                    </div>
+                    {(memberTaskCount[member.id] ?? 0) > 0 && (
+                      <span className="shrink-0 text-xs font-mono font-semibold bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+                        {memberTaskCount[member.id]}
+                      </span>
+                    )}
+                  </Link>
+                ))}
+            </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {teamLoading ? (
-            <div className="col-span-full text-sm text-muted-foreground">Loading team…</div>
-          ) : (members as Member[])
-              .filter((m) => m.status === 'active')
-              .map((member) => (
-                <Link
-                  key={member.id}
-                  href={`/team/${member.id}`}
-                  className="bg-card rounded-xl p-3 flex items-center gap-3 shadow-[var(--shadow-glass)] hover:-translate-y-0.5 transition-all"
-                >
-                  <MemberAvatar name={member.name} size="md" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium text-foreground truncate">{member.name}</div>
-                    <div className="text-xs text-muted-foreground truncate">{member.role}</div>
-                  </div>
-                  {(memberTaskCount[member.id] ?? 0) > 0 && (
-                    <span className="shrink-0 text-xs font-mono font-semibold bg-muted text-muted-foreground rounded-full px-2 py-0.5">
-                      {memberTaskCount[member.id]}
-                    </span>
-                  )}
-                </Link>
-              ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── 5. Recent Activity ───────────────────────────────────────────── */}
       <section>
@@ -467,7 +477,7 @@ export default function DashboardPage() {
       </section>
 
       {/* ── 7. Automation Status (Failsafe Panel) ────────────────────────── */}
-      <section>
+      {isOperator && <section>
         <button
           className="w-full flex items-center justify-between bg-card rounded-xl shadow-[var(--shadow-glass)] px-6 py-4 text-left hover:bg-[var(--surface-container-low)] transition-colors"
           onClick={() => setAutomationOpen((v) => !v)}
@@ -561,7 +571,7 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
-      </section>
+      </section>}
     </div>
   )
 }

@@ -21,10 +21,16 @@ export async function GET(req: Request) {
     assignedByName: searchParams.get('assignedByName') ?? undefined,
   }
 
-  // RBAC: DIRECT_REPORT users can only see tasks assigned to themselves
-  const user = session.user as { role?: string; teamMemberId?: string }
-  if (user.role === 'DIRECT_REPORT' && user.teamMemberId) {
-    filters.assigneeId = user.teamMemberId
+  // RBAC: contributors can only see tasks assigned to or created by themselves
+  const user = session.user as { role?: string; teamMemberId?: string; name?: string }
+  const contributorRoles = ['DIRECT_REPORT', 'SENIOR_IC']
+  if (contributorRoles.includes(user.role ?? '')) {
+    const name = user.name ?? ''
+    if (!name) {
+      // No name, can't match anything — return empty
+      return NextResponse.json({ data: [] })
+    }
+    filters.contributorFilter = { teamMemberId: user.teamMemberId ?? undefined, name }
   }
 
   try {
