@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Plus, Search, Calendar, ClipboardList, User, Archive, Sparkles } from 'lucide-react'
+import { Plus, Search, Calendar, ClipboardList, User, Archive, Sparkles, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCurrentUser } from '@/hooks/use-current-user'
 
@@ -33,15 +33,6 @@ import { MemberAvatar } from '@/components/ui/member-avatar'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -50,9 +41,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-import { cn, PRIORITIES, formatDate, isOverdue, isDueToday } from '@/lib/utils'
+import { cn, formatDate, isOverdue, isDueToday } from '@/lib/utils'
 import type { TaskFilters } from '@/types'
-import { TaskDetailSheet } from '@/components/ui/task-detail-sheet'
+import { TaskDetailPanel } from '@/components/ui/task-detail-panel'
+import { TaskCreatePanel } from '@/components/ui/task-create-panel'
 import { BacklogAlert } from '@/components/ui/backlog-alert'
 import { AiTaskParser } from '@/components/ui/ai-task-parser'
 
@@ -85,6 +77,7 @@ interface TaskShape {
   dueDate?: string | null
   assignee?: { id: string; name: string } | null
   assignedByName?: string | null
+  stakeholders?: Array<{ stakeholder: { id: string; name: string } }>
 }
 
 // Droppable column wrapper — enables empty columns to accept drops
@@ -132,6 +125,12 @@ function TaskCard({ task, onClick }: TaskCardProps) {
       <div className="flex flex-wrap gap-1.5 mb-2">
         <PriorityBadge priority={task.priority} />
         {task.department && <DepartmentBadge department={task.department} />}
+        {task.stakeholders && task.stakeholders.length > 0 && (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            <Users className="h-2.5 w-2.5" />
+            {task.stakeholders.length}
+          </span>
+        )}
       </div>
       <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-1.5">
@@ -200,28 +199,8 @@ function SortableTaskCard({ task, onClick }: SortableTaskCardProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Create-task form type
+// (Create-task form is handled by TaskCreatePanel component)
 // ---------------------------------------------------------------------------
-
-interface CreateTaskForm {
-  title: string
-  department: string
-  priority: string
-  assigneeId: string
-  dueDate: string
-  description: string
-  isSelfTask: boolean
-}
-
-const EMPTY_FORM: CreateTaskForm = {
-  title: '',
-  department: '',
-  priority: 'medium',
-  assigneeId: '',
-  dueDate: '',
-  description: '',
-  isSelfTask: false,
-}
 
 // ---------------------------------------------------------------------------
 // ArchiveList — compact list of done tasks
@@ -280,10 +259,8 @@ export default function TasksPage() {
   const [search, setSearch] = useState('')
   const [deptFilter, setDeptFilter] = useState<string>('all')
   const [assignedToMe, setAssignedToMe] = useState(false)
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
   const [aiParserOpen, setAiParserOpen] = useState(false)
-  const [form, setForm] = useState<CreateTaskForm>(EMPTY_FORM)
-  const [submitting, setSubmitting] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [showArchive, setShowArchive] = useState(false)
@@ -296,7 +273,7 @@ export default function TasksPage() {
   if (assignedToMe && myTeamMemberId) filters.assigneeId = myTeamMemberId
 
   const { tasks, mutate, isLoading } = useTasks(filters)
-  const { members, mutate: mutateTeam } = useTeam()
+  const { mutate: mutateTeam } = useTeam()
   const { departments } = useDepartments()
 
   // Group tasks by column
@@ -377,47 +354,6 @@ export default function TasksPage() {
   }
 
   // -------------------------------------------------------------------------
-  // Create task
-  // -------------------------------------------------------------------------
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.title.trim()) {
-      toast.error('Title is required')
-      return
-    }
-    setSubmitting(true)
-    try {
-      const isSelf = form.assigneeId === '__self__'
-      const body: Record<string, unknown> = {
-        title: form.title.trim(),
-        priority: form.priority || 'medium',
-        isSelfTask: isSelf ? true : form.isSelfTask,
-        assignedByName: currentUser?.name ?? 'Saksham',
-      }
-      if (form.department) body.department = form.department
-      if (!isSelf && form.assigneeId) body.assigneeId = form.assigneeId
-      if (form.dueDate) body.dueDate = new Date(form.dueDate).toISOString()
-      if (form.description) body.description = form.description
-
-      const res = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) throw new Error('Failed to create task')
-      await mutate()
-      mutateTeam()
-      setDialogOpen(false)
-      setForm(EMPTY_FORM)
-      toast.success('Task created')
-    } catch {
-      toast.error('Failed to create task')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
   return (
@@ -430,7 +366,7 @@ export default function TasksPage() {
               <Sparkles className="h-4 w-4 text-primary" />
               AI Parse
             </Button>
-            <Button onClick={() => setDialogOpen(true)}>
+            <Button onClick={() => setCreateOpen(true)}>
               <Plus className="h-4 w-4" />
               Drop a Task
             </Button>
@@ -548,12 +484,19 @@ export default function TasksPage() {
         {showArchive && <ArchiveList tasks={doneTasks} onRestore={handleRestore} />}
       </div>
 
-      {/* Task Detail Sheet */}
-      <TaskDetailSheet
+      {/* Task Detail Panel */}
+      <TaskDetailPanel
         taskId={selectedTaskId}
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         onTaskUpdated={() => mutate()}
+      />
+
+      {/* Create Task Panel */}
+      <TaskCreatePanel
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={() => { mutate(); mutateTeam() }}
       />
 
       {/* AI Task Parser */}
@@ -563,107 +506,6 @@ export default function TasksPage() {
         onTasksCreated={() => { mutate(); mutateTeam() }}
         departments={departments}
       />
-
-      {/* Create Task Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Drop a Task</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreate} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Title *</label>
-              <Input
-                placeholder="Task title"
-                value={form.title}
-                onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Department</label>
-                <Select value={form.department} onValueChange={(v: string | null) => setForm(f => ({ ...f, department: v ?? '' }))}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map(d => (
-                      <SelectItem key={d} value={d}>{d}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Priority</label>
-                <Select value={form.priority} onValueChange={(v: string | null) => setForm(f => ({ ...f, priority: v ?? 'medium' }))}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRIORITIES.map(p => (
-                      <SelectItem key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Assigned To</label>
-                <Select value={form.assigneeId} onValueChange={(v: string | null) => setForm(f => ({ ...f, assigneeId: v ?? '' }))}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Unassigned" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__self__">— Me (Saksham) —</SelectItem>
-                    {(members as Array<{ id: string; name: string }>).map(m => (
-                      <SelectItem key={`${m.id}-${m.name}`} value={m.id}>{m.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Due Date</label>
-                <Input
-                  type="date"
-                  value={form.dueDate}
-                  onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Description</label>
-              <Textarea
-                placeholder="Task description…"
-                rows={3}
-                value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              />
-            </div>
-
-            <label className="flex items-center gap-2 cursor-pointer">
-              <Checkbox
-                checked={form.isSelfTask}
-                onCheckedChange={(checked: boolean) => setForm(f => ({ ...f, isSelfTask: checked }))}
-              />
-              <span className="text-sm text-foreground">Personal task</span>
-            </label>
-
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)} disabled={submitting}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? 'Creating…' : 'Create Task'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

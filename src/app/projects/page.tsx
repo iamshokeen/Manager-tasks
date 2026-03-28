@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Layers, Calendar, Archive, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Layers, Calendar, Archive, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useProjects } from '@/hooks/use-projects'
@@ -50,6 +50,7 @@ interface ProjectData {
   dueDate?: string | null
   owner?: { id: string; name: string } | null
   stakeholder?: { id: string; name: string } | null
+  stakeholders?: Array<{ stakeholder: { id: string; name: string } }>
   tasks?: Array<{ id: string; status: string }>
 }
 
@@ -58,7 +59,7 @@ interface CreateProjectForm {
   department: string
   stage: Stage
   ownerId: string
-  stakeholderId: string
+  stakeholderIds: string[]
   dueDate: string
   description: string
 }
@@ -68,7 +69,7 @@ const EMPTY_FORM: CreateProjectForm = {
   department: '',
   stage: 'planning',
   ownerId: '',
-  stakeholderId: '',
+  stakeholderIds: [],
   dueDate: '',
   description: '',
 }
@@ -129,10 +130,25 @@ function ProjectCard({ project, onClick }: { project: ProjectData; onClick: () =
         </div>
       )}
 
-      {/* Stakeholder */}
-      {project.stakeholder && (
-        <p className="text-xs text-[var(--outline)] truncate">{project.stakeholder.name}</p>
-      )}
+      {/* Stakeholders */}
+      {(() => {
+        const stks = project.stakeholders && project.stakeholders.length > 0
+          ? project.stakeholders.map(s => s.stakeholder)
+          : project.stakeholder ? [project.stakeholder] : []
+        if (stks.length === 0) return null
+        return (
+          <div className="flex flex-wrap gap-1">
+            {stks.slice(0, 3).map(s => (
+              <span key={s.id} className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 truncate max-w-[120px]">
+                {s.name}
+              </span>
+            ))}
+            {stks.length > 3 && (
+              <span className="text-[10px] text-muted-foreground">+{stks.length - 3}</span>
+            )}
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -171,7 +187,7 @@ export default function ProjectsPage() {
       }
       if (form.department) body.department = form.department
       if (form.ownerId && form.ownerId !== '__self__') body.ownerId = form.ownerId
-      if (form.stakeholderId) body.stakeholderId = form.stakeholderId
+      if (form.stakeholderIds.length > 0) body.stakeholderIds = form.stakeholderIds
       if (form.dueDate) body.dueDate = new Date(form.dueDate).toISOString()
       if (form.description) body.description = form.description
 
@@ -383,7 +399,7 @@ export default function ProjectsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 items-start">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Assigned To / Owner</label>
                 <Select
@@ -401,21 +417,45 @@ export default function ProjectsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Stakeholder</label>
-                <Select
-                  value={form.stakeholderId}
-                  onValueChange={v => setForm(f => ({ ...f, stakeholderId: v ?? '' }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(stakeholders as Array<{ id: string; name: string }>).map(s => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex flex-col gap-1.5 col-span-2">
+                <label className="text-xs font-medium text-muted-foreground">Stakeholders</label>
+                <div className="min-h-[44px] p-2 rounded-lg bg-[var(--surface-container-high)] border border-border space-y-2">
+                  {form.stakeholderIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {(stakeholders as Array<{ id: string; name: string }>)
+                        .filter(s => form.stakeholderIds.includes(s.id))
+                        .map(s => (
+                          <span key={s.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[11px] text-purple-300">
+                            {s.name}
+                            <button
+                              type="button"
+                              onClick={() => setForm(f => ({ ...f, stakeholderIds: f.stakeholderIds.filter(id => id !== s.id) }))}
+                              className="hover:text-red-400 transition-colors cursor-pointer"
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </button>
+                          </span>
+                        ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-1.5">
+                    {(stakeholders as Array<{ id: string; name: string }>)
+                      .filter(s => !form.stakeholderIds.includes(s.id))
+                      .map(s => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, stakeholderIds: [...f.stakeholderIds, s.id] }))}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-dashed border-border text-[11px] text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all cursor-pointer"
+                        >
+                          <Plus className="h-2.5 w-2.5" /> {s.name}
+                        </button>
+                      ))}
+                  </div>
+                  {stakeholders.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No stakeholders yet.</p>
+                  )}
+                </div>
               </div>
             </div>
 

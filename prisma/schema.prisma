@@ -172,20 +172,21 @@ model TeamMember {
 }
 
 model Project {
-  id            String       @id @default(cuid())
+  id            String               @id @default(cuid())
   title         String
-  description   String?      @db.Text
+  description   String?              @db.Text
   department    String
-  stage         String       @default("planning")
+  stage         String               @default("planning")
   ownerId       String?
-  owner         TeamMember?  @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  owner         TeamMember?          @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   stakeholderId String?
-  stakeholder   Stakeholder? @relation(fields: [stakeholderId], references: [id])
+  stakeholder   Stakeholder?         @relation(fields: [stakeholderId], references: [id])
+  stakeholders  ProjectStakeholder[]
   dueDate       DateTime?
   tasks         Task[]
   followUps     FollowUp[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 }
 
 model Task {
@@ -204,6 +205,7 @@ model Task {
   completedAt    DateTime?
   stakeholderId  String?
   stakeholder    Stakeholder?    @relation(fields: [stakeholderId], references: [id], onDelete: SetNull)
+  stakeholders   TaskStakeholder[]
   cadenceId      String?
   cadence        Cadence?        @relation(fields: [cadenceId], references: [id], onDelete: SetNull)
   emailThreads   TaskEmailLink[]
@@ -230,20 +232,40 @@ model TaskActivity {
 }
 
 model Stakeholder {
-  id        String     @id @default(cuid())
-  name      String
-  title     String?
-  frequency String
-  channel   String
-  priority  String     @default("high")
-  context   String?    @db.Text
-  strategy  String?    @db.Text
-  email     String?
-  tasks     Task[]
-  projects  Project[]
-  followUps FollowUp[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id           String               @id @default(cuid())
+  name         String
+  title        String?
+  frequency    String
+  channel      String
+  priority     String               @default("high")
+  context      String?              @db.Text
+  strategy     String?              @db.Text
+  email        String?
+  tasks        Task[]
+  projects     Project[]
+  taskLinks    TaskStakeholder[]
+  projectLinks ProjectStakeholder[]
+  followUps    FollowUp[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+model TaskStakeholder {
+  taskId        String
+  stakeholderId String
+  task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  stakeholder   Stakeholder @relation(fields: [stakeholderId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, stakeholderId])
+}
+
+model ProjectStakeholder {
+  projectId     String
+  stakeholderId String
+  project       Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stakeholder   Stakeholder @relation(fields: [stakeholderId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, stakeholderId])
 }
 
 model OneOnOne {

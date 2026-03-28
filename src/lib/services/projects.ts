@@ -11,6 +11,7 @@ export async function getProjects(filters: { stage?: string; department?: string
     include: {
       owner: { select: { id: true, name: true } },
       stakeholder: { select: { id: true, name: true } },
+      stakeholders: { include: { stakeholder: { select: { id: true, name: true } } } },
       _count: { select: { tasks: true } },
       tasks: { select: { id: true, status: true } },
     },
@@ -24,6 +25,7 @@ export async function getProject(id: string) {
     include: {
       owner: true,
       stakeholder: true,
+      stakeholders: { include: { stakeholder: { select: { id: true, name: true, title: true } } } },
       tasks: {
         include: { assignee: { select: { id: true, name: true } } },
         orderBy: [{ priority: 'asc' }, { dueDate: 'asc' }],
@@ -32,12 +34,44 @@ export async function getProject(id: string) {
   })
 }
 
-export async function createProject(data: Prisma.ProjectCreateInput) {
-  return prisma.project.create({ data })
+export async function createProject(
+  data: Prisma.ProjectCreateInput & { stakeholderIds?: string[] }
+) {
+  const { stakeholderIds, ...rest } = data as Record<string, unknown> & { stakeholderIds?: string[] }
+  const projectData = rest as Prisma.ProjectCreateInput
+
+  const project = await prisma.project.create({ data: projectData })
+
+  if (stakeholderIds && stakeholderIds.length > 0) {
+    await prisma.projectStakeholder.createMany({
+      data: stakeholderIds.map(sId => ({ projectId: project.id, stakeholderId: sId })),
+      skipDuplicates: true,
+    })
+  }
+
+  return project
 }
 
-export async function updateProject(id: string, data: Prisma.ProjectUpdateInput) {
-  return prisma.project.update({ where: { id }, data })
+export async function updateProject(
+  id: string,
+  data: Prisma.ProjectUpdateInput & { stakeholderIds?: string[] }
+) {
+  const { stakeholderIds, ...rest } = data as Record<string, unknown> & { stakeholderIds?: string[] }
+  const projectData = rest as Prisma.ProjectUpdateInput
+
+  const project = await prisma.project.update({ where: { id }, data: projectData })
+
+  if (stakeholderIds !== undefined) {
+    await prisma.projectStakeholder.deleteMany({ where: { projectId: id } })
+    if (stakeholderIds.length > 0) {
+      await prisma.projectStakeholder.createMany({
+        data: stakeholderIds.map(sId => ({ projectId: id, stakeholderId: sId })),
+        skipDuplicates: true,
+      })
+    }
+  }
+
+  return project
 }
 
 export async function deleteProject(id: string) {

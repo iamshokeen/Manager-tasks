@@ -1,17 +1,22 @@
 // src/app/api/user/onboarding/route.ts
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { onboardingCompleted: true, role: true },
+    })
+
     return NextResponse.json({
       data: {
-        completed: session.user.onboardingCompleted,
-        role: session.user.role,
+        completed: user?.onboardingCompleted ?? false,
+        role: user?.role ?? session.user.role,
       },
     })
   } catch {
@@ -24,7 +29,7 @@ export async function PATCH() {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    await db.user.update({
+    await prisma.user.update({
       where: { id: session.user.id },
       data: { onboardingCompleted: true },
     })
