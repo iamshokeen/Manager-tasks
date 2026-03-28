@@ -137,8 +137,8 @@ export function Sidebar({ userRole }: SidebarProps) {
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
                     active
-                      ? 'text-primary bg-white/60 font-semibold'
-                      : 'text-[var(--outline)] hover:text-[var(--foreground)] hover:bg-white/40'
+                      ? 'text-primary bg-[var(--surface-container-high)] font-semibold'
+                      : 'text-[var(--outline)] hover:text-[var(--foreground)] hover:bg-[var(--surface-container)]'
                   )}
                 >
                   <Icon size={18} strokeWidth={active ? 2.5 : 1.75} className="shrink-0" />
@@ -158,8 +158,8 @@ export function Sidebar({ userRole }: SidebarProps) {
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
               pathname === '/profile'
-                ? 'text-primary bg-white/60 font-semibold'
-                : 'text-[var(--outline)] hover:text-[var(--foreground)] hover:bg-white/40'
+                ? 'text-primary bg-[var(--surface-container-high)] font-semibold'
+                : 'text-[var(--outline)] hover:text-[var(--foreground)] hover:bg-[var(--surface-container)]'
             )}
           >
             <UserCircle

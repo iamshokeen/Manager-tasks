@@ -44,7 +44,7 @@ export function Topbar() {
   })
 
   return (
-    <header className="fixed top-0 left-0 lg:left-64 right-0 h-14 z-30 flex items-center justify-between px-5 lg:px-8 bg-white/80 backdrop-blur-xl shadow-[var(--shadow-glass)] print:hidden">
+    <header className="fixed top-0 left-0 lg:left-64 right-0 h-14 z-30 flex items-center justify-between px-5 lg:px-8 bg-[var(--background)]/90 backdrop-blur-xl border-b border-[var(--border)] print:hidden">
       {/* Left: brand on mobile, page title on desktop */}
       <div className="flex items-center gap-4">
         <span className="text-base font-black tracking-tight text-foreground lg:hidden">

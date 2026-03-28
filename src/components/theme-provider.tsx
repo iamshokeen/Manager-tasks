@@ -21,7 +21,7 @@ const DARK_THEMES: ThemeId[] = [
 const ThemeContext = createContext<{
   theme: ThemeId
   setTheme: (t: ThemeId) => void
-}>({ theme: 'azure', setTheme: () => {} })
+}>({ theme: 'gold', setTheme: () => {} })
 
 function applyTheme(theme: ThemeId) {
   const root = document.documentElement
@@ -34,11 +34,11 @@ function applyTheme(theme: ThemeId) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeId>('azure')
+  const [theme, setThemeState] = useState<ThemeId>('gold')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    const saved = (localStorage.getItem('lohono-theme') as ThemeId) ?? 'azure'
+    const saved = (localStorage.getItem('lohono-theme') as ThemeId) ?? 'gold'
     applyTheme(saved)
     setThemeState(saved)
     setMounted(true)
@@ -66,7 +66,7 @@ export function useTheme() {
 
 export const THEMES: { id: ThemeId; label: string; group: string; bg: string; primary: string; accent?: string }[] = [
   // Dark
-  { id: 'gold',         label: 'Gold',           group: 'Dark',      bg: '#0A0B0F', primary: '#C9A84C' },
+  { id: 'gold',         label: 'Kairos',         group: 'Dark',      bg: '#0c0c18', primary: '#c9a96e' },
   { id: 'violet-dark',  label: 'Violet',         group: 'Dark',      bg: '#0D0B14', primary: '#A78BFA' },
   { id: 'slate-dark',   label: 'Slate',          group: 'Dark',      bg: '#0F1117', primary: '#94A3B8' },
   { id: 'navy-dark',    label: 'Navy',           group: 'Dark',      bg: '#060B18', primary: '#60A5FA' },

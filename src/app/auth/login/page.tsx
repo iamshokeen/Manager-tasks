@@ -244,12 +244,12 @@ export default function LoginPage() {
   // ---- Render ----
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-8 max-w-md w-full">
+    <div className="bg-[var(--surface-container-high)] border border-[var(--border)] rounded-2xl shadow-[var(--shadow-glass)] p-8 max-w-md w-full">
 
       {/* Logo + Heading */}
       <div className="flex flex-col items-center mb-8 gap-3">
         <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-          <span className="text-white text-xl font-bold tracking-tight">L</span>
+          <span className="text-[var(--primary-foreground)] text-xl font-bold tracking-tight" style={{ fontFamily: 'Cormorant Garamond, serif' }}>K</span>
         </div>
         <div className="text-center">
           <h1 className="text-xl font-semibold text-foreground tracking-tight">
