@@ -203,12 +203,17 @@ export function TaskDetailPanel({ taskId, open, onClose, onTaskUpdated }: TaskDe
   }
 
   async function assignToMe() {
-    if (!currentUser?.teamMemberId) {
-      toast.error('Your account is not linked to a team member profile')
+    // Prefer the explicit link on the User record; fall back to name match in team list
+    const myMemberId = currentUser?.teamMemberId
+      ?? (teamMembers as Array<{ id: string; name: string }>).find(
+          m => m.name.toLowerCase() === (currentUser?.name ?? '').toLowerCase()
+        )?.id
+    if (!myMemberId) {
+      toast.error('No team member profile found for your account')
       return
     }
     setAssigneeOpen(false)
-    await patchTask({ assigneeId: currentUser.teamMemberId, isSelfTask: true })
+    await patchTask({ assigneeId: myMemberId, isSelfTask: true })
     toast.success('Assigned to you — added to My Tasks')
   }
 
@@ -572,14 +577,12 @@ export function TaskDetailPanel({ taskId, open, onClose, onTaskUpdated }: TaskDe
                 </button>
                 {assigneeOpen && (
                   <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-card border border-border rounded-lg shadow-xl py-1 max-h-48 overflow-y-auto">
-                    {currentUser?.teamMemberId && (
-                      <button
-                        onClick={assignToMe}
-                        className="w-full text-left px-3 py-1.5 text-xs font-medium text-primary hover:bg-muted transition-colors cursor-pointer"
-                      >
-                        Assign to me
-                      </button>
-                    )}
+                    <button
+                      onClick={assignToMe}
+                      className="w-full text-left px-3 py-1.5 text-xs font-medium text-primary hover:bg-muted transition-colors cursor-pointer"
+                    >
+                      Assign to me
+                    </button>
                     <div className="h-px bg-border my-1" />
                     {(teamMembers as Array<{ id: string; name: string }>).map(m => (
                       <button
