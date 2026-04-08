@@ -43,10 +43,13 @@ import {
 
 import { cn, formatDate, isOverdue, isDueToday } from '@/lib/utils'
 import type { TaskFilters } from '@/types'
+
+type Tab = 'kanban' | 'list' | 'calendar'
 import { TaskDetailPanel } from '@/components/ui/task-detail-panel'
 import { TaskCreatePanel } from '@/components/ui/task-create-panel'
 import { BacklogAlert } from '@/components/ui/backlog-alert'
 import { AiTaskParser } from '@/components/ui/ai-task-parser'
+import { TaskCalendarView } from '@/components/ui/task-calendar-view'
 
 // ---------------------------------------------------------------------------
 // Kanban column definitions
@@ -256,6 +259,7 @@ function ArchiveList({ tasks, onRestore }: ArchiveListProps) {
 export default function TasksPage() {
   const currentUser = useCurrentUser()
 
+  const [activeTab, setActiveTab] = useState<Tab>('kanban')
   const [search, setSearch] = useState('')
   const [deptFilter, setDeptFilter] = useState<string>('all')
   const [assignedToMe, setAssignedToMe] = useState(false)
@@ -374,8 +378,26 @@ export default function TasksPage() {
         }
       />
 
-      {/* Filter bar */}
-      <div className="flex items-center gap-3 mb-6 flex-wrap">
+      {/* Tab bar */}
+      <div className="flex items-center gap-6 border-b border-border mb-5 -mt-2">
+        {(['list', 'kanban', 'calendar'] as Tab[]).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              'pb-3 text-sm font-semibold capitalize transition-colors border-b-2 -mb-px cursor-pointer',
+              activeTab === tab
+                ? 'text-primary border-primary'
+                : 'text-muted-foreground border-transparent hover:text-foreground'
+            )}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Filter bar — shown for list + kanban only */}
+      {activeTab !== 'calendar' && <div className="flex items-center gap-3 mb-6 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
@@ -407,9 +429,83 @@ export default function TasksPage() {
             Assigned to me
           </Button>
         )}
-      </div>
+      </div>}
 
-      {/* Kanban board — drag-and-drop */}
+      {/* ── Calendar tab ─────────────────────────────────────────────────── */}
+      {activeTab === 'calendar' && (
+        <TaskCalendarView
+          tasks={tasks as TaskShape[]}
+          onTaskClick={(id) => { setSelectedTaskId(id); setSheetOpen(true) }}
+          mutate={mutate}
+        />
+      )}
+
+      {/* ── List tab ─────────────────────────────────────────────────────── */}
+      {activeTab === 'list' && (
+        <div className="flex flex-col gap-1 flex-1 overflow-y-auto">
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">Loading…</p>
+          ) : (tasks as TaskShape[]).filter(t => t.status !== 'done').length === 0 ? (
+            <EmptyState icon={<ClipboardList className="h-8 w-8" />} title="No tasks found" description="Adjust filters or create a task" />
+          ) : (
+            <>
+              {/* Header row */}
+              <div className="grid grid-cols-[1fr_100px_90px_120px_90px_90px] gap-3 px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border">
+                <span>Task</span>
+                <span>Status</span>
+                <span>Priority</span>
+                <span>Assignee</span>
+                <span>Dept</span>
+                <span>Due</span>
+              </div>
+              {(tasks as TaskShape[]).filter(t => t.status !== 'done').map(task => {
+                const overdue = isOverdue(task.dueDate ?? null)
+                const today   = isDueToday(task.dueDate ?? null)
+                return (
+                  <div
+                    key={task.id}
+                    onClick={() => { setSelectedTaskId(task.id); setSheetOpen(true) }}
+                    className="grid grid-cols-[1fr_100px_90px_120px_90px_90px] gap-3 px-3 py-2.5 rounded-lg hover:bg-card border border-transparent hover:border-border cursor-pointer transition-all group items-center"
+                  >
+                    <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">{task.title}</p>
+                    <span className={cn(
+                      'text-xs font-semibold px-2 py-0.5 rounded-full w-fit',
+                      task.status === 'todo'        && 'bg-muted text-muted-foreground',
+                      task.status === 'in_progress' && 'bg-blue-500/10 text-blue-400',
+                      task.status === 'review'      && 'bg-amber-500/10 text-amber-400',
+                    )}>
+                      {task.status === 'in_progress' ? 'In Progress' : task.status === 'todo' ? 'To Do' : 'Review'}
+                    </span>
+                    <PriorityBadge priority={task.priority} />
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {task.assignee
+                        ? <><MemberAvatar name={task.assignee.name} size="sm" /><span className="text-xs text-muted-foreground truncate">{task.assignee.name}</span></>
+                        : <span className="text-xs text-muted-foreground">—</span>
+                      }
+                    </div>
+                    {task.department
+                      ? <DepartmentBadge department={task.department} />
+                      : <span className="text-xs text-muted-foreground">—</span>
+                    }
+                    {task.dueDate ? (
+                      <div className={cn(
+                        'flex items-center gap-1 text-xs',
+                        overdue ? 'text-red-400' : today ? 'text-amber-400' : 'text-muted-foreground'
+                      )}>
+                        <Calendar className="h-3 w-3 flex-shrink-0" />
+                        {formatDate(task.dueDate)}
+                      </div>
+                    ) : <span className="text-xs text-muted-foreground">—</span>}
+                  </div>
+                )
+              })}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Kanban tab ───────────────────────────────────────────────────── */}
+      {activeTab === 'kanban' && <>
       {/* Backlog alert — computed from live task data, no AI */}
       <BacklogAlert tasks={tasks} className="mb-2" />
 
@@ -483,6 +579,7 @@ export default function TasksPage() {
         </button>
         {showArchive && <ArchiveList tasks={doneTasks} onRestore={handleRestore} />}
       </div>
+      </>}
 
       {/* Task Detail Panel */}
       <TaskDetailPanel
