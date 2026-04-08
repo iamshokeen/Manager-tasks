@@ -67,6 +67,12 @@ model User {
   activityLogs         ActivityLog[]
   onboardingCompleted  Boolean           @default(false)
   kpiAccessRequest     KpiAccessRequest?
+  createdTasks         Task[]            @relation("TaskCreator")
+  createdFollowUps     FollowUp[]        @relation("FollowUpCreator")
+  ownedNotes           Note[]            @relation("NoteOwner")
+  ownedCadences        Cadence[]         @relation("CadenceOwner")
+  createdOneOnOnes     OneOnOne[]        @relation("OneOnOneCreator")
+  createdProjects      Project[]         @relation("ProjectCreator")
 }
 
 // ─── Workspaces ───────────────────────────────────────────────────────────────
@@ -184,6 +190,8 @@ model Project {
   stakeholder   Stakeholder?         @relation(fields: [stakeholderId], references: [id])
   stakeholders  ProjectStakeholder[]
   dueDate       DateTime?
+  createdByUserId String?
+  createdByUser User?                @relation("ProjectCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   tasks         Task[]
   followUps     FollowUp[]
   createdAt     DateTime             @default(now())
@@ -214,6 +222,8 @@ model Task {
   source         String          @default("manual")
   tags           String[]        @default([])
   assignedByName String?
+  createdByUserId String?
+  createdByUser  User?           @relation("TaskCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   followUps      FollowUp[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -280,6 +290,8 @@ model OneOnOne {
   feedbackGiven    String?          @db.Text
   developmentNotes String?          @db.Text
   actionItems      OneOnOneAction[]
+  createdByUserId  String?
+  createdByUser    User?            @relation("OneOnOneCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt        DateTime         @default(now())
 }
 
@@ -307,6 +319,8 @@ model Cadence {
   prepItems   CadencePrepItem[]
   tasks       Task[]
   isActive    Boolean           @default(true)
+  userId      String?
+  user        User?             @relation("CadenceOwner", fields: [userId], references: [id], onDelete: SetNull)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 }
@@ -385,6 +399,8 @@ model Setting {
 model Note {
   id        String   @id @default(cuid())
   content   String   @db.Text
+  userId    String?
+  user      User?    @relation("NoteOwner", fields: [userId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -411,6 +427,8 @@ model FollowUp {
   projectId       String?
   project         Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
   convertedTaskId String?
+  createdByUserId String?
+  createdByUser   User?          @relation("FollowUpCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   notes           FollowUpNote[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt

@@ -6,6 +6,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const user = session.user as { id: string; role?: string; teamMemberId?: string }
     const { id } = await params
     const followUp = await prisma.followUp.findUnique({
       where: { id },
@@ -28,6 +29,10 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
       },
     })
     if (!followUp) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    // Ownership check
+    if (user.role !== 'SUPER_ADMIN' && followUp.createdByUserId !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     return NextResponse.json({ data: followUp })
   } catch {
     return NextResponse.json({ error: 'Failed to fetch follow-up' }, { status: 500 })

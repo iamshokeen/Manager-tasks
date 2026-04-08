@@ -16,8 +16,14 @@ export async function getTasks(filters: TaskFilters = {}) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (filters.assignedByName) (where as any).assignedByName = filters.assignedByName
 
-  // Contributor RBAC: OR condition — tasks assigned TO them OR created BY them
-  if (filters.contributorFilter) {
+  // Ownership isolation: see tasks you created, are assigned to, or assigned to others
+  if (filters.ownershipFilter) {
+    const { userId, teamMemberId } = filters.ownershipFilter
+    const orClauses: Prisma.TaskWhereInput[] = [{ createdByUserId: userId }]
+    if (teamMemberId) orClauses.push({ assigneeId: teamMemberId })
+    where.OR = orClauses
+  } else if (filters.contributorFilter) {
+    // legacy fallback
     const { teamMemberId, name } = filters.contributorFilter
     const orClauses: Prisma.TaskWhereInput[] = [{ assignedByName: name }]
     if (teamMemberId) orClauses.push({ assigneeId: teamMemberId })

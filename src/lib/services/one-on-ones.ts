@@ -2,9 +2,23 @@
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 
-export async function getOneOnOnes(memberId?: string) {
+export async function getOneOnOnes(
+  memberId?: string,
+  ownershipFilter?: { userId: string; teamMemberId?: string }
+) {
+  const where: Prisma.OneOnOneWhereInput = {}
+  if (memberId) where.memberId = memberId
+  if (ownershipFilter) {
+    const orClauses: Prisma.OneOnOneWhereInput[] = [
+      { createdByUserId: ownershipFilter.userId },
+    ]
+    if (ownershipFilter.teamMemberId) {
+      orClauses.push({ memberId: ownershipFilter.teamMemberId })
+    }
+    where.OR = orClauses
+  }
   return prisma.oneOnOne.findMany({
-    where: memberId ? { memberId } : undefined,
+    where,
     include: {
       member: { select: { id: true, name: true, department: true } },
       actionItems: true,

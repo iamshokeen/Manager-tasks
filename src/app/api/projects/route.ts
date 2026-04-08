@@ -6,13 +6,20 @@ export async function GET(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const user = session.user as { id: string; role?: string; teamMemberId?: string }
   const { searchParams } = new URL(req.url)
   const filters = {
     stage: searchParams.get('stage') ?? undefined,
     department: searchParams.get('department') ?? undefined,
   }
+
+  // Only show projects you're involved in; SUPER_ADMIN sees all
+  const ownershipFilter = user.role === 'SUPER_ADMIN'
+    ? undefined
+    : { userId: user.id, teamMemberId: user.teamMemberId ?? undefined }
+
   try {
-    const projects = await getProjects(filters)
+    const projects = await getProjects(filters, ownershipFilter)
     return NextResponse.json({ data: projects })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 })
@@ -28,6 +35,8 @@ export async function POST(req: Request) {
     if (!body.title || !body.department) {
       return NextResponse.json({ error: 'title and department are required' }, { status: 400 })
     }
+    const sessionUser = session.user as { id: string }
+    body.createdByUserId = sessionUser.id
     const project = await createProject(body)
     return NextResponse.json({ data: project }, { status: 201 })
   } catch (e) {

@@ -22,16 +22,13 @@ export async function GET(req: Request) {
     assignedByName: searchParams.get('assignedByName') ?? undefined,
   }
 
-  // RBAC: contributors can only see tasks assigned to or created by themselves
-  const user = session.user as { role?: string; teamMemberId?: string; name?: string }
-  const contributorRoles = ['DIRECT_REPORT', 'SENIOR_IC']
-  if (contributorRoles.includes(user.role ?? '')) {
-    const name = user.name ?? ''
-    if (!name) {
-      // No name, can't match anything — return empty
-      return NextResponse.json({ data: [] })
+  const user = session.user as { id: string; role?: string; teamMemberId?: string }
+  // SUPER_ADMIN sees everything; everyone else sees only tasks they own or are assigned to
+  if (user.role !== 'SUPER_ADMIN') {
+    filters.ownershipFilter = {
+      userId: user.id,
+      teamMemberId: user.teamMemberId ?? undefined,
     }
-    filters.contributorFilter = { teamMemberId: user.teamMemberId ?? undefined, name }
   }
 
   try {
@@ -45,14 +42,17 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const role = (session.user as { role?: string }).role ?? ''
-  if (!await canRoleAsync(role, 'tasks', 'create')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const user = session.user as { id: string; name?: string; role?: string }
+  if (!await canRoleAsync(user.role ?? '', 'tasks', 'create')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
     const body = await req.json()
     if (!body.title || !body.department) {
       return NextResponse.json({ error: 'title and department are required' }, { status: 400 })
     }
+    // Stamp creator
+    body.createdByUserId = user.id
+    if (!body.assignedByName && user.name) body.assignedByName = user.name
     const task = await createTask(body)
     return NextResponse.json({ data: task }, { status: 201 })
   } catch (_e) {

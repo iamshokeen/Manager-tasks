@@ -7,6 +7,18 @@ export async function GET() {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const user = session.user as { id: string; role?: string; teamMemberId?: string }
+
+    // Ownership isolation: only see follow-ups you created or that involve you directly
+    const ownershipWhere = user.role === 'SUPER_ADMIN'
+      ? {}
+      : {
+          OR: [
+            { createdByUserId: user.id },
+            ...(user.teamMemberId ? [{ teamMember: { user: { id: user.id } } }] : []),
+          ],
+        }
+
     const followUps = await prisma.followUp.findMany({
       include: {
         teamMember: { select: { id: true, name: true, department: true } },
@@ -30,7 +42,7 @@ export async function GET() {
           },
         },
       },
-      where: { parentId: null },
+      where: { parentId: null, ...ownershipWhere },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -52,6 +64,7 @@ export async function POST(req: Request) {
     if (!title?.trim()) return NextResponse.json({ error: 'title is required' }, { status: 400 })
     if (!contactName?.trim()) return NextResponse.json({ error: 'contactName is required' }, { status: 400 })
 
+    const sessionUser = session.user as { id: string }
     const followUp = await prisma.followUp.create({
       data: {
         title: title.trim(),
@@ -64,6 +77,7 @@ export async function POST(req: Request) {
         autoRemind: autoRemind ?? true,
         taskId: taskId || null,
         projectId: projectId || null,
+        createdByUserId: sessionUser.id,
       },
       include: {
         teamMember: { select: { id: true, name: true } },

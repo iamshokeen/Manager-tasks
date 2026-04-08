@@ -2,12 +2,29 @@
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 
-export async function getProjects(filters: { stage?: string; department?: string } = {}) {
+export async function getProjects(
+  filters: { stage?: string; department?: string } = {},
+  ownershipFilter?: { userId: string; teamMemberId?: string }
+) {
+  const baseWhere: Prisma.ProjectWhereInput = {
+    ...(filters.stage && { stage: filters.stage }),
+    ...(filters.department && { department: filters.department }),
+  }
+
+  if (ownershipFilter) {
+    const { userId, teamMemberId } = ownershipFilter
+    const involvementClauses: Prisma.ProjectWhereInput[] = [
+      { createdByUserId: userId },
+      { tasks: { some: { createdByUserId: userId } } },
+    ]
+    if (teamMemberId) {
+      involvementClauses.push({ tasks: { some: { assigneeId: teamMemberId } } })
+    }
+    baseWhere.OR = involvementClauses
+  }
+
   return prisma.project.findMany({
-    where: {
-      ...(filters.stage && { stage: filters.stage }),
-      ...(filters.department && { department: filters.department }),
-    },
+    where: baseWhere,
     include: {
       owner: { select: { id: true, name: true } },
       stakeholder: { select: { id: true, name: true } },

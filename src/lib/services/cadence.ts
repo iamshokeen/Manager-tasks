@@ -3,8 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { addDays, startOfDay } from 'date-fns'
 
-export async function getCadences() {
+export async function getCadences(userId?: string) {
   return prisma.cadence.findMany({
+    where: userId ? { userId } : undefined,
     include: {
       prepItems: true,
       _count: { select: { tasks: true } },

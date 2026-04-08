@@ -31,4 +31,5 @@ export interface TaskFilters {
   search?: string
   assignedByName?: string
   contributorFilter?: { teamMemberId?: string; name: string }
+  ownershipFilter?: { userId: string; teamMemberId?: string }
 }
