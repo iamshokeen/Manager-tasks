@@ -34,10 +34,10 @@ import {
 import { cn, formatDate } from '@/lib/utils'
 
 const STAGES = [
-  { key: 'planning', label: 'Planning', color: 'border-t-[#6B7280]' },
-  { key: 'active', label: 'Active', color: 'border-t-[#3B82F6]' },
-  { key: 'review', label: 'Review', color: 'border-t-[#F59E0B]' },
-  { key: 'closed', label: 'Closed', color: 'border-t-[#10B981]' },
+  { key: 'planning', label: 'Planning', color: '#717c82' },
+  { key: 'active', label: 'Active', color: '#0053db' },
+  { key: 'review', label: 'Review', color: '#f59e0b' },
+  { key: 'closed', label: 'Closed', color: '#10b981' },
 ] as const
 
 type Stage = (typeof STAGES)[number]['key']
@@ -83,72 +83,111 @@ function ProjectCard({ project, onClick }: { project: ProjectData; onClick: () =
   return (
     <div
       onClick={onClick}
-      className="bg-card rounded-xl p-5 shadow-[var(--shadow-glass)] hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col gap-2"
+      className="rounded-xl p-4 hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col gap-3 border border-transparent hover:border-primary/20"
+      style={{
+        background: 'var(--surface-container-lowest)',
+        boxShadow: '0 8px 30px rgba(42,52,57,0.04)',
+      }}
     >
-      {/* Top row: dept badge + due date */}
-      <div className="flex items-center justify-between">
+      {/* Top row: dept badge + arrow icon */}
+      <div className="flex items-start justify-between gap-2">
         {project.department ? (
           <DepartmentBadge department={project.department} />
         ) : (
           <span />
         )}
-        {project.dueDate && (
-          <div className="flex items-center gap-1 text-xs text-[var(--outline)]">
-            <Calendar className="h-3 w-3" />
-            <span>{formatDate(project.dueDate)}</span>
-          </div>
-        )}
+        <span
+          className="text-base leading-none opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{ color: 'var(--primary)' }}
+        >
+          ↗
+        </span>
       </div>
 
       {/* Title */}
-      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+      <h4
+        className="font-headline font-bold text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2"
+        style={{ color: 'var(--on-surface)' }}
+      >
         {project.title}
-      </p>
+      </h4>
 
       {/* Owner */}
       {project.owner && (
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-[var(--outline)]">Owner:</span>
           <MemberAvatar name={project.owner.name} size="sm" />
-          <span className="text-xs text-[var(--outline)] truncate">{project.owner.name}</span>
+          <span className="text-xs truncate" style={{ color: 'var(--on-surface-variant)' }}>
+            {project.owner.name}
+          </span>
         </div>
       )}
 
       {/* Tasks progress */}
       {total > 0 && (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[var(--outline)]">Tasks</span>
-            <span className="text-xs text-[var(--outline)]">{done}/{total} done</span>
+            <span className="text-[10px] font-bold uppercase tracking-tighter" style={{ color: 'var(--on-surface)' }}>
+              Progress
+            </span>
+            <span className="text-[10px]" style={{ color: 'var(--on-surface-variant)' }}>
+              {done}/{total} done
+            </span>
           </div>
-          <div className="h-1.5 bg-[var(--surface-container-high)] rounded-full overflow-hidden">
+          <div
+            className="h-1.5 rounded-full overflow-hidden"
+            style={{ background: 'var(--surface-container)' }}
+          >
             <div
-              className="h-full bg-primary rounded-full transition-all"
-              style={{ width: `${progress}%` }}
+              className="h-full rounded-full transition-all"
+              style={{ width: `${progress}%`, background: 'var(--primary)' }}
             />
           </div>
         </div>
       )}
 
-      {/* Stakeholders */}
-      {(() => {
-        const stks = project.stakeholders && project.stakeholders.length > 0
-          ? project.stakeholders.map(s => s.stakeholder)
-          : project.stakeholder ? [project.stakeholder] : []
-        if (stks.length === 0) return null
-        return (
-          <div className="flex flex-wrap gap-1">
-            {stks.slice(0, 3).map(s => (
-              <span key={s.id} className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 truncate max-w-[120px]">
-                {s.name}
-              </span>
-            ))}
-            {stks.length > 3 && (
-              <span className="text-[10px] text-muted-foreground">+{stks.length - 3}</span>
-            )}
+      {/* Bottom: stakeholders + due date */}
+      <div
+        className="flex items-center justify-between pt-3 border-t"
+        style={{ borderColor: 'var(--surface-container)' }}
+      >
+        {(() => {
+          const stks = project.stakeholders && project.stakeholders.length > 0
+            ? project.stakeholders.map(s => s.stakeholder)
+            : project.stakeholder ? [project.stakeholder] : []
+          return (
+            <div className="flex -space-x-1.5">
+              {stks.slice(0, 3).map(s => (
+                <div
+                  key={s.id}
+                  className="w-5 h-5 rounded-full ring-1 ring-surface flex items-center justify-center text-[9px] font-bold text-white"
+                  style={{ background: 'var(--primary)', outline: '1px solid var(--surface-container-lowest)' }}
+                  title={s.name}
+                >
+                  {s.name.charAt(0).toUpperCase()}
+                </div>
+              ))}
+              {stks.length > 3 && (
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
+                  style={{
+                    background: 'var(--surface-container-highest)',
+                    color: 'var(--on-surface-variant)',
+                  }}
+                >
+                  +{stks.length - 3}
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
+        {project.dueDate && (
+          <div className="flex items-center gap-1" style={{ color: 'var(--on-surface-variant)' }}>
+            <Calendar className="h-3 w-3" />
+            <span className="text-[10px]">{formatDate(project.dueDate)}</span>
           </div>
-        )
-      })()}
+        )}
+      </div>
     </div>
   )
 }
@@ -172,6 +211,9 @@ export default function ProjectsPage() {
     setForm({ ...EMPTY_FORM, stage })
     setDialogOpen(true)
   }
+
+  // suppress unused warning
+  void defaultStage
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -245,28 +287,42 @@ export default function ProjectsPage() {
     <div className="flex flex-col h-full">
       <PageHeader title="Projects" description="Lifecycle board across all stages" />
 
-      {/* 3-column kanban board (excludes closed — those are in Archive) */}
-      <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
+      {/* 3-column kanban board */}
+      <div className="grid grid-cols-3 gap-6 flex-1 min-h-0">
         {STAGES.filter(col => col.key !== 'closed').map(col => {
           const colProjects = projectsByStage[col.key]
           return (
             <div key={col.key} className="flex flex-col min-h-0">
               {/* Column header */}
               <div
-                className={cn(
-                  'bg-card border-t-2 rounded-xl px-3 py-2 mb-3 flex items-center justify-between shadow-[var(--shadow-glass)]',
-                  col.color
-                )}
+                className="rounded-xl px-3 py-2.5 mb-4 flex items-center justify-between"
+                style={{
+                  borderTop: `4px solid ${col.color}`,
+                  background: 'var(--surface-container-lowest)',
+                  boxShadow: '0 4px 12px rgba(42,52,57,0.04)',
+                }}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-foreground">{col.label}</span>
-                  <span className="text-xs font-semibold bg-[var(--surface-container-low)] text-[var(--outline)] rounded-full px-2 py-0.5">
+                  <span
+                    className="font-headline font-extrabold text-sm uppercase tracking-widest"
+                    style={{ color: 'var(--on-surface)' }}
+                  >
+                    {col.label}
+                  </span>
+                  <span
+                    className="text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      background: 'var(--surface-container-high)',
+                      color: 'var(--on-surface-variant)',
+                    }}
+                  >
                     {isLoading ? '…' : colProjects.length}
                   </span>
                 </div>
                 <button
                   onClick={() => openCreateDialog(col.key)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="transition-colors"
+                  style={{ color: 'var(--on-surface-variant)' }}
                   title={`New project in ${col.label}`}
                 >
                   <Plus className="h-4 w-4" />
@@ -274,7 +330,7 @@ export default function ProjectsPage() {
               </div>
 
               {/* Cards */}
-              <div className="flex flex-col gap-2 overflow-y-auto max-h-[calc(100vh-260px)] pr-0.5">
+              <div className="flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-280px)] pr-0.5">
                 {colProjects.length === 0 && !isLoading ? (
                   <EmptyState
                     icon={<Layers className="h-7 w-7" />}
@@ -297,10 +353,14 @@ export default function ProjectsPage() {
       </div>
 
       {/* Archive toggle */}
-      <div className="mt-4 border-t border-border pt-4">
+      <div
+        className="mt-4 border-t pt-4"
+        style={{ borderColor: 'var(--surface-container-highest, #d9e4ea)' }}
+      >
         <button
           onClick={() => setArchiveOpen(prev => !prev)}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-2 text-sm transition-colors"
+          style={{ color: 'var(--on-surface-variant)' }}
         >
           <Archive className="h-4 w-4" />
           <span>Archive ({closedProjects.length} closed project{closedProjects.length !== 1 ? 's' : ''})</span>
@@ -310,23 +370,30 @@ export default function ProjectsPage() {
         {archiveOpen && (
           <div className="mt-3 flex flex-col gap-2">
             {closedProjects.length === 0 ? (
-              <p className="text-xs text-muted-foreground pl-6">No closed projects.</p>
+              <p className="text-xs pl-6" style={{ color: 'var(--on-surface-variant)' }}>
+                No closed projects.
+              </p>
             ) : (
               closedProjects.map(project => (
                 <div
                   key={project.id}
-                  className="flex items-center justify-between gap-3 px-4 py-2.5 bg-card border border-border rounded-lg"
+                  className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl border"
+                  style={{
+                    background: 'var(--surface-container-lowest)',
+                    borderColor: 'rgba(169,180,185,0.2)',
+                  }}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     {project.department && <DepartmentBadge department={project.department} />}
                     <span
-                      className="text-sm text-muted-foreground truncate cursor-pointer hover:text-foreground transition-colors"
+                      className="text-sm truncate cursor-pointer hover:underline transition-colors"
+                      style={{ color: 'var(--on-surface-variant)' }}
                       onClick={() => router.push(`/projects/${project.id}`)}
                     >
                       {project.title}
                     </span>
                     {project.dueDate && (
-                      <span className="text-xs text-muted-foreground shrink-0">
+                      <span className="text-xs shrink-0" style={{ color: 'var(--on-surface-variant)' }}>
                         {formatDate(project.dueDate)}
                       </span>
                     )}
@@ -419,7 +486,10 @@ export default function ProjectsPage() {
               </div>
               <div className="flex flex-col gap-1.5 col-span-2">
                 <label className="text-xs font-medium text-muted-foreground">Stakeholders</label>
-                <div className="min-h-[44px] p-2 rounded-lg bg-[var(--surface-container-high)] border border-border space-y-2">
+                <div
+                  className="min-h-[44px] p-2 rounded-lg border space-y-2"
+                  style={{ background: 'var(--surface-container-high)', borderColor: 'var(--border, rgba(169,180,185,0.3))' }}
+                >
                   {form.stakeholderIds.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {(stakeholders as Array<{ id: string; name: string }>)

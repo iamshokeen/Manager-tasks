@@ -171,7 +171,7 @@ function CreateFollowUpDialog({
 
   return (
     <Dialog open={open} onOpenChange={v => { onOpenChange(v); if (!v) reset() }}>
-      <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" style={{ background: 'var(--surface-container-lowest)' }}>
         <DialogHeader>
           <DialogTitle>
             {parentTitle ? `Open a loop under "${parentTitle}"` : 'Open a Loop'}
@@ -179,18 +179,18 @@ function CreateFollowUpDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">What are you following up on? *</label>
+            <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>What are you following up on? *</label>
             <Input placeholder="e.g. Q1 OKR submission from Priya" value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Who are you chasing? *</label>
+            <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Who are you chasing? *</label>
             <Input placeholder="Name or description (anyone)" value={form.contactName}
               onChange={e => setForm(f => ({ ...f, contactName: e.target.value }))} required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Link Team Member</label>
+              <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Link Team Member</label>
               <Select value={form.teamMemberId} onValueChange={v => setForm(f => ({ ...f, teamMemberId: v ?? '' }))}>
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
@@ -200,7 +200,7 @@ function CreateFollowUpDialog({
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Link Stakeholder</label>
+              <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Link Stakeholder</label>
               <Select value={form.stakeholderId} onValueChange={v => setForm(f => ({ ...f, stakeholderId: v ?? '' }))}>
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
@@ -211,13 +211,13 @@ function CreateFollowUpDialog({
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Description / Context</label>
+            <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Description / Context</label>
             <Textarea placeholder="Any background context…" rows={2} value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Link to Task</label>
+              <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Link to Task</label>
               <Select value={form.taskId} onValueChange={v => setForm(f => ({ ...f, taskId: v ?? '' }))}>
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
@@ -227,7 +227,7 @@ function CreateFollowUpDialog({
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Link to Project</label>
+              <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Link to Project</label>
               <Select value={form.projectId} onValueChange={v => setForm(f => ({ ...f, projectId: v ?? '' }))}>
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
@@ -238,7 +238,7 @@ function CreateFollowUpDialog({
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Scheduled Reminder</label>
+            <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Scheduled Reminder</label>
             <Input type="datetime-local" value={form.reminderAt}
               onChange={e => setForm(f => ({ ...f, reminderAt: e.target.value }))} />
           </div>
@@ -246,7 +246,7 @@ function CreateFollowUpDialog({
             <input type="checkbox" checked={form.autoRemind}
               onChange={e => setForm(f => ({ ...f, autoRemind: e.target.checked }))}
               className="rounded" />
-            <span className="text-xs text-muted-foreground">Auto-remind if no update after 1 day</span>
+            <span className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>Auto-remind if no update after 1 day</span>
           </label>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
@@ -313,7 +313,7 @@ function ConvertDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-md">
+      <DialogContent className="max-w-md" style={{ background: 'var(--surface-container-lowest)' }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="h-4 w-4 text-primary" />
@@ -321,11 +321,17 @@ function ConvertDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-4">
-          <div className="flex rounded-lg border border-border overflow-hidden">
+          <div className="flex rounded-xl overflow-hidden p-1" style={{ background: 'var(--surface-container)' }}>
             {(['new', 'link'] as const).map(m => (
-              <button key={m} onClick={() => setMode(m)}
-                className={cn('flex-1 py-2 text-sm font-medium transition-colors',
-                  mode === m ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className="flex-1 py-2 text-sm font-medium transition-colors rounded-lg"
+                style={mode === m
+                  ? { background: 'var(--surface-container-lowest)', color: 'var(--primary)', boxShadow: '0 1px 3px rgba(42,52,57,0.08)' }
+                  : { color: 'var(--on-surface-variant)', background: 'transparent' }
+                }
+              >
                 {m === 'new' ? 'Create New Task' : 'Link Existing Task'}
               </button>
             ))}
@@ -333,13 +339,13 @@ function ConvertDialog({
           {mode === 'new' ? (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Task Title</label>
+                <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Task Title</label>
                 <Input value={title} onChange={e => setTitle(e.target.value)}
                   placeholder={followUp?.title ?? 'Task title'} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Priority</label>
+                  <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Priority</label>
                   <Select value={priority} onValueChange={v => setPriority(v ?? 'medium')}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -349,7 +355,7 @@ function ConvertDialog({
                   </Select>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Department</label>
+                  <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Department</label>
                   <Select value={department} onValueChange={v => setDepartment(v ?? '')}>
                     <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
                     <SelectContent>
@@ -360,7 +366,7 @@ function ConvertDialog({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Assignee</label>
+                  <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Assignee</label>
                   <Select value={assigneeId} onValueChange={v => setAssigneeId(v ?? '')}>
                     <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
                     <SelectContent>
@@ -370,21 +376,21 @@ function ConvertDialog({
                   </Select>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Due Date</label>
+                  <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Due Date</label>
                   <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
                 </div>
               </div>
             </div>
           ) : (
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Link to existing task</label>
+              <label className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Link to existing task</label>
               <Select value={existingTaskId} onValueChange={v => setExistingTaskId(v ?? '')}>
                 <SelectTrigger><SelectValue placeholder="Select task…" /></SelectTrigger>
                 <SelectContent>
                   {tasks.map(t => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">The follow-up history will be added as a comment on the task.</p>
+              <p className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>The follow-up history will be added as a comment on the task.</p>
             </div>
           )}
         </div>
@@ -413,7 +419,7 @@ function SnoozeDialog({ open, onOpenChange, onSnooze }: {
   ]
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-xs">
+      <DialogContent className="max-w-xs" style={{ background: 'var(--surface-container-lowest)' }}>
         <DialogHeader><DialogTitle>Snooze until…</DialogTitle></DialogHeader>
         <div className="flex flex-col gap-2">
           {options.map(o => (
@@ -508,14 +514,14 @@ function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, project
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border flex-shrink-0">
+      <div className="px-5 py-4 flex-shrink-0" style={{ borderBottom: '1px solid var(--surface-container)' }}>
         <div className="flex items-start gap-2">
           <StatusDot status={followUp.status} alert={alert} />
           <div className="flex-1 min-w-0">
-            <h2 className="text-base font-semibold text-foreground leading-snug">{followUp.title}</h2>
+            <h2 className="text-base font-semibold leading-snug" style={{ color: 'var(--on-surface)' }}>{followUp.title}</h2>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <User className="h-3 w-3" />
+              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--on-surface-variant)' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>person</span>
                 {followUp.teamMember?.name ?? followUp.stakeholder?.name ?? followUp.contactName}
               </span>
               {followUp.task && (
@@ -534,17 +540,17 @@ function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, project
           </div>
         </div>
         {followUp.description && (
-          <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{followUp.description}</p>
+          <p className="text-sm mt-2 leading-relaxed" style={{ color: 'var(--on-surface-variant)' }}>{followUp.description}</p>
         )}
         {alert && (
-          <div className="mt-3 flex items-center gap-2 text-xs text-red-600 bg-red-50 dark:bg-red-950/30 px-3 py-1.5 rounded-lg">
-            <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+          <div className="mt-3 flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl" style={{ color: 'var(--on-error-container)', background: 'var(--error-container)' }}>
+            <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '14px' }}>error</span>
             Needs attention — no update received
           </div>
         )}
         {followUp.snoozedUntil && followUp.status === 'snoozed' && (
-          <div className="mt-2 flex items-center gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 rounded-lg">
-            <Clock className="h-3.5 w-3.5" />
+          <div className="mt-2 flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl" style={{ color: 'var(--tertiary)', background: 'rgba(134,84,0,0.08)' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>schedule</span>
             Snoozed until {new Date(followUp.snoozedUntil).toLocaleString()}
           </div>
         )}
@@ -552,7 +558,7 @@ function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, project
 
       {/* Action bar */}
       {!isClosed && (
-        <div className="px-5 py-2 border-b border-border flex-shrink-0 flex items-center gap-2 flex-wrap">
+        <div className="px-5 py-2 flex-shrink-0 flex items-center gap-2 flex-wrap" style={{ borderBottom: '1px solid var(--surface-container)' }}>
           <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
             onClick={() => onSpawn(followUp.id, followUp.title)}>
             <GitBranch className="h-3 w-3" />
@@ -590,8 +596,8 @@ function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, project
       )}
 
       {isClosed && (
-        <div className="px-5 py-2 border-b border-border flex-shrink-0 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground italic">
+        <div className="px-5 py-2 flex-shrink-0 flex items-center justify-between" style={{ borderBottom: '1px solid var(--surface-container)' }}>
+          <span className="text-xs italic" style={{ color: 'var(--on-surface-variant)' }}>
             {followUp.status === 'converted' ? 'Converted to task' : 'Closed'}
           </span>
           <div className="flex gap-2">
@@ -611,21 +617,24 @@ function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, project
       {/* Notes timeline */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
         {followUp.notes.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No updates yet. Add the first note.</p>
+          <p className="text-sm" style={{ color: 'var(--on-surface-variant)' }}>No updates yet. Add the first note.</p>
         ) : (
           followUp.notes.map(n => (
             <div key={n.id} className="flex gap-3">
-              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-primary mt-0.5">
+              <div
+                className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold mt-0.5"
+                style={{ background: 'rgba(0,83,219,0.1)', color: 'var(--primary)' }}
+              >
                 {(n.authorName ?? 'S').charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
                 <div className="flex items-baseline gap-2 mb-0.5">
-                  <span className="text-xs font-semibold">{n.authorName ?? 'System'}</span>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-xs font-semibold" style={{ color: 'var(--on-surface)' }}>{n.authorName ?? 'System'}</span>
+                  <span className="text-[10px]" style={{ color: 'var(--on-surface-variant)' }}>
                     {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
                   </span>
                 </div>
-                <p className="text-sm text-foreground/90 whitespace-pre-wrap">{n.content}</p>
+                <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--on-surface)' }}>{n.content}</p>
               </div>
             </div>
           ))
@@ -634,7 +643,7 @@ function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, project
 
       {/* Add note */}
       {!isClosed && (
-        <div className="px-5 py-3 border-t border-border flex-shrink-0 flex gap-2">
+        <div className="px-5 py-3 flex-shrink-0 flex gap-2" style={{ borderTop: '1px solid var(--surface-container)' }}>
           <Input
             value={noteText}
             onChange={e => setNoteText(e.target.value)}
@@ -650,17 +659,22 @@ function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, project
 
       {/* Children list */}
       {followUp.children.length > 0 && (
-        <div className="px-5 py-3 border-t border-border flex-shrink-0">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+        <div className="px-5 py-3 flex-shrink-0" style={{ borderTop: '1px solid var(--surface-container)' }}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--on-surface-variant)' }}>
             Child loops ({followUp.children.length})
           </p>
           <div className="flex flex-col gap-1">
             {followUp.children.map(c => (
-              <div key={c.id} className={cn('flex items-center gap-2 text-sm py-1 px-2 rounded-lg',
-                c.status === 'closed' || c.status === 'converted' ? 'opacity-50' : 'hover:bg-muted/50')}>
+              <div
+                key={c.id}
+                className={cn('flex items-center gap-2 text-sm py-1 px-2 rounded-xl transition-colors',
+                  c.status === 'closed' || c.status === 'converted' ? 'opacity-50' : '')}
+                onMouseEnter={e => { if (c.status !== 'closed' && c.status !== 'converted') (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-container-low)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
+              >
                 <StatusDot status={c.status} alert={needsAttention(c)} />
-                <span className="flex-1 truncate">{c.title}</span>
-                <span className="text-xs text-muted-foreground truncate max-w-[80px]">{c.contactName}</span>
+                <span className="flex-1 truncate" style={{ color: 'var(--on-surface)' }}>{c.title}</span>
+                <span className="text-xs truncate max-w-[80px]" style={{ color: 'var(--on-surface-variant)' }}>{c.contactName}</span>
               </div>
             ))}
           </div>
@@ -691,25 +705,38 @@ function FollowUpRow({ fu, selected, onSelect, depth = 0 }: {
       <div
         onClick={onSelect}
         className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm',
-          selected ? 'bg-primary/10 text-primary' : 'hover:bg-muted/50',
-          depth > 0 && 'ml-4 border-l-2 border-border pl-4 rounded-l-none'
+          'flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-colors text-sm',
+          depth > 0 && 'ml-4'
         )}
-        style={{ paddingLeft: depth > 0 ? `${(depth * 16) + 12}px` : undefined }}
+        style={{
+          paddingLeft: depth > 0 ? `${(depth * 16) + 12}px` : undefined,
+          background: selected ? 'rgba(0,83,219,0.08)' : 'transparent',
+          color: selected ? 'var(--primary)' : 'var(--on-surface)',
+          borderLeft: depth > 0 ? '2px solid var(--surface-container)' : undefined,
+        }}
+        onMouseEnter={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-container-low)' }}
+        onMouseLeave={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
       >
         {hasChildren ? (
           <button onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}
-            className="p-0.5 hover:bg-muted rounded flex-shrink-0">
-            {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            className="p-0.5 rounded flex-shrink-0 transition-colors"
+            style={{ color: 'var(--on-surface-variant)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+              {expanded ? 'expand_more' : 'chevron_right'}
+            </span>
           </button>
         ) : <span className="w-5 flex-shrink-0" />}
         <StatusDot status={fu.status} alert={alert} />
-        <span className={cn('flex-1 truncate', fu.status === 'closed' || fu.status === 'converted' ? 'line-through text-muted-foreground' : '')}>
+        <span className={cn('flex-1 truncate text-sm', fu.status === 'closed' || fu.status === 'converted' ? 'line-through' : '')}
+          style={fu.status === 'closed' || fu.status === 'converted' ? { color: 'var(--on-surface-variant)' } : {}}>
           {fu.title}
         </span>
-        <span className="text-xs text-muted-foreground truncate max-w-[80px] flex-shrink-0">{fu.contactName}</span>
+        <span className="text-xs truncate max-w-[80px] flex-shrink-0" style={{ color: 'var(--on-surface-variant)' }}>{fu.contactName}</span>
         {fu.notes.length > 0 && (
-          <span className="text-[10px] text-muted-foreground flex-shrink-0">{fu.notes.length} note{fu.notes.length !== 1 ? 's' : ''}</span>
+          <span className="text-[10px] flex-shrink-0" style={{ color: 'var(--on-surface-variant)' }}>{fu.notes.length} note{fu.notes.length !== 1 ? 's' : ''}</span>
         )}
       </div>
       {hasChildren && expanded && fu.children!.map(child => (
@@ -789,8 +816,11 @@ export default function FollowUpsPage() {
           action={
             <div className="flex items-center gap-2">
               {alertCount > 0 && (
-                <span className="flex items-center gap-1.5 text-xs text-red-600 bg-red-50 dark:bg-red-950/30 px-3 py-1.5 rounded-full font-medium border border-red-200 dark:border-red-900">
-                  <Bell className="h-3.5 w-3.5" />
+                <span
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium"
+                  style={{ color: 'var(--on-error-container)', background: 'var(--error-container)', border: '1px solid var(--error)' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>notifications</span>
                   {alertCount} need{alertCount === 1 ? 's' : ''} attention
                 </span>
               )}
@@ -803,12 +833,18 @@ export default function FollowUpsPage() {
         />
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex-shrink-0 flex gap-1 mb-3">
+      {/* Filter tabs — pill style */}
+      <div className="flex-shrink-0 flex gap-1.5 mb-3 p-1 rounded-xl w-fit" style={{ background: 'var(--surface-container)' }}>
         {(['open', 'snoozed', 'closed', 'all'] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize',
-              filter === f ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={cn('px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize')}
+            style={filter === f
+              ? { background: 'var(--surface-container-lowest)', color: 'var(--primary)', boxShadow: '0 1px 3px rgba(42,52,57,0.08)' }
+              : { color: 'var(--on-surface-variant)', background: 'transparent' }
+            }
+          >
             {f === 'all' ? 'All' : f === 'open' ? 'Active' : f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
         ))}
@@ -817,10 +853,13 @@ export default function FollowUpsPage() {
       {/* Two-panel layout */}
       <div className="flex-1 min-h-0 flex gap-4">
         {/* Left: list */}
-        <div className="w-80 flex-shrink-0 bg-card border border-border rounded-xl overflow-y-auto">
+        <div
+          className="w-80 flex-shrink-0 rounded-xl overflow-y-auto"
+          style={{ background: 'var(--surface-container-lowest)', boxShadow: 'var(--shadow-card)' }}
+        >
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground p-6">
-              <CheckCircle2 className="h-10 w-10 opacity-20" />
+            <div className="flex flex-col items-center justify-center h-full gap-3 p-6" style={{ color: 'var(--on-surface-variant)' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '40px', opacity: 0.2 }}>check_circle</span>
               <p className="text-sm text-center">
                 {filter === 'open' ? 'Nothing open. Rare. Enjoy it.' : `No ${filter} loops.`}
               </p>
@@ -851,7 +890,10 @@ export default function FollowUpsPage() {
         </div>
 
         {/* Right: detail */}
-        <div className="flex-1 min-w-0 bg-card border border-border rounded-xl overflow-hidden">
+        <div
+          className="flex-1 min-w-0 rounded-xl overflow-hidden"
+          style={{ background: 'var(--surface-container-lowest)', boxShadow: 'var(--shadow-card)' }}
+        >
           {selectedFollowUp ? (
             <DetailPanel
               followUp={selectedFollowUp}
@@ -864,8 +906,8 @@ export default function FollowUpsPage() {
               onSpawn={handleSpawn}
             />
           ) : (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-              <Bell className="h-10 w-10 opacity-20" />
+            <div className="flex flex-col items-center justify-center h-full gap-3" style={{ color: 'var(--on-surface-variant)' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '40px', opacity: 0.2 }}>notifications</span>
               <p className="text-sm">Select a loop to see details</p>
             </div>
           )}

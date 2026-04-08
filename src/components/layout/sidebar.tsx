@@ -3,60 +3,53 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { KairosWordmark } from '@/components/ui/kairos-logo'
-import {
-  LayoutDashboard, FolderKanban, CheckSquare, ListTodo, RefreshCw,
-  Users, MessageSquare, Handshake, BarChart3, TrendingUp, Hotel,
-  FileText, BookOpen, Settings, StickyNote, Bell, ShieldCheck,
-  UserCheck, Building2, Activity, UserCircle, Lock
-} from 'lucide-react'
 
 type Role = 'SUPER_ADMIN' | 'MANAGER' | 'SENIOR_IC' | 'DIRECT_REPORT' | 'EXEC_VIEWER' | 'GUEST'
 
-interface NavItem { href: string; label: string; Icon: React.ElementType }
+interface NavItem { href: string; label: string; icon: string }
 interface NavGroup { group: string; items: NavItem[] }
 
 const BASE_NAV: NavGroup[] = [
   {
     group: 'Overview',
-    items: [{ href: '/', label: 'Kairos', Icon: LayoutDashboard }],
+    items: [{ href: '/', label: 'Dashboard', icon: 'dashboard' }],
   },
   {
     group: 'Work',
     items: [
-      { href: '/projects', label: 'Projects', Icon: FolderKanban },
-      { href: '/tasks', label: 'Tasks', Icon: CheckSquare },
-      { href: '/my-tasks', label: 'My Tasks', Icon: ListTodo },
-      { href: '/cadence', label: 'Rounds', Icon: RefreshCw },
-      { href: '/notes', label: 'Notes', Icon: StickyNote },
-      { href: '/follow-ups', label: 'Open Loops', Icon: Bell },
+      { href: '/projects',   label: 'Projects',    icon: 'folder_kanban' },
+      { href: '/tasks',      label: 'Tasks',        icon: 'checklist' },
+      { href: '/my-tasks',   label: 'My Tasks',     icon: 'task_alt' },
+      { href: '/cadence',    label: 'Rounds',       icon: 'repeat' },
+      { href: '/notes',      label: 'Notes',        icon: 'sticky_note_2' },
+      { href: '/follow-ups', label: 'Open Loops',   icon: 'track_changes' },
     ],
   },
   {
     group: 'People',
     items: [
-      { href: '/team', label: 'Your People', Icon: Users },
-      { href: '/one-on-ones', label: '1:1s', Icon: MessageSquare },
-      { href: '/stakeholders', label: 'The Table', Icon: Handshake },
+      { href: '/team',         label: 'Your People', icon: 'group' },
+      { href: '/one-on-ones',  label: '1:1s',        icon: 'forum' },
+      { href: '/stakeholders', label: 'The Table',   icon: 'handshake' },
     ],
   },
   {
     group: 'Revenue',
     items: [
-      { href: '/metrics', label: 'Metrics', Icon: BarChart3 },
-      { href: '/assessment/ota', label: 'Channel Pulse', Icon: TrendingUp },
-      { href: '/assessment/checkin', label: 'Check-in GMV', Icon: Hotel },
+      { href: '/metrics',           label: 'Metrics',       icon: 'analytics' },
+      { href: '/assessment/ota',    label: 'Channel Pulse', icon: 'trending_up' },
+      { href: '/assessment/checkin',label: 'Check-in GMV',  icon: 'hotel' },
     ],
   },
   {
     group: 'Reports',
-    items: [{ href: '/reports', label: 'Reports', Icon: FileText }],
+    items: [{ href: '/reports', label: 'Reports', icon: 'summarize' }],
   },
   {
     group: 'Reference',
     items: [
-      { href: '/playbook', label: 'Playbook', Icon: BookOpen },
-      { href: '/settings', label: 'Settings', Icon: Settings },
+      { href: '/playbook', label: 'Playbook', icon: 'menu_book' },
+      { href: '/settings', label: 'Settings', icon: 'settings' },
     ],
   },
 ]
@@ -64,25 +57,24 @@ const BASE_NAV: NavGroup[] = [
 const ADMIN_NAV: NavGroup = {
   group: 'Admin',
   items: [
-    { href: '/dashboard/admin/users', label: 'Users', Icon: UserCheck },
-    { href: '/dashboard/admin/approvals', label: 'Approvals', Icon: ShieldCheck },
-    { href: '/dashboard/admin/workspaces', label: 'Workspaces', Icon: Building2 },
-    { href: '/dashboard/admin/activity-log', label: 'Activity', Icon: Activity },
-    { href: '/dashboard/admin/rbac', label: 'Permissions', Icon: Lock },
+    { href: '/dashboard/admin/users',        label: 'Users',       icon: 'manage_accounts' },
+    { href: '/dashboard/admin/approvals',    label: 'Approvals',   icon: 'verified_user' },
+    { href: '/dashboard/admin/workspaces',   label: 'Workspaces',  icon: 'corporate_fare' },
+    { href: '/dashboard/admin/activity-log', label: 'Activity',    icon: 'history' },
+    { href: '/dashboard/admin/rbac',         label: 'Permissions', icon: 'lock' },
   ],
 }
 
-// Items filtered based on role
 const ROLE_HIDDEN: Record<string, Role[]> = {
-  '/cadence': ['DIRECT_REPORT', 'EXEC_VIEWER', 'GUEST'],
-  '/one-on-ones': ['EXEC_VIEWER', 'GUEST'],
-  '/stakeholders': ['DIRECT_REPORT', 'EXEC_VIEWER', 'GUEST'],
-  '/assessment/ota': ['DIRECT_REPORT', 'SENIOR_IC', 'EXEC_VIEWER', 'GUEST'],
-  '/assessment/checkin': ['DIRECT_REPORT', 'SENIOR_IC', 'EXEC_VIEWER', 'GUEST'],
-  '/metrics': ['EXEC_VIEWER', 'GUEST'],
-  '/reports': ['EXEC_VIEWER', 'GUEST'],
-  '/projects': ['EXEC_VIEWER', 'GUEST'],
-  '/playbook': ['MANAGER', 'SENIOR_IC', 'DIRECT_REPORT', 'EXEC_VIEWER', 'GUEST'],
+  '/cadence':             ['DIRECT_REPORT', 'EXEC_VIEWER', 'GUEST'],
+  '/one-on-ones':         ['EXEC_VIEWER', 'GUEST'],
+  '/stakeholders':        ['DIRECT_REPORT', 'EXEC_VIEWER', 'GUEST'],
+  '/assessment/ota':      ['DIRECT_REPORT', 'SENIOR_IC', 'EXEC_VIEWER', 'GUEST'],
+  '/assessment/checkin':  ['DIRECT_REPORT', 'SENIOR_IC', 'EXEC_VIEWER', 'GUEST'],
+  '/metrics':             ['EXEC_VIEWER', 'GUEST'],
+  '/reports':             ['EXEC_VIEWER', 'GUEST'],
+  '/projects':            ['EXEC_VIEWER', 'GUEST'],
+  '/playbook':            ['MANAGER', 'SENIOR_IC', 'DIRECT_REPORT', 'EXEC_VIEWER', 'GUEST'],
 }
 
 function filterNavForRole(role: Role): NavGroup[] {
@@ -94,10 +86,7 @@ function filterNavForRole(role: Role): NavGroup[] {
     }),
   })).filter((group) => group.items.length > 0)
 
-  if (role === 'SUPER_ADMIN') {
-    filtered.push(ADMIN_NAV)
-  }
-
+  if (role === 'SUPER_ADMIN') filtered.push(ADMIN_NAV)
   return filtered
 }
 
@@ -107,39 +96,88 @@ interface SidebarProps {
 
 export function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname()
-
   const role = (userRole as Role) ?? 'DIRECT_REPORT'
   const navGroups = filterNavForRole(role)
 
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-64 flex-col bg-[var(--surface-container-low)] z-40 print:hidden overflow-hidden">
+    <aside
+      className="hidden lg:flex fixed left-0 top-0 h-screen w-64 flex-col z-40 print:hidden overflow-hidden"
+      style={{ background: 'var(--surface-container)', borderRight: 'none' }}
+    >
       {/* Brand */}
-      <div className="px-4 py-5">
-        <KairosWordmark size="sm" showTagline />
+      <div className="px-4 py-6 mb-2">
+        <div className="flex items-center gap-3 px-2">
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0"
+            style={{ background: 'var(--primary)' }}
+          >
+            <span className="material-symbols-outlined text-base" style={{ color: 'var(--on-primary)', fontSize: '18px' }}>
+              hourglass_empty
+            </span>
+          </div>
+          <div>
+            <h1
+              className="font-headline text-lg font-extrabold tracking-tight leading-tight"
+              style={{ color: 'var(--on-surface)' }}
+            >
+              Kairos
+            </h1>
+            <p
+              className="text-[9px] uppercase tracking-[0.18em] font-bold"
+              style={{ color: 'var(--on-surface-variant)', opacity: 0.7 }}
+            >
+              Manager Command
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-4">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 pb-4 space-y-0.5">
         {navGroups.map(({ group, items }) => (
           <div key={group} className="mb-1">
-            <div className="px-3 py-2 text-[10px] font-bold tracking-widest text-[var(--outline)] uppercase whitespace-nowrap">
+            <div
+              className="px-3 py-1.5 text-[10px] font-bold tracking-[0.16em] uppercase"
+              style={{ color: 'var(--on-surface-variant)', opacity: 0.6 }}
+            >
               {group}
             </div>
-            {items.map(({ href, label, Icon }) => {
+            {items.map(({ href, label, icon }) => {
               const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
               return (
                 <Link
                   key={href}
                   href={href}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
-                    active
-                      ? 'text-primary bg-[var(--surface-container-high)] font-semibold'
-                      : 'text-[var(--outline)] hover:text-[var(--foreground)] hover:bg-[var(--surface-container)]'
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer',
                   )}
+                  style={active ? {
+                    background: 'var(--surface-container-lowest)',
+                    color: 'var(--primary)',
+                    boxShadow: '0 1px 3px rgba(42,52,57,0.08)',
+                  } : {
+                    color: 'var(--on-surface-variant)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.5)'
+                      ;(e.currentTarget as HTMLElement).style.color = 'var(--on-surface)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.background = ''
+                      ;(e.currentTarget as HTMLElement).style.color = 'var(--on-surface-variant)'
+                    }
+                  }}
                 >
-                  <Icon size={18} strokeWidth={active ? 2.5 : 1.75} className="shrink-0" />
-                  <span className="whitespace-nowrap">{label}</span>
+                  <span
+                    className="material-symbols-outlined flex-shrink-0"
+                    style={{ fontSize: '20px' }}
+                  >
+                    {icon}
+                  </span>
+                  <span className="whitespace-nowrap font-['Inter']">{label}</span>
                 </Link>
               )
             })}
@@ -148,27 +186,46 @@ export function Sidebar({ userRole }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-[var(--outline-variant)]/20">
-        <div className="px-2 py-2">
-          <Link
-            href="/profile"
-            className={cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
-              pathname === '/profile'
-                ? 'text-primary bg-[var(--surface-container-high)] font-semibold'
-                : 'text-[var(--outline)] hover:text-[var(--foreground)] hover:bg-[var(--surface-container)]'
-            )}
+      <div className="px-3 pb-4 pt-2" style={{ borderTop: '1px solid rgba(169,180,185,0.15)' }}>
+        {/* New Task CTA */}
+        <Link
+          href="/tasks"
+          className="w-full mb-3 flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold text-sm transition-all cursor-pointer"
+          style={{
+            background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dim) 100%)',
+            color: 'var(--on-primary)',
+            boxShadow: '0 2px 12px rgba(0,83,219,0.25)',
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
+          New Task
+        </Link>
+
+        <Link
+          href="/profile"
+          className={cn(
+            'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer',
+          )}
+          style={pathname === '/profile' ? {
+            background: 'var(--surface-container-lowest)',
+            color: 'var(--primary)',
+          } : {
+            color: 'var(--on-surface-variant)',
+          }}
+        >
+          <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '20px' }}>
+            account_circle
+          </span>
+          <span className="whitespace-nowrap font-['Inter']">Profile</span>
+        </Link>
+
+        <div className="px-3 pt-2">
+          <div
+            className="text-[10px] font-bold uppercase tracking-widest"
+            style={{ color: 'var(--on-surface-variant)', opacity: 0.5 }}
           >
-            <UserCircle
-              size={18}
-              strokeWidth={pathname === '/profile' ? 2.5 : 1.75}
-              className="shrink-0"
-            />
-            <span className="whitespace-nowrap">Profile</span>
-          </Link>
-        </div>
-        <div className="px-5 py-3">
-          <div className="text-[10px] text-[var(--outline)] font-medium whitespace-nowrap">FY27 · Kairos</div>
+            FY27 · Kairos
+          </div>
         </div>
       </div>
     </aside>

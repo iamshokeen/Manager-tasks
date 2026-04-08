@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Users, ChevronRight } from 'lucide-react'
+import { Plus, Users, ChevronRight, Search } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useTeam } from '@/hooks/use-team'
@@ -33,12 +33,12 @@ import { cn, DELEGATION_LEVELS } from '@/lib/utils'
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as const
 
-const MEMBER_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  active: { label: 'Active', className: 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/20' },
-  hiring: { label: 'Hiring', className: 'bg-[#C9A84C]/10 text-[#C9A84C] border-[#C9A84C]/20' },
-  inactive: { label: 'Inactive', className: 'bg-[var(--surface-container-low)] text-[var(--outline)] border-transparent' },
-  on_leave: { label: 'On Leave', className: 'bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/20' },
-  exited: { label: 'Exited', className: 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/20' },
+const MEMBER_STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+  active:   { label: 'Active',   bg: 'var(--primary-container)',  color: 'var(--on-primary-container)' },
+  hiring:   { label: 'Hiring',   bg: 'var(--tertiary-container)', color: 'var(--on-tertiary-container)' },
+  inactive: { label: 'Inactive', bg: 'var(--surface-container)',  color: 'var(--on-surface-variant)' },
+  on_leave: { label: 'On Leave', bg: 'var(--secondary-container)',color: 'var(--on-secondary-container)' },
+  exited:   { label: 'Exited',   bg: 'var(--error-container)',    color: 'var(--on-error-container)' },
 }
 
 interface MemberSummary {
@@ -80,7 +80,10 @@ const EMPTY_FORM: AddMemberForm = {
 function MemberStatusBadge({ status }: { status: string }) {
   const config = MEMBER_STATUS_CONFIG[status] ?? MEMBER_STATUS_CONFIG.inactive
   return (
-    <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border', config.className)}>
+    <span
+      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
+      style={{ background: config.bg, color: config.color }}
+    >
       {config.label}
     </span>
   )
@@ -95,50 +98,78 @@ function MemberCard({ member, onClick }: { member: MemberSummary; onClick: () =>
   return (
     <div
       onClick={onClick}
-      className="bg-card rounded-xl p-5 shadow-[var(--shadow-glass)] hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col gap-3"
+      className="rounded-xl p-5 flex flex-col gap-4 cursor-pointer group transition-all hover:-translate-y-0.5"
+      style={{
+        background: 'var(--surface-container-lowest)',
+        boxShadow: 'var(--shadow-card)',
+        border: '1px solid transparent',
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(0,83,219,0.15)'
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLDivElement).style.borderColor = 'transparent'
+      }}
     >
-      {/* Top: avatar + name/role */}
-      <div className="flex items-center gap-3">
-        <MemberAvatar name={member.name} size="lg" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-            {member.name}
-          </p>
-          <p className="text-xs text-[var(--outline)] truncate">{member.role}</p>
+      {/* Top: avatar + name/role + status */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <MemberAvatar name={member.name} size="lg" />
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-sm font-semibold truncate transition-colors"
+              style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
+            >
+              {member.name}
+            </p>
+            <p className="text-xs truncate mt-0.5" style={{ color: 'var(--on-surface-variant)' }}>
+              {member.role}
+            </p>
+          </div>
         </div>
-      </div>
-
-      {/* Badges row */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <DepartmentBadge department={member.department} />
         <MemberStatusBadge status={member.status} />
       </div>
 
+      {/* Department */}
+      <div>
+        <DepartmentBadge department={member.department} />
+      </div>
+
       {/* Divider */}
-      <div className="h-px bg-[var(--surface-container-low)]" />
+      <div className="h-px" style={{ background: 'var(--surface-container)' }} />
 
       {/* Stats row */}
-      <div className="flex items-center gap-4 text-xs text-[var(--outline)]">
-        <div>
-          <span className="text-foreground font-medium">Delegation:</span>{' '}
-          {delegLabel}
+      <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--on-surface-variant)' }}>
+        <div
+          className="flex-1 p-2 rounded-lg"
+          style={{ background: 'var(--surface-container-low)', borderLeft: '3px solid var(--primary)' }}
+        >
+          <div className="text-[10px] uppercase tracking-widest mb-0.5" style={{ color: 'var(--on-surface-variant)' }}>
+            Delegation
+          </div>
+          <div className="font-bold text-xs" style={{ color: 'var(--on-surface)' }}>{delegLabel}</div>
         </div>
-        <div>
-          <span className="text-foreground font-medium">Tasks:</span>{' '}
-          {member.taskCount ?? 0}
+        <div
+          className="flex-1 p-2 rounded-lg"
+          style={{ background: 'var(--surface-container-low)', borderLeft: '3px solid var(--tertiary)' }}
+        >
+          <div className="text-[10px] uppercase tracking-widest mb-0.5" style={{ color: 'var(--on-surface-variant)' }}>
+            Tasks
+          </div>
+          <div className="font-bold text-xs" style={{ color: 'var(--on-surface)' }}>{member.taskCount ?? 0}</div>
         </div>
       </div>
 
       {/* 1:1 */}
       {oneOnOne && (
-        <div className="text-xs text-[var(--outline)]">
-          <span className="text-foreground font-medium">1:1:</span> {oneOnOne}
+        <div className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>
+          <span className="font-medium" style={{ color: 'var(--on-surface)' }}>1:1:</span> {oneOnOne}
         </div>
       )}
 
       {/* View profile link */}
-      <div className="flex items-center gap-1 text-xs text-primary mt-auto pt-1">
-        <span>View Profile</span>
+      <div className="flex items-center gap-1 text-xs mt-auto pt-1" style={{ color: 'var(--primary)' }}>
+        <span className="font-medium">View Profile</span>
         <ChevronRight className="h-3.5 w-3.5" />
       </div>
     </div>
@@ -152,6 +183,14 @@ export default function TeamPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState<AddMemberForm>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const filtered = (members as MemberSummary[]).filter(m =>
+    !search ||
+    m.name.toLowerCase().includes(search.toLowerCase()) ||
+    m.role.toLowerCase().includes(search.toLowerCase()) ||
+    m.department.toLowerCase().includes(search.toLowerCase())
+  )
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -195,7 +234,7 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-6">
       <PageHeader
         title="Your People"
         action={
@@ -206,13 +245,42 @@ export default function TeamPage() {
         }
       />
 
+      {/* Filter / Search bar */}
+      <div
+        className="flex flex-wrap items-center justify-between gap-4 p-3 rounded-xl"
+        style={{ background: 'var(--surface-container-low)', border: '1px solid rgba(169,180,185,0.1)' }}
+      >
+        <div
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg flex-1 max-w-xs"
+          style={{ background: 'var(--surface-container-lowest)', border: '1px solid rgba(113,124,130,0.2)' }}
+        >
+          <Search className="h-4 w-4 shrink-0" style={{ color: 'var(--on-surface-variant)' }} />
+          <input
+            className="bg-transparent border-none focus:outline-none text-sm w-full"
+            style={{ color: 'var(--on-surface)' }}
+            placeholder="Search members..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        {!isLoading && (
+          <div className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>
+            {filtered.length} member{filtered.length !== 1 ? 's' : ''}
+          </div>
+        )}
+      </div>
+
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-card rounded-xl p-5 h-48 animate-pulse shadow-[var(--shadow-glass)]" />
+            <div
+              key={i}
+              className="rounded-xl p-5 h-52 animate-pulse"
+              style={{ background: 'var(--surface-container-lowest)', boxShadow: 'var(--shadow-card)' }}
+            />
           ))}
         </div>
-      ) : (members as MemberSummary[]).length === 0 ? (
+      ) : filtered.length === 0 && (members as MemberSummary[]).length === 0 ? (
         <EmptyState
           icon={<Users className="h-10 w-10" />}
           title="Nobody on your team yet."
@@ -224,9 +292,18 @@ export default function TeamPage() {
             </Button>
           }
         />
+      ) : filtered.length === 0 ? (
+        <div
+          className="rounded-xl p-8 text-center"
+          style={{ background: 'var(--surface-container-lowest)', boxShadow: 'var(--shadow-card)' }}
+        >
+          <p className="text-sm" style={{ color: 'var(--on-surface-variant)' }}>
+            No members match &ldquo;{search}&rdquo;
+          </p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {(members as MemberSummary[]).map(member => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {filtered.map(member => (
             <MemberCard
               key={member.id}
               member={member}
@@ -238,14 +315,17 @@ export default function TeamPage() {
 
       {/* Add Member Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-card max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          className="max-w-lg max-h-[90vh] overflow-y-auto"
+          style={{ background: 'var(--surface-container-lowest)' }}
+        >
           <DialogHeader>
-            <DialogTitle>Add to Your People</DialogTitle>
+            <DialogTitle style={{ fontFamily: 'Manrope, sans-serif' }}>Add to Your People</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
             {/* Name */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Name *</label>
+              <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Name *</label>
               <Input
                 placeholder="Full name"
                 value={form.name}
@@ -256,7 +336,7 @@ export default function TeamPage() {
 
             {/* Role */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Role *</label>
+              <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Role *</label>
               <Input
                 placeholder="Job title or role"
                 value={form.role}
@@ -268,7 +348,7 @@ export default function TeamPage() {
             <div className="grid grid-cols-2 gap-3">
               {/* Department */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Department *</label>
+                <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Department *</label>
                 <Select value={form.department} onValueChange={(v: string | null) => setForm(f => ({ ...f, department: v ?? '' }))}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select…" />
@@ -283,7 +363,7 @@ export default function TeamPage() {
 
               {/* Status */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Status</label>
+                <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Status</label>
                 <Select value={form.status} onValueChange={(v: string | null) => setForm(f => ({ ...f, status: v ?? 'active' }))}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select…" />
@@ -299,7 +379,7 @@ export default function TeamPage() {
 
             {/* Delegation Level */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Delegation Level</label>
+              <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Delegation Level</label>
               <Select value={form.delegationLevel} onValueChange={(v: string | null) => setForm(f => ({ ...f, delegationLevel: v ?? '1' }))}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select…" />
@@ -315,7 +395,7 @@ export default function TeamPage() {
 
             {/* Skills */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Skills</label>
+              <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Skills</label>
               <Textarea
                 placeholder="e.g. SQL, Python, Excel (comma-separated)"
                 rows={2}
@@ -327,7 +407,7 @@ export default function TeamPage() {
             <div className="grid grid-cols-2 gap-3">
               {/* 1:1 Day */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">1:1 Day</label>
+                <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>1:1 Day</label>
                 <Select value={form.oneOnOneDay} onValueChange={(v: string | null) => setForm(f => ({ ...f, oneOnOneDay: v ?? '' }))}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select…" />
@@ -342,7 +422,7 @@ export default function TeamPage() {
 
               {/* 1:1 Time */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">1:1 Time</label>
+                <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>1:1 Time</label>
                 <Input
                   placeholder="10:00 AM"
                   value={form.oneOnOneTime}
@@ -353,7 +433,7 @@ export default function TeamPage() {
 
             {/* Coaching Notes */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Coaching Notes</label>
+              <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Coaching Notes</label>
               <Textarea
                 placeholder="Private notes about this team member…"
                 rows={3}

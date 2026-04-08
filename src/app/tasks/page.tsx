@@ -55,11 +55,11 @@ import { TaskCalendarView } from '@/components/ui/task-calendar-view'
 // Kanban column definitions
 // ---------------------------------------------------------------------------
 
-const KANBAN_COLUMNS: Array<{ key: 'todo' | 'in_progress' | 'review' | 'done'; label: string; color: string; dotColor: string }> = [
-  { key: 'todo',        label: 'To Do',       color: 'border-t-[#6B7280]', dotColor: '#6B7280' },
-  { key: 'in_progress', label: 'In Progress', color: 'border-t-[#3B82F6]', dotColor: '#3B82F6' },
-  { key: 'review',      label: 'Review',      color: 'border-t-[#F59E0B]', dotColor: '#F59E0B' },
-  { key: 'done',        label: 'Done',        color: 'border-t-[#10B981]', dotColor: '#10B981' },
+const KANBAN_COLUMNS: Array<{ key: 'todo' | 'in_progress' | 'review' | 'done'; label: string; color: string; dotColor: string; countStyle: string }> = [
+  { key: 'todo',        label: 'To Do',       color: 'border-t-[#6B7280]', dotColor: '#6B7280', countStyle: '' },
+  { key: 'in_progress', label: 'In Progress', color: 'border-t-[#0053db]', dotColor: '#0053db', countStyle: 'primary' },
+  { key: 'review',      label: 'Review',      color: 'border-t-[#865400]', dotColor: '#865400', countStyle: '' },
+  { key: 'done',        label: 'Done',        color: 'border-t-[#10B981]', dotColor: '#10B981', countStyle: '' },
 ]
 
 // Columns shown in the active Kanban board (done is archived separately)
@@ -90,9 +90,10 @@ function DroppableColumn({ id, children }: { id: string; children: React.ReactNo
     <div
       ref={setNodeRef}
       className={cn(
-        'flex flex-col gap-2 overflow-y-auto max-h-[calc(100vh-280px)] pr-0.5 min-h-[80px] rounded-lg transition-colors',
-        isOver && 'bg-primary/5 ring-1 ring-primary/20'
+        'flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-280px)] pr-0.5 min-h-[80px] rounded-xl transition-colors',
+        isOver && 'ring-2 ring-inset'
       )}
+      style={isOver ? { outline: '2px solid var(--primary)', outlineOffset: '-2px' } : {}}
     >
       {children}
     </div>
@@ -111,54 +112,66 @@ interface TaskCardProps {
 function TaskCard({ task, onClick }: TaskCardProps) {
   const overdue = isOverdue(task.dueDate ?? null)
   const today = isDueToday(task.dueDate ?? null)
-  const dueDateColor = overdue
-    ? 'text-[#EF4444]'
+  const dueDateStyle = overdue
+    ? { color: 'var(--error)' }
     : today
-    ? 'text-[#C9A84C]'
-    : 'text-muted-foreground'
+    ? { color: 'var(--tertiary)' }
+    : { color: 'var(--on-surface-variant)' }
 
   return (
     <div
       onClick={onClick}
-      className="bg-card border border-border rounded-lg p-3 cursor-pointer hover:border-ring/40 transition-colors group"
+      className="rounded-xl p-4 cursor-pointer transition-all group"
+      style={{
+        background: 'var(--surface-container-lowest)',
+        boxShadow: '0 8px 30px rgb(42,52,57,0.04)',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 30px rgb(42,52,57,0.08)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 30px rgb(42,52,57,0.04)' }}
     >
-      <p className="text-sm font-medium text-foreground line-clamp-2 mb-2 group-hover:text-primary transition-colors">
-        {task.title}
-      </p>
-      <div className="flex flex-wrap gap-1.5 mb-2">
+      <div className="flex items-center justify-between mb-3">
         <PriorityBadge priority={task.priority} />
-        {task.department && <DepartmentBadge department={task.department} />}
         {task.stakeholders && task.stakeholders.length > 0 && (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
-            <Users className="h-2.5 w-2.5" />
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+            style={{ background: 'var(--surface-container)', color: 'var(--on-surface-variant)' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>groups</span>
             {task.stakeholders.length}
           </span>
         )}
       </div>
-      <div className="flex items-center justify-between mt-2">
-        <div className="flex items-center gap-1.5">
+      <p className="text-sm font-semibold line-clamp-2 mb-1 leading-snug transition-colors group-hover:text-[var(--primary)]" style={{ color: 'var(--on-surface)' }}>
+        {task.title}
+      </p>
+      {task.assignedByName && (
+        <p className="text-[11px] mb-3" style={{ color: 'var(--on-surface-variant)' }}>
+          by <span className="font-semibold">{task.assignedByName}</span>
+        </p>
+      )}
+      {task.department && (
+        <div className="mb-2">
+          <DepartmentBadge department={task.department} />
+        </div>
+      )}
+      <div className="flex items-center justify-between mt-auto">
+        <div className="flex items-center gap-2">
           {task.assignee ? (
             <>
               <MemberAvatar name={task.assignee.name} size="sm" />
-              <span className="text-xs text-muted-foreground truncate max-w-[80px]">{task.assignee.name}</span>
+              <span className="text-[11px] font-medium truncate max-w-[80px]" style={{ color: 'var(--on-surface-variant)' }}>{task.assignee.name}</span>
             </>
           ) : (
-            <span className="text-xs text-muted-foreground">Unassigned</span>
+            <span className="text-[11px]" style={{ color: 'var(--on-surface-variant)' }}>Unassigned</span>
           )}
         </div>
         {task.dueDate && (
-          <div className={cn('flex items-center gap-1 text-xs', dueDateColor)}>
-            <Calendar className="h-3 w-3" />
+          <div className="flex items-center gap-1 text-[11px] font-bold" style={dueDateStyle}>
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>calendar_today</span>
             <span>{formatDate(task.dueDate)}</span>
           </div>
         )}
       </div>
-      {task.assignedByName && (
-        <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-border/40">
-          <User className="h-3 w-3 text-muted-foreground/60" />
-          <span className="text-[11px] text-muted-foreground/60">by {task.assignedByName}</span>
-        </div>
-      )}
     </div>
   )
 }
@@ -216,16 +229,17 @@ interface ArchiveListProps {
 
 function ArchiveList({ tasks, onRestore }: ArchiveListProps) {
   if (tasks.length === 0) {
-    return <p className="text-sm text-muted-foreground py-3">No completed tasks.</p>
+    return <p className="text-sm py-3" style={{ color: 'var(--on-surface-variant)' }}>No completed tasks.</p>
   }
   return (
     <div className="mt-3 space-y-1.5">
       {tasks.map(task => (
         <div
           key={task.id}
-          className="flex items-center gap-3 bg-card border border-border rounded-lg px-3 py-2"
+          className="flex items-center gap-3 rounded-xl px-3 py-2"
+          style={{ background: 'var(--surface-container-lowest)', boxShadow: 'var(--shadow-card)' }}
         >
-          <p className="flex-1 text-sm text-muted-foreground line-through truncate">{task.title}</p>
+          <p className="flex-1 text-sm line-through truncate" style={{ color: 'var(--on-surface-variant)' }}>{task.title}</p>
           <div className="flex items-center gap-2 flex-shrink-0">
             <PriorityBadge priority={task.priority} />
             {task.assignee && (
@@ -234,14 +248,15 @@ function ArchiveList({ tasks, onRestore }: ArchiveListProps) {
               </div>
             )}
             {task.dueDate && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
+              <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--on-surface-variant)' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>calendar_today</span>
                 <span>{formatDate(task.dueDate)}</span>
               </div>
             )}
             <button
               onClick={() => onRestore(task)}
-              className="text-xs text-primary hover:underline transition-colors"
+              className="text-xs font-semibold hover:underline transition-colors"
+              style={{ color: 'var(--primary)' }}
             >
               Restore
             </button>
@@ -366,30 +381,46 @@ export default function TasksPage() {
         title="Tasks"
         action={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setAiParserOpen(true)} className="gap-1.5">
-              <Sparkles className="h-4 w-4 text-primary" />
+            <Button
+              variant="outline"
+              onClick={() => setAiParserOpen(true)}
+              className="gap-1.5"
+              style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>auto_awesome</span>
               AI Parse
             </Button>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4" />
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold shadow-sm transition-all hover:shadow-md active:scale-95"
+              style={{
+                background: 'linear-gradient(to right, var(--primary), var(--primary-dim))',
+                color: 'var(--on-primary)',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
               Drop a Task
-            </Button>
+            </button>
           </div>
         }
       />
 
-      {/* Tab bar */}
-      <div className="flex items-center gap-6 border-b border-border mb-5 -mt-2">
+      {/* Tab bar — pill style */}
+      <div className="flex items-center gap-1.5 mb-5 -mt-2 p-1 rounded-xl w-fit" style={{ background: 'var(--surface-container)' }}>
         {(['list', 'kanban', 'calendar'] as Tab[]).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-              'pb-3 text-sm font-semibold capitalize transition-colors border-b-2 -mb-px cursor-pointer',
+              'px-4 py-1.5 rounded-lg text-sm font-semibold capitalize transition-all cursor-pointer',
               activeTab === tab
-                ? 'text-primary border-primary'
-                : 'text-muted-foreground border-transparent hover:text-foreground'
+                ? 'shadow-sm'
+                : 'hover:opacity-80'
             )}
+            style={activeTab === tab
+              ? { background: 'var(--surface-container-lowest)', color: 'var(--primary)' }
+              : { color: 'var(--on-surface-variant)', background: 'transparent' }
+            }
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
@@ -397,39 +428,44 @@ export default function TasksPage() {
       </div>
 
       {/* Filter bar — shown for list + kanban only */}
-      {activeTab !== 'calendar' && <div className="flex items-center gap-3 mb-6 flex-wrap">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <Input
-            placeholder="Search tasks…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-8"
-          />
+      {activeTab !== 'calendar' && (
+        <div
+          className="flex items-center gap-3 mb-6 flex-wrap px-4 py-3 rounded-xl"
+          style={{ background: 'var(--surface-container)' }}
+        >
+          <div className="relative flex-1 max-w-sm">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 material-symbols-outlined pointer-events-none" style={{ fontSize: '18px', color: 'var(--on-surface-variant)' }}>search</span>
+            <Input
+              placeholder="Search tasks…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <Select value={deptFilter} onValueChange={(v: string | null) => setDeptFilter(v ?? 'all')}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="All departments" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All departments</SelectItem>
+              {departments.map(d => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {myTeamMemberId && (
+            <Button
+              variant={assignedToMe ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setAssignedToMe(v => !v)}
+              className="gap-1.5"
+            >
+              <User className="h-3.5 w-3.5" />
+              Assigned to me
+            </Button>
+          )}
         </div>
-        <Select value={deptFilter} onValueChange={(v: string | null) => setDeptFilter(v ?? 'all')}>
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="All departments" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All departments</SelectItem>
-            {departments.map(d => (
-              <SelectItem key={d} value={d}>{d}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {myTeamMemberId && (
-          <Button
-            variant={assignedToMe ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setAssignedToMe(v => !v)}
-            className="gap-1.5"
-          >
-            <User className="h-3.5 w-3.5" />
-            Assigned to me
-          </Button>
-        )}
-      </div>}
+      )}
 
       {/* ── Calendar tab ─────────────────────────────────────────────────── */}
       {activeTab === 'calendar' && (
@@ -444,13 +480,16 @@ export default function TasksPage() {
       {activeTab === 'list' && (
         <div className="flex flex-col gap-1 flex-1 overflow-y-auto">
           {isLoading ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">Loading…</p>
+            <p className="text-sm py-6 text-center" style={{ color: 'var(--on-surface-variant)' }}>Loading…</p>
           ) : (tasks as TaskShape[]).filter(t => t.status !== 'done').length === 0 ? (
             <EmptyState icon={<ClipboardList className="h-8 w-8" />} title="No tasks found" description="Adjust filters or create a task" />
           ) : (
             <>
               {/* Header row */}
-              <div className="grid grid-cols-[1fr_100px_90px_120px_90px_90px] gap-3 px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border">
+              <div
+                className="grid grid-cols-[1fr_100px_90px_120px_90px_90px] gap-3 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg mb-1"
+                style={{ color: 'var(--on-surface-variant)', background: 'var(--surface-container)' }}
+              >
                 <span>Task</span>
                 <span>Status</span>
                 <span>Priority</span>
@@ -465,37 +504,40 @@ export default function TasksPage() {
                   <div
                     key={task.id}
                     onClick={() => { setSelectedTaskId(task.id); setSheetOpen(true) }}
-                    className="grid grid-cols-[1fr_100px_90px_120px_90px_90px] gap-3 px-3 py-2.5 rounded-lg hover:bg-card border border-transparent hover:border-border cursor-pointer transition-all group items-center"
+                    className="grid grid-cols-[1fr_100px_90px_120px_90px_90px] gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all group items-center"
+                    style={{ background: 'var(--surface-container-lowest)', boxShadow: 'var(--shadow-card)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-container-low)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-container-lowest)' }}
                   >
-                    <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">{task.title}</p>
+                    <p className="text-sm font-semibold truncate transition-colors group-hover:text-[var(--primary)]" style={{ color: 'var(--on-surface)' }}>{task.title}</p>
                     <span className={cn(
-                      'text-xs font-semibold px-2 py-0.5 rounded-full w-fit',
-                      task.status === 'todo'        && 'bg-muted text-muted-foreground',
-                      task.status === 'in_progress' && 'bg-blue-500/10 text-blue-400',
-                      task.status === 'review'      && 'bg-amber-500/10 text-amber-400',
+                      'text-[10px] font-bold px-2 py-0.5 rounded-full w-fit uppercase tracking-wide',
+                      task.status === 'todo'        && 'bg-[var(--surface-container-highest)] text-[var(--on-surface-variant)]',
+                      task.status === 'in_progress' && 'bg-[#dbe1ff] text-[#0048bf]',
+                      task.status === 'review'      && 'bg-[#f8a010]/10 text-[#865400]',
                     )}>
                       {task.status === 'in_progress' ? 'In Progress' : task.status === 'todo' ? 'To Do' : 'Review'}
                     </span>
                     <PriorityBadge priority={task.priority} />
                     <div className="flex items-center gap-1.5 min-w-0">
                       {task.assignee
-                        ? <><MemberAvatar name={task.assignee.name} size="sm" /><span className="text-xs text-muted-foreground truncate">{task.assignee.name}</span></>
-                        : <span className="text-xs text-muted-foreground">—</span>
+                        ? <><MemberAvatar name={task.assignee.name} size="sm" /><span className="text-xs truncate" style={{ color: 'var(--on-surface-variant)' }}>{task.assignee.name}</span></>
+                        : <span className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>—</span>
                       }
                     </div>
                     {task.department
                       ? <DepartmentBadge department={task.department} />
-                      : <span className="text-xs text-muted-foreground">—</span>
+                      : <span className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>—</span>
                     }
                     {task.dueDate ? (
-                      <div className={cn(
-                        'flex items-center gap-1 text-xs',
-                        overdue ? 'text-red-400' : today ? 'text-amber-400' : 'text-muted-foreground'
-                      )}>
-                        <Calendar className="h-3 w-3 flex-shrink-0" />
+                      <div
+                        className="flex items-center gap-1 text-xs font-bold"
+                        style={overdue ? { color: 'var(--error)' } : today ? { color: 'var(--tertiary)' } : { color: 'var(--on-surface-variant)' }}
+                      >
+                        <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '12px' }}>calendar_today</span>
                         {formatDate(task.dueDate)}
                       </div>
-                    ) : <span className="text-xs text-muted-foreground">—</span>}
+                    ) : <span className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>—</span>}
                   </div>
                 )
               })}
@@ -514,28 +556,31 @@ export default function TasksPage() {
         collisionDetection={closestCorners}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
+        <div className="grid grid-cols-3 gap-5 flex-1 min-h-0">
           {ACTIVE_COLUMNS.map(col => {
             const colTasks = columns[col.key]
             return (
-              <div key={col.key} className="flex flex-col min-h-0">
+              <div
+                key={col.key}
+                className="flex flex-col min-h-0 rounded-xl p-2"
+                style={{ background: 'rgba(240,244,247,0.5)' }}
+              >
                 {/* Column header */}
-                <div
-                  className={cn(
-                    'bg-card border border-border border-t-2 rounded-lg px-3 py-2 mb-3 flex items-center justify-between',
-                    col.color
-                  )}
-                >
+                <div className="flex items-center justify-between px-3 py-4">
                   <div className="flex items-center gap-2">
+                    <h2 className="font-headline font-bold tracking-tight uppercase text-sm" style={{ color: 'var(--on-surface)' }}>
+                      {col.label}
+                    </h2>
                     <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ background: col.dotColor }}
-                    />
-                    <span className="text-sm font-medium text-foreground">{col.label}</span>
+                      className="px-2 py-0.5 rounded text-[10px] font-bold"
+                      style={col.key === 'in_progress'
+                        ? { background: 'rgba(0,83,219,0.1)', color: 'var(--primary)' }
+                        : { background: 'var(--surface-container-highest)', color: 'var(--on-surface-variant)' }
+                      }
+                    >
+                      {isLoading ? '…' : colTasks.length}
+                    </span>
                   </div>
-                  <span className="text-xs font-semibold bg-muted text-muted-foreground rounded-full px-2 py-0.5">
-                    {isLoading ? '…' : colTasks.length}
-                  </span>
                 </div>
 
                 {/* Sortable drop zone */}
@@ -569,16 +614,26 @@ export default function TasksPage() {
       </DndContext>
 
       {/* Archive bar */}
-      <div className="mt-4 pt-4 border-t border-border">
-        <button
-          onClick={() => setShowArchive(v => !v)}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Archive className="h-4 w-4" />
-          Archive ({doneTasks.length} completed tasks) {showArchive ? '▲' : '▼'}
-        </button>
-        {showArchive && <ArchiveList tasks={doneTasks} onRestore={handleRestore} />}
+      <div
+        className="mt-4 px-5 py-3 rounded-xl flex items-center justify-between cursor-pointer group transition-all"
+        style={{ background: 'var(--surface-container-highest)' }}
+        onClick={() => setShowArchive(v => !v)}
+      >
+        <div className="flex items-center gap-3">
+          <span className="material-symbols-outlined" style={{ color: 'var(--on-surface-variant)', fontSize: '20px' }}>unfold_more</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold tracking-tight uppercase font-headline" style={{ color: 'var(--on-surface)' }}>Archive</span>
+            <span
+              className="px-2 py-0.5 rounded-full text-[10px] font-black"
+              style={{ background: 'rgba(42,52,57,0.1)', color: 'var(--on-surface)' }}
+            >
+              {doneTasks.length} COMPLETED
+            </span>
+          </div>
+        </div>
+        <span className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>{showArchive ? '▲' : '▼'}</span>
       </div>
+      {showArchive && <ArchiveList tasks={doneTasks} onRestore={handleRestore} />}
       </>}
 
       {/* Task Detail Panel */}

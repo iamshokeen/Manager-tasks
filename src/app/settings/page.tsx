@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/utils'
-import { RefreshCw, Download, X, Plus, Users, ShieldCheck, ChevronDown, Trash2, BookOpen } from 'lucide-react'
+import { RefreshCw, Download, X, Plus, Users, ShieldCheck, ChevronDown, Trash2, BookOpen, Palette, Building2, Database, Zap, HelpCircle } from 'lucide-react'
 import { useOnboarding } from '@/context/onboarding-context'
 import { ThemeSelector } from '@/components/ui/theme-selector'
 import { useDepartments } from '@/hooks/use-departments'
@@ -26,23 +26,18 @@ import {
 } from '@/components/ui/select'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
-// ─── CollapsibleSection ────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
-function CollapsibleSection({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div className="bg-card rounded-xl shadow-[var(--shadow-glass)] mb-4 overflow-hidden">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left"
-      >
-        <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">{title}</h2>
-        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && <div className="px-5 pb-5">{children}</div>}
-    </div>
-  )
+interface NumberEntry {
+  syncedAt?: string | null
 }
+
+interface NumbersData {
+  weekly?: NumberEntry[]
+  monthly?: NumberEntry[]
+}
+
+const fetcher = (url: string) => fetch(url).then(r => r.json()).then(r => r.data)
 
 // ─── TargetsUpload ─────────────────────────────────────────────────────────────
 
@@ -71,30 +66,22 @@ function TargetsUpload() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">Upload Targets CSV to update OTA and Check-in GMV targets.</p>
+      <p className="text-sm" style={{ color: 'var(--on-surface-variant)' }}>
+        Upload Targets CSV to update OTA and Check-in GMV targets.
+      </p>
       <label className="flex items-center gap-3 cursor-pointer">
-        <span className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90">
+        <span
+          className="px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity"
+          style={{ background: 'var(--primary)', color: '#f8f7ff' }}
+        >
           {loading ? 'Uploading...' : 'Upload Targets CSV'}
         </span>
         <input type="file" accept=".csv" onChange={handleUpload} className="hidden" disabled={loading} />
       </label>
-      {status && <p className="text-sm text-muted-foreground">{status}</p>}
+      {status && <p className="text-sm" style={{ color: 'var(--on-surface-variant)' }}>{status}</p>}
     </div>
   )
 }
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
-interface NumberEntry {
-  syncedAt?: string | null
-}
-
-interface NumbersData {
-  weekly?: NumberEntry[]
-  monthly?: NumberEntry[]
-}
-
-const fetcher = (url: string) => fetch(url).then(r => r.json()).then(r => r.data)
 
 // ─── DepartmentsCard ───────────────────────────────────────────────────────────
 
@@ -144,24 +131,44 @@ function DepartmentsCard() {
 
   return (
     <>
-      <p className="text-xs text-muted-foreground mb-4">Manage department tags used across tasks and team members</p>
+      <p className="text-sm mb-4" style={{ color: 'var(--on-surface-variant)' }}>
+        Manage department tags used across tasks and team members
+      </p>
       <div className="flex flex-wrap gap-2 mb-4">
         {departments.map(dept => (
           <span
             key={dept}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-foreground border border-border"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold border"
+            style={{
+              background: 'rgba(0,83,219,0.08)',
+              color: 'var(--on-primary-container, #0048bf)',
+              borderColor: 'rgba(0,83,219,0.12)',
+            }}
           >
             {dept}
             <button
               onClick={() => handleRemove(dept)}
               disabled={saving}
-              className="ml-0.5 text-muted-foreground hover:text-foreground transition-colors"
+              className="hover:opacity-70 transition-opacity"
               aria-label={`Remove ${dept}`}
             >
               <X className="h-3 w-3" />
             </button>
           </span>
         ))}
+        <button
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border-2 border-dashed transition-all hover:border-primary/40 hover:text-primary"
+          style={{ borderColor: 'var(--outline-variant)', color: 'var(--on-surface-variant)' }}
+          onClick={() => {
+            const val = prompt('New department name')
+            if (val?.trim()) {
+              setNewDept(val.trim())
+            }
+          }}
+        >
+          <Plus className="h-3 w-3" />
+          Add Tag
+        </button>
       </div>
       <div className="flex gap-2">
         <Input
@@ -289,8 +296,8 @@ function TeamAccessCard() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-1">
-        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm flex items-center gap-1.5" style={{ color: 'var(--on-surface-variant)' }}>
           <Users className="h-3.5 w-3.5" />
           Manage user accounts and roles for the command center
         </p>
@@ -300,32 +307,37 @@ function TeamAccessCard() {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-2 mt-4">
+      <div className="flex flex-col gap-2">
         {!users || users.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No users found.</p>
+          <p className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>No users found.</p>
         ) : (
           users.map(user => (
             <div
               key={user.id}
-              className="flex items-center justify-between gap-3 px-3 py-2.5 border border-border rounded-lg"
+              className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border"
+              style={{
+                background: 'var(--surface-container-low)',
+                borderColor: 'rgba(169,180,185,0.2)',
+              }}
             >
               <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-sm font-medium text-foreground truncate">
+                <span className="text-sm font-semibold truncate" style={{ color: 'var(--on-surface)' }}>
                   {user.name ?? '—'}
                 </span>
-                <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                <span className="text-xs truncate" style={{ color: 'var(--on-surface-variant)' }}>{user.email}</span>
                 {user.teamMember && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>
                     Linked: {user.teamMember.name}
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <span
-                  className={
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold"
+                  style={
                     user.role === 'MANAGER'
-                      ? 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800'
-                      : 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-700'
+                      ? { background: 'rgba(0,83,219,0.1)', color: 'var(--primary)', border: '1px solid rgba(0,83,219,0.15)' }
+                      : { background: 'var(--surface-container)', color: 'var(--on-surface-variant)', border: '1px solid rgba(169,180,185,0.3)' }
                   }
                 >
                   <ShieldCheck className="h-3 w-3" />
@@ -333,7 +345,8 @@ function TeamAccessCard() {
                 </span>
                 <button
                   onClick={() => openDeleteConfirm(user)}
-                  className="text-muted-foreground hover:text-destructive transition-colors"
+                  className="transition-colors"
+                  style={{ color: 'var(--on-surface-variant)' }}
                   aria-label={`Delete ${user.name ?? user.email}`}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -344,7 +357,6 @@ function TeamAccessCard() {
         )}
       </div>
 
-      {/* Add User Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
@@ -425,7 +437,6 @@ function TeamAccessCard() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirm Dialog */}
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
@@ -438,6 +449,58 @@ function TeamAccessCard() {
   )
 }
 
+// ─── Section card component ────────────────────────────────────────────────────
+
+interface SettingsSectionProps {
+  title: string
+  icon: React.ReactNode
+  children: React.ReactNode
+  defaultOpen?: boolean
+  danger?: boolean
+}
+
+function SettingsSection({ title, icon, children, defaultOpen = true, danger = false }: SettingsSectionProps) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <section className="flex flex-col gap-4">
+      <div
+        className="flex items-center justify-between pb-2 border-b cursor-pointer"
+        style={{ borderColor: danger ? 'rgba(159,64,61,0.2)' : 'var(--surface-container-highest, #d9e4ea)' }}
+        onClick={() => setOpen(v => !v)}
+      >
+        <h3
+          className="font-headline font-bold text-lg flex items-center gap-2"
+          style={{ color: danger ? 'var(--error)' : 'var(--on-surface)' }}
+        >
+          <span style={{ color: danger ? 'var(--error)' : 'var(--primary)' }}>{icon}</span>
+          {title}
+        </h3>
+        <ChevronDown
+          className="h-5 w-5 transition-transform"
+          style={{
+            color: 'var(--on-surface-variant)',
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+          }}
+        />
+      </div>
+
+      {open && (
+        <div
+          className="p-6 rounded-xl border"
+          style={{
+            background: danger ? 'rgba(159,64,61,0.03)' : 'var(--surface-container-lowest)',
+            borderColor: danger ? 'rgba(159,64,61,0.1)' : 'rgba(169,180,185,0.15)',
+            boxShadow: '0 8px 30px rgba(42,52,57,0.03)',
+          }}
+        >
+          {children}
+        </div>
+      )}
+    </section>
+  )
+}
+
 // ─── SettingsPage ──────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -447,7 +510,6 @@ export default function SettingsPage() {
   const [prepLoading, setPrepLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
 
-  // Find most recent syncedAt across all entries
   const allEntries: NumberEntry[] = [
     ...(numbersData?.weekly ?? []),
     ...(numbersData?.monthly ?? []),
@@ -511,14 +573,7 @@ export default function SettingsPage() {
           fetch('/api/numbers').then(r => r.json()),
         ])
       const exportData = {
-        tasks,
-        team,
-        projects,
-        stakeholders,
-        oneOnOnes,
-        cadences,
-        reports,
-        numbers,
+        tasks, team, projects, stakeholders, oneOnOnes, cadences, reports, numbers,
         exportedAt: new Date().toISOString(),
       }
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
@@ -540,68 +595,81 @@ export default function SettingsPage() {
     <div>
       <PageHeader title="Settings" description="Configuration, sync, and automation controls" />
 
-      {/* Appearance */}
-      <CollapsibleSection title="Appearance">
-        <p className="text-xs text-muted-foreground mb-5">Choose a theme for the interface</p>
-        <ThemeSelector />
-      </CollapsibleSection>
+      <div className="max-w-4xl flex flex-col gap-10 pb-10">
 
-      {/* Departments */}
-      <CollapsibleSection title="Departments">
-        <DepartmentsCard />
-      </CollapsibleSection>
+        {/* Appearance */}
+        <SettingsSection title="Appearance" icon={<Palette className="h-5 w-5" />}>
+          <p className="text-sm mb-5" style={{ color: 'var(--on-surface-variant)' }}>
+            Choose a theme for the interface
+          </p>
+          <ThemeSelector />
+        </SettingsSection>
 
-      {/* Team Access */}
-      <CollapsibleSection title="Team Access">
-        <TeamAccessCard />
-      </CollapsibleSection>
+        {/* Departments */}
+        <SettingsSection title="Department Tags" icon={<Building2 className="h-5 w-5" />}>
+          <DepartmentsCard />
+        </SettingsSection>
 
-      {/* Revenue Targets Upload */}
-      <CollapsibleSection title="Revenue Targets (FY27)">
-        <TargetsUpload />
-      </CollapsibleSection>
+        {/* Team Access */}
+        <SettingsSection title="Team Access" icon={<Users className="h-5 w-5" />}>
+          <TeamAccessCard />
+        </SettingsSection>
 
-      {/* Sheets Sync */}
-      <CollapsibleSection title="Google Sheets Sync">
-        <p className="text-xs text-muted-foreground mb-3">
-          Last synced: {lastSynced ? formatDate(lastSynced) : 'Never'}
-        </p>
-        <Button onClick={handleSheetsSync} disabled={syncing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-          {syncing ? 'Syncing...' : 'Sync Now'}
-        </Button>
-        <p className="text-xs text-muted-foreground mt-2">
-          Configure SHEETS_SCRIPT_URL and SHEETS_SCRIPT_TOKEN in your environment.
-        </p>
-      </CollapsibleSection>
+        {/* Revenue Targets Upload */}
+        <SettingsSection title="Revenue Targets (FY27)" icon={<Database className="h-5 w-5" />}>
+          <TargetsUpload />
+        </SettingsSection>
 
-      {/* Automation */}
-      <CollapsibleSection title="Run Automations">
-        <div className="flex flex-wrap gap-3">
-          <Button variant="outline" onClick={handlePrepTasks} disabled={prepLoading}>
-            {prepLoading ? 'Generating...' : 'Generate Prep Tasks'}
+        {/* Sheets Sync */}
+        <SettingsSection title="Google Sheets Sync" icon={<RefreshCw className="h-5 w-5" />}>
+          <p className="text-sm mb-3" style={{ color: 'var(--on-surface-variant)' }}>
+            Last synced: {lastSynced ? formatDate(lastSynced) : 'Never'}
+          </p>
+          <Button onClick={handleSheetsSync} disabled={syncing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Syncing...' : 'Sync Now'}
           </Button>
-        </div>
-      </CollapsibleSection>
+          <p className="text-xs mt-2" style={{ color: 'var(--on-surface-variant)' }}>
+            Configure SHEETS_SCRIPT_URL and SHEETS_SCRIPT_TOKEN in your environment.
+          </p>
+        </SettingsSection>
 
-      {/* Data Export */}
-      <CollapsibleSection title="Data Export">
-        <p className="text-xs text-muted-foreground mb-3">
-          Download a full JSON backup of all your data.
-        </p>
-        <Button variant="outline" onClick={handleExport} disabled={exporting}>
-          <Download className="h-4 w-4 mr-2" />
-          {exporting ? 'Exporting...' : 'Export All Data (JSON)'}
-        </Button>
-      </CollapsibleSection>
+        {/* Automation */}
+        <SettingsSection title="Run Automations" icon={<Zap className="h-5 w-5" />}>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="outline" onClick={handlePrepTasks} disabled={prepLoading}>
+              {prepLoading ? 'Generating...' : 'Generate Prep Tasks'}
+            </Button>
+          </div>
+        </SettingsSection>
 
-      {/* Help */}
-      <CollapsibleSection title="Help" defaultOpen={false}>
-        <p className="text-xs text-muted-foreground mb-4">
-          Relaunch the onboarding tour at any time. The tour adapts to your role.
-        </p>
-        <HelpSection />
-      </CollapsibleSection>
+        {/* Data Export */}
+        <SettingsSection title="Data Export" icon={<Download className="h-5 w-5" />} danger>
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex-1">
+              <h4 className="font-bold text-sm" style={{ color: 'var(--on-surface)' }}>
+                Data Exportation
+              </h4>
+              <p className="text-xs mt-1" style={{ color: 'var(--on-surface-variant)' }}>
+                Download a full JSON backup of all your data.
+              </p>
+            </div>
+            <Button variant="outline" onClick={handleExport} disabled={exporting}>
+              <Download className="h-4 w-4 mr-2" />
+              {exporting ? 'Exporting...' : 'Export All Data (JSON)'}
+            </Button>
+          </div>
+        </SettingsSection>
+
+        {/* Help */}
+        <SettingsSection title="Help & Onboarding" icon={<HelpCircle className="h-5 w-5" />} defaultOpen={false}>
+          <p className="text-sm mb-4" style={{ color: 'var(--on-surface-variant)' }}>
+            Relaunch the onboarding tour at any time. The tour adapts to your role.
+          </p>
+          <HelpSection />
+        </SettingsSection>
+
+      </div>
     </div>
   )
 }

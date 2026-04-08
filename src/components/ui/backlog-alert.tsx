@@ -80,41 +80,45 @@ export function BacklogAlert({ tasks, className }: BacklogAlertProps) {
 
   const urgentCount = overdue.filter(t => t.priority === 'urgent' || t.priority === 'high').length
 
+  const headerBg = urgentCount > 0 ? 'rgba(159,64,61,0.06)' : 'rgba(134,84,0,0.06)'
+  const borderColor = urgentCount > 0 ? 'rgba(159,64,61,0.25)' : 'rgba(134,84,0,0.25)'
+
   return (
-    <div className={cn(
-      'rounded-xl border bg-card shadow-[var(--shadow-glass)] overflow-hidden',
-      urgentCount > 0 ? 'border-destructive/30' : 'border-amber-300/50',
-      className
-    )}>
+    <div
+      className={cn('rounded-xl overflow-hidden', className)}
+      style={{ background: 'var(--surface-container-lowest)', boxShadow: 'var(--shadow-card)', border: `1px solid ${borderColor}` }}
+    >
       {/* Header */}
-      <div className={cn(
-        'flex items-center justify-between px-4 py-3',
-        urgentCount > 0 ? 'bg-destructive/5' : 'bg-amber-50/60 dark:bg-amber-900/10'
-      )}>
-        <div className="flex items-center gap-2">
-          <AlertTriangle className={cn(
-            'h-4 w-4 shrink-0',
-            urgentCount > 0 ? 'text-destructive' : 'text-amber-500'
-          )} />
-          <span className="text-sm font-semibold text-foreground">Backlog Alerts</span>
-          <div className="flex items-center gap-1.5">
+      <div
+        className="flex items-center justify-between px-4 py-3"
+        style={{ background: headerBg }}
+      >
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className="material-symbols-outlined"
+            style={{ fontSize: '18px', color: urgentCount > 0 ? 'var(--error)' : 'var(--tertiary)' }}
+          >
+            warning
+          </span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--on-surface)' }}>Backlog Alerts</span>
+          <div className="flex items-center gap-1.5 flex-wrap">
             {overdue.length > 0 && (
-              <span className="text-xs font-medium bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--error-container)', color: 'var(--on-error-container)' }}>
                 {overdue.length} overdue
               </span>
             )}
             {staleTodo.length > 0 && (
-              <span className="text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--tertiary-container)', color: 'var(--on-tertiary-container)' }}>
                 {staleTodo.length} stale
               </span>
             )}
             {stuck.length > 0 && (
-              <span className="text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-1.5 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--primary-container)', color: 'var(--on-primary-container)' }}>
                 {stuck.length} stuck
               </span>
             )}
             {needsFollowUp.length > 0 && (
-              <span className="text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 px-1.5 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(234,88,12,0.12)', color: '#7c2d12' }}>
                 {needsFollowUp.length} follow-up{needsFollowUp.length !== 1 ? 's' : ''}
               </span>
             )}
@@ -123,16 +127,20 @@ export function BacklogAlert({ tasks, className }: BacklogAlertProps) {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setExpanded(v => !v)}
-            className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+            className="p-1 rounded transition-colors cursor-pointer"
+            style={{ color: 'var(--on-surface-variant)' }}
           >
-            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+              {expanded ? 'expand_less' : 'expand_more'}
+            </span>
           </button>
           <button
             onClick={() => setDismissed(true)}
-            className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+            className="p-1 rounded transition-colors cursor-pointer"
             title="Dismiss"
+            style={{ color: 'var(--on-surface-variant)' }}
           >
-            <X className="h-4 w-4" />
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
           </button>
         </div>
       </div>
@@ -195,20 +203,23 @@ function AlertGroup({ icon, label, tasks, showDue }: {
     <div>
       <div className="flex items-center gap-1.5 mb-1.5">
         {icon}
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</span>
+        <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>{label}</span>
       </div>
       <div className="flex flex-col gap-1">
         {tasks.map(t => (
           <Link
             key={t.id}
             href={`/tasks/${t.id}`}
-            className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-[var(--surface-container-low)] hover:bg-[var(--surface-container-high)] transition-colors group"
+            className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg transition-colors group cursor-pointer"
+            style={{ background: 'var(--surface-container-low)' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-container)'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-container-low)'}
           >
-            <span className="text-xs text-foreground group-hover:text-primary transition-colors truncate">{t.title}</span>
+            <span className="text-xs font-medium truncate" style={{ color: 'var(--on-surface)' }}>{t.title}</span>
             <div className="flex items-center gap-2 shrink-0">
-              {t.assignee && <span className="text-xs text-muted-foreground">{t.assignee.name}</span>}
+              {t.assignee && <span className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>{t.assignee.name}</span>}
               {showDue && t.dueDate && (
-                <span className="text-xs text-destructive font-medium">
+                <span className="text-xs font-bold" style={{ color: 'var(--error)' }}>
                   {new Date(t.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                 </span>
               )}

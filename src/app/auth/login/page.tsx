@@ -3,9 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { KairosMark } from '@/components/ui/kairos-logo'
 
 // ---------------------------------------------------------------------------
@@ -31,7 +28,6 @@ function OtpInput({ onComplete, digits, setDigits, disabled }: OtpInputProps) {
   }
 
   const handleChange = (index: number, value: string) => {
-    // Accept only a single digit
     const digit = value.replace(/\D/g, '').slice(-1)
     const next = [...digits]
     next[index] = digit
@@ -82,7 +78,7 @@ function OtpInput({ onComplete, digits, setDigits, disabled }: OtpInputProps) {
   }
 
   return (
-    <div className="flex gap-2 justify-center">
+    <div className="flex gap-3 justify-center">
       {digits.map((digit, i) => (
         <input
           key={i}
@@ -96,7 +92,11 @@ function OtpInput({ onComplete, digits, setDigits, disabled }: OtpInputProps) {
           onKeyDown={(e) => handleKeyDown(i, e)}
           onPaste={handlePaste}
           onFocus={(e) => e.target.select()}
-          className="w-11 h-12 text-center text-lg font-semibold rounded-lg bg-[var(--surface-container-low)] text-foreground focus:ring-2 focus:ring-primary/30 focus:bg-white transition-all outline-none border border-[var(--outline-variant)]/30 focus:border-primary/40 disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: 'var(--surface-container-low)',
+            color: 'var(--primary)',
+          }}
+          className="w-full h-16 text-center text-2xl font-bold rounded-xl border-none focus:ring-2 focus:ring-primary/30 transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed"
         />
       ))}
     </div>
@@ -131,9 +131,9 @@ function ResendButton({ onResend, disabled }: ResendButtonProps) {
 
   if (countdown > 0) {
     return (
-      <p className="text-sm text-[var(--outline)] text-center">
+      <p className="text-sm text-center" style={{ color: 'var(--on-surface-variant)' }}>
         Resend code in{' '}
-        <span className="font-medium text-foreground tabular-nums">{countdown}s</span>
+        <span className="font-medium tabular-nums" style={{ color: 'var(--on-surface)' }}>{countdown}s</span>
       </p>
     )
   }
@@ -143,7 +143,8 @@ function ResendButton({ onResend, disabled }: ResendButtonProps) {
       type="button"
       onClick={handleResend}
       disabled={resending || disabled}
-      className="text-sm text-primary hover:underline underline-offset-2 disabled:opacity-50 disabled:no-underline transition-all"
+      className="text-sm font-bold hover:underline underline-offset-2 disabled:opacity-50 disabled:no-underline transition-all"
+      style={{ color: 'var(--primary)' }}
     >
       {resending ? 'Sending…' : 'Resend code'}
     </button>
@@ -245,109 +246,267 @@ export default function LoginPage() {
   // ---- Render ----
 
   return (
-    <div className="bg-[var(--surface-container-high)] border border-[var(--border)] rounded-2xl shadow-[var(--shadow-glass)] p-8 max-w-md w-full">
+    <>
+      {/* Left panel — dark hero */}
+      <aside
+        className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col"
+        style={{ background: 'var(--inverse-surface)' }}
+      >
+        {/* Dot pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{
+            backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }}
+        />
+        {/* Gradient tint */}
+        <div
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(135deg, rgba(0,83,219,0.25) 0%, transparent 70%)' }}
+        />
 
-      {/* Logo + Heading */}
-      <div className="flex flex-col items-center mb-8 gap-4">
-        <div className="w-14 h-14 rounded-xl bg-[var(--surface-container)] border border-[var(--border)] flex items-center justify-center">
-          <KairosMark size={36} />
-        </div>
-        <div className="text-center">
-          <h1 className="text-xl font-subhead font-semibold text-[#c9a96e] tracking-[0.2em] uppercase">
-            Kairos
-          </h1>
-          {step === 'email' && (
-            <p className="text-xs text-[var(--outline)] mt-1 tracking-wide">Know the moment. Own the purpose.</p>
-          )}
-        </div>
-      </div>
-
-      {/* ---- Step 1: Email ---- */}
-      {step === 'email' && (
-        <form onSubmit={handleSendCode} className="space-y-5">
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Work email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@lohono.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              autoFocus
-              disabled={loading}
-            />
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-between h-full p-12">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+              style={{ background: 'var(--primary)' }}
+            >
+              <KairosMark size={24} className="text-white" />
+            </div>
+            <span
+              className="font-headline font-extrabold text-2xl tracking-tight"
+              style={{ color: '#ffffff' }}
+            >
+              Kairos
+            </span>
           </div>
 
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
-          )}
-
-          <Button
-            type="submit"
-            size="lg"
-            className="w-full h-10"
-            disabled={loading}
-          >
-            {loading ? 'Sending…' : 'Send Login Code'}
-          </Button>
-
-          <p className="text-center text-sm text-[var(--outline)]">
-            Don&apos;t have access?{' '}
-            <Link
-              href="/auth/request-access"
-              className="text-primary hover:underline underline-offset-2 font-medium"
+          {/* Tagline */}
+          <div className="max-w-md">
+            <h2
+              className="font-headline font-bold text-4xl mb-4 leading-tight"
+              style={{ color: '#ffffff' }}
             >
-              Request access
-            </Link>
-          </p>
-        </form>
-      )}
-
-      {/* ---- Step 2: OTP ---- */}
-      {step === 'otp' && (
-        <div className="space-y-6">
-          <div className="text-center space-y-1">
-            <h2 className="text-base font-semibold text-foreground">Enter your login code</h2>
-            <p className="text-sm text-[var(--outline)]">
-              We sent a 6-digit code to{' '}
-              <span className="font-medium text-foreground">{email}</span>
+              Orchestrating the ledger of tomorrow.
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.65)' }} className="text-lg">
+              Precision architecture for enterprise-grade security and financial transparency.
             </p>
           </div>
 
-          <OtpInput onComplete={handleVerify} digits={digits} setDigits={setDigits} disabled={verifying} />
-
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 text-center">{error}</p>
-          )}
-
-          <Button
-            type="button"
-            size="lg"
-            className="w-full h-10"
-            disabled={verifying || digits.some(d => d === '')}
-            onClick={() => {
-              const otp = digits.join('')
-              if (otp.length === 6) handleVerify(otp)
-            }}
+          {/* Footer */}
+          <div
+            className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest"
+            style={{ color: 'rgba(255,255,255,0.4)' }}
           >
-            {verifying ? 'Verifying…' : 'Verify Code'}
-          </Button>
-
-          <div className="flex flex-col items-center gap-3">
-            <ResendButton onResend={handleResend} disabled={verifying} />
-
-            <button
-              type="button"
-              onClick={() => { setStep('email'); setError(''); setDigits(Array(6).fill('')) }}
-              className="text-sm text-[var(--outline)] hover:text-foreground transition-colors"
-            >
-              ← Use a different email
-            </button>
+            <span>© 2024 Kairos AI</span>
+            <span className="w-1 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.2)' }} />
+            <span>v2.4.0-PRO</span>
           </div>
         </div>
-      )}
+      </aside>
 
-    </div>
+      {/* Right panel — login form */}
+      <main
+        className="w-full lg:w-1/2 flex items-center justify-center p-8"
+        style={{ background: 'var(--surface-container-lowest)' }}
+      >
+        <div className="w-full max-w-[400px] space-y-10">
+
+          {/* Mobile logo (hidden on desktop) */}
+          <div className="lg:hidden flex flex-col items-center mb-8">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 shadow-lg"
+              style={{ background: 'var(--primary)' }}
+            >
+              <KairosMark size={28} className="text-white" />
+            </div>
+            <h1
+              className="font-headline font-extrabold text-3xl tracking-tight"
+              style={{ color: 'var(--on-surface)' }}
+            >
+              Kairos
+            </h1>
+          </div>
+
+          {/* ---- Step 1: Email ---- */}
+          {step === 'email' && (
+            <div className="space-y-8">
+              <div className="space-y-2">
+                <h2
+                  className="font-headline font-bold text-3xl tracking-tight"
+                  style={{ color: 'var(--on-surface)' }}
+                >
+                  Welcome back
+                </h2>
+                <p style={{ color: 'var(--on-surface-variant)' }} className="text-base">
+                  Enter your work email to receive a secure login code.
+                </p>
+              </div>
+
+              <form onSubmit={handleSendCode} className="space-y-6">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="email"
+                    className="block text-xs font-bold uppercase tracking-widest"
+                    style={{ color: 'var(--on-surface-variant)' }}
+                  >
+                    Work Email
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="email"
+                      type="email"
+                      placeholder="name@company.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      autoComplete="email"
+                      autoFocus
+                      disabled={loading}
+                      className="w-full rounded-xl py-4 pl-4 pr-4 text-sm font-medium border-none focus:ring-2 transition-all duration-200 outline-none disabled:opacity-50"
+                      style={{
+                        background: 'var(--surface-container-low)',
+                        color: 'var(--on-surface)',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <p
+                    className="text-sm rounded-lg px-3 py-2"
+                    style={{ color: 'var(--error)', background: 'rgba(159,64,61,0.08)' }}
+                  >
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-4 px-6 font-bold rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'linear-gradient(90deg, var(--primary) 0%, var(--primary-dim) 100%)',
+                    color: '#f8f7ff',
+                  }}
+                >
+                  {loading ? 'Sending…' : 'Send Login Code'}
+                </button>
+
+                <p className="text-center text-sm" style={{ color: 'var(--on-surface-variant)' }}>
+                  Don&apos;t have access?{' '}
+                  <Link
+                    href="/auth/request-access"
+                    className="font-bold hover:underline underline-offset-2"
+                    style={{ color: 'var(--primary)' }}
+                  >
+                    Request access
+                  </Link>
+                </p>
+              </form>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1" style={{ background: 'var(--surface-container-highest, #d9e4ea)' }} />
+                <span
+                  className="text-[10px] font-bold uppercase tracking-[0.2em]"
+                  style={{ color: 'var(--on-surface-variant)' }}
+                >
+                  Enterprise Security
+                </span>
+                <div className="h-px flex-1" style={{ background: 'var(--surface-container-highest, #d9e4ea)' }} />
+              </div>
+            </div>
+          )}
+
+          {/* ---- Step 2: OTP ---- */}
+          {step === 'otp' && (
+            <div className="space-y-8">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 -ml-1">
+                  <button
+                    type="button"
+                    onClick={() => { setStep('email'); setError(''); setDigits(Array(6).fill('')) }}
+                    className="p-2 rounded-full transition-colors"
+                    style={{ color: 'var(--on-surface-variant)' }}
+                  >
+                    ←
+                  </button>
+                  <h2
+                    className="font-headline font-bold text-3xl tracking-tight"
+                    style={{ color: 'var(--on-surface)' }}
+                  >
+                    Verify Identity
+                  </h2>
+                </div>
+                <p style={{ color: 'var(--on-surface-variant)' }} className="text-base">
+                  We&apos;ve sent a 6-digit code to{' '}
+                  <strong style={{ color: 'var(--on-surface)' }}>{email}</strong>
+                </p>
+              </div>
+
+              <OtpInput onComplete={handleVerify} digits={digits} setDigits={setDigits} disabled={verifying} />
+
+              {error && (
+                <p
+                  className="text-sm rounded-lg px-3 py-2 text-center"
+                  style={{ color: 'var(--error)', background: 'rgba(159,64,61,0.08)' }}
+                >
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="button"
+                disabled={verifying || digits.some(d => d === '')}
+                onClick={() => {
+                  const otp = digits.join('')
+                  if (otp.length === 6) handleVerify(otp)
+                }}
+                className="w-full py-4 px-6 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{
+                  background: 'linear-gradient(90deg, var(--primary) 0%, var(--primary-dim) 100%)',
+                  color: '#f8f7ff',
+                }}
+              >
+                {verifying ? 'Verifying…' : 'Verify and Login'}
+              </button>
+
+              <div className="flex flex-col items-center gap-3 text-center">
+                <ResendButton onResend={handleResend} disabled={verifying} />
+                <button
+                  type="button"
+                  onClick={() => { setStep('email'); setError(''); setDigits(Array(6).fill('')) }}
+                  className="text-sm transition-colors hover:underline underline-offset-2"
+                  style={{ color: 'var(--on-surface-variant)' }}
+                >
+                  Use a different email
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <footer
+            className="flex flex-wrap justify-center gap-x-6 gap-y-2 border-t pt-8"
+            style={{ borderColor: 'var(--surface-container-highest, #d9e4ea)' }}
+          >
+            {['Privacy Policy', 'Terms of Service', 'Help Center'].map(link => (
+              <a
+                key={link}
+                href="#"
+                className="text-xs font-semibold transition-colors hover:underline"
+                style={{ color: 'var(--on-surface-variant)' }}
+              >
+                {link}
+              </a>
+            ))}
+          </footer>
+        </div>
+      </main>
+    </>
   )
 }

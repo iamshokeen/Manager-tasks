@@ -1,18 +1,22 @@
-import { cn } from '@/lib/utils'
-
-const DEPT_COLORS: Record<string, string> = {
-  Analytics: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  Revenue: 'bg-[#C9A84C]/10 text-[#C9A84C] border-[#C9A84C]/20',
-  OTA: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  Marketing: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
-  'Financial Modelling': 'bg-green-500/10 text-green-400 border-green-500/20',
-  'Program Management': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+const DEPT_STYLES: Record<string, React.CSSProperties> = {
+  Analytics:             { background: 'rgba(124,58,237,0.1)',  color: '#5b21b6' },
+  Revenue:               { background: 'var(--tertiary-container)', color: 'var(--on-tertiary-container)' },
+  OTA:                   { background: 'var(--primary-container)', color: 'var(--on-primary-container)' },
+  Marketing:             { background: 'rgba(225,29,72,0.1)',   color: '#9f1239' },
+  'Financial Modelling': { background: 'rgba(5,150,105,0.1)',   color: '#065f46' },
+  'Program Management':  { background: 'rgba(234,88,12,0.1)',   color: '#7c2d12' },
 }
 
 export function DepartmentBadge({ department, className }: { department: string; className?: string }) {
-  const color = DEPT_COLORS[department] ?? 'bg-[#1E2028] text-[#6B7280] border-[#1E2028]'
+  const style = DEPT_STYLES[department] ?? {
+    background: 'var(--surface-container-high)',
+    color: 'var(--on-surface-variant)',
+  }
   return (
-    <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border', color, className)}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide${className ? ' ' + className : ''}`}
+      style={style}
+    >
       {department}
     </span>
   )

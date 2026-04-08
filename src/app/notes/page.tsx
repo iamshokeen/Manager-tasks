@@ -92,13 +92,20 @@ export default function NotesPage() {
       />
 
       {/* New note input */}
-      <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-3">
+      <div
+        className="rounded-xl p-5 flex flex-col gap-3"
+        style={{
+          background: 'var(--surface-container-lowest)',
+          boxShadow: 'var(--shadow-card)',
+        }}
+      >
         <textarea
           value={newText}
           onChange={e => setNewText(e.target.value)}
           placeholder="Write a note, meeting takeaway, or idea… AI can convert it to tasks."
           rows={4}
-          className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+          className="w-full resize-none bg-transparent text-sm outline-none"
+          style={{ color: 'var(--on-surface)' }}
           onKeyDown={e => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
               e.preventDefault()
@@ -106,8 +113,8 @@ export default function NotesPage() {
             }
           }}
         />
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Ctrl+Enter to save</span>
+        <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid var(--surface-container-low)' }}>
+          <span className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>Ctrl+Enter to save</span>
           <div className="flex gap-2">
             {newText.trim().length > 0 && (
               <Button
@@ -116,30 +123,45 @@ export default function NotesPage() {
                 onClick={() => openParser(newText.trim())}
                 className="gap-1.5"
               >
-                <Wand2 className="h-3.5 w-3.5" />
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>auto_awesome</span>
                 Convert to Tasks
               </Button>
             )}
-            <Button size="sm" onClick={createNote} disabled={saving || !newText.trim()} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" />
+            <button
+              onClick={createNote}
+              disabled={saving || !newText.trim()}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+              style={{
+                background: 'linear-gradient(to right, var(--primary), var(--primary-dim))',
+                color: 'var(--on-primary)',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>add</span>
               {saving ? 'Saving…' : 'New Note'}
-            </Button>
+            </button>
           </div>
         </div>
       </div>
 
       {/* Notes list */}
       {notes === undefined ? (
-        <div className="text-sm text-muted-foreground py-8 text-center">Loading…</div>
+        <div className="text-sm py-8 text-center" style={{ color: 'var(--on-surface-variant)' }}>Loading…</div>
       ) : notes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-          <FileText className="h-10 w-10 opacity-30" />
+        <div className="flex flex-col items-center justify-center py-16 gap-3" style={{ color: 'var(--on-surface-variant)' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '40px', opacity: 0.3 }}>description</span>
           <p className="text-sm">No notes yet. Write something down.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           {notes.map(note => (
-            <div key={note.id} className="bg-card border border-border rounded-xl p-4 group">
+            <div
+              key={note.id}
+              className="rounded-xl p-5 group transition-all"
+              style={{
+                background: 'var(--surface-container-lowest)',
+                boxShadow: '0 8px 30px rgb(42,52,57,0.04)',
+              }}
+            >
               {editingId === note.id ? (
                 <div className="flex flex-col gap-2">
                   <textarea
@@ -147,7 +169,8 @@ export default function NotesPage() {
                     onChange={e => setEditText(e.target.value)}
                     rows={4}
                     autoFocus
-                    className="w-full resize-none bg-transparent text-sm text-foreground outline-none"
+                    className="w-full resize-none bg-transparent text-sm outline-none"
+                    style={{ color: 'var(--on-surface)' }}
                   />
                   <div className="flex gap-2 justify-end">
                     <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
@@ -159,35 +182,40 @@ export default function NotesPage() {
               ) : (
                 <>
                   <p
-                    className="text-sm text-foreground whitespace-pre-wrap cursor-pointer hover:text-primary transition-colors"
+                    className="text-sm whitespace-pre-wrap cursor-pointer transition-colors"
+                    style={{ color: 'var(--on-surface)' }}
                     onClick={() => { setEditingId(note.id); setEditText(note.content) }}
                     title="Click to edit"
+                    onMouseEnter={e => { (e.currentTarget as HTMLParagraphElement).style.color = 'var(--primary)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLParagraphElement).style.color = 'var(--on-surface)' }}
                   >
                     {note.content}
                   </p>
-                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
-                    <span className="text-[11px] text-muted-foreground">
+                  <div className="flex items-center justify-between mt-3 pt-2" style={{ borderTop: '1px solid var(--surface-container-low)' }}>
+                    <span className="text-[11px]" style={{ color: 'var(--on-surface-variant)' }}>
                       {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}
                     </span>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 text-xs gap-1"
+                      <button
+                        className="flex items-center gap-1 h-7 px-2 text-xs font-medium rounded-lg transition-colors"
+                        style={{ border: '1px solid var(--outline-variant)', color: 'var(--on-surface-variant)' }}
                         onClick={() => openParser(note.content)}
                         title="Convert to tasks"
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-low)' }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
                       >
-                        <Wand2 className="h-3 w-3" />
+                        <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>auto_awesome</span>
                         Convert to Tasks
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      </button>
+                      <button
+                        className="h-7 w-7 flex items-center justify-center rounded-lg transition-colors"
+                        style={{ color: 'var(--on-surface-variant)' }}
                         onClick={() => deleteNote(note.id)}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--error)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(159,64,61,0.05)' }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--on-surface-variant)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>delete</span>
+                      </button>
                     </div>
                   </div>
                 </>

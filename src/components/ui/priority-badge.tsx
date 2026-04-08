@@ -1,16 +1,33 @@
-import { cn } from '@/lib/utils'
-
 const CONFIG = {
-  critical: { label: 'Critical', className: 'bg-red-50 text-red-700 border-red-200' },
-  high: { label: 'High', className: 'bg-orange-50 text-orange-700 border-orange-200' },
-  medium: { label: 'Medium', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  low: { label: 'Low', className: 'bg-green-50 text-green-700 border-green-200' },
+  critical: {
+    label: 'Urgent',
+    bg: 'var(--error-container)',
+    color: 'var(--on-error-container)',
+  },
+  high: {
+    label: 'High',
+    bg: 'var(--tertiary-container)',
+    color: 'var(--on-tertiary-container)',
+  },
+  medium: {
+    label: 'Med',
+    bg: 'var(--primary-container)',
+    color: 'var(--on-primary-container)',
+  },
+  low: {
+    label: 'Low',
+    bg: 'var(--surface-container-highest)',
+    color: 'var(--on-surface-variant)',
+  },
 }
 
 export function PriorityBadge({ priority }: { priority: string }) {
   const config = CONFIG[priority as keyof typeof CONFIG] ?? CONFIG.medium
   return (
-    <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border', config.className)}>
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+      style={{ background: config.bg, color: config.color }}
+    >
       {config.label}
     </span>
   )

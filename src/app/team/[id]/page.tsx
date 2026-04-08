@@ -42,20 +42,23 @@ const DELEGATION_DESCRIPTIONS: Record<number, string> = {
 }
 
 // Mood badge config
-const MOOD_CONFIG: Record<string, { label: string; className: string }> = {
-  great: { label: 'Great', className: 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/20' },
-  good: { label: 'Good', className: 'bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/20' },
-  neutral: { label: 'Neutral', className: 'bg-[#1E2028] text-[#6B7280] border-[#6B7280]/20' },
-  concerned: { label: 'Concerned', className: 'bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20' },
-  tough: { label: 'Tough', className: 'bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20' },
-  difficult: { label: 'Difficult', className: 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/20' },
-  bad: { label: 'Bad', className: 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/20' },
+const MOOD_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+  great:     { label: 'Great',     bg: 'var(--primary-container)',   color: 'var(--on-primary-container)' },
+  good:      { label: 'Good',      bg: 'var(--secondary-container)', color: 'var(--on-secondary-container)' },
+  neutral:   { label: 'Neutral',   bg: 'var(--surface-container)',   color: 'var(--on-surface-variant)' },
+  concerned: { label: 'Concerned', bg: 'var(--tertiary-container)',  color: 'var(--on-tertiary-container)' },
+  tough:     { label: 'Tough',     bg: 'var(--tertiary-container)',  color: 'var(--on-tertiary-container)' },
+  difficult: { label: 'Difficult', bg: 'var(--error-container)',     color: 'var(--on-error-container)' },
+  bad:       { label: 'Bad',       bg: 'var(--error-container)',     color: 'var(--on-error-container)' },
 }
 
 function MoodBadge({ mood }: { mood: string }) {
   const config = MOOD_CONFIG[mood] ?? MOOD_CONFIG.neutral
   return (
-    <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border', config.className)}>
+    <span
+      className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold')}
+      style={{ background: config.bg, color: config.color }}
+    >
       {config.label}
     </span>
   )
@@ -114,6 +117,12 @@ const EMPTY_EDIT_FORM: EditMemberForm = {
   oneOnOneDay: '',
   oneOnOneTime: '',
   coachingNotes: '',
+}
+
+const cardStyle: React.CSSProperties = {
+  background: 'var(--surface-container-lowest)',
+  boxShadow: 'var(--shadow-card)',
+  borderRadius: '0.75rem',
 }
 
 export default function TeamMemberPage() {
@@ -200,16 +209,16 @@ export default function TeamMemberPage() {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-4">
-        <div className="h-6 w-32 animate-pulse bg-card rounded" />
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-1 flex flex-col gap-4">
-            <div className="h-48 animate-pulse bg-card rounded-lg" />
-            <div className="h-32 animate-pulse bg-card rounded-lg" />
-            <div className="h-24 animate-pulse bg-card rounded-lg" />
+        <div className="h-6 w-32 animate-pulse rounded" style={{ background: 'var(--surface-container-lowest)' }} />
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-12 lg:col-span-8 h-56 animate-pulse rounded-xl" style={{ background: 'var(--surface-container-lowest)' }} />
+          <div className="col-span-12 lg:col-span-4 h-56 animate-pulse rounded-xl" style={{ background: 'var(--surface-container-lowest)' }} />
+          <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
+            <div className="h-40 animate-pulse rounded-xl" style={{ background: 'var(--surface-container-lowest)' }} />
+            <div className="h-32 animate-pulse rounded-xl" style={{ background: 'var(--surface-container-lowest)' }} />
           </div>
-          <div className="col-span-2 flex flex-col gap-4">
-            <div className="h-64 animate-pulse bg-card rounded-lg" />
-            <div className="h-48 animate-pulse bg-card rounded-lg" />
+          <div className="col-span-12 lg:col-span-8 flex flex-col gap-4">
+            <div className="h-64 animate-pulse rounded-xl" style={{ background: 'var(--surface-container-lowest)' }} />
           </div>
         </div>
       </div>
@@ -219,8 +228,8 @@ export default function TeamMemberPage() {
   if (!member) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
-        <AlertCircle className="h-8 w-8 text-muted-foreground" />
-        <div className="text-sm text-muted-foreground">Team member not found</div>
+        <AlertCircle className="h-8 w-8" style={{ color: 'var(--on-surface-variant)' }} />
+        <div className="text-sm" style={{ color: 'var(--on-surface-variant)' }}>Team member not found</div>
         <Button variant="ghost" onClick={() => router.push('/team')}>
           <ArrowLeft className="h-4 w-4" />
           Back to Team
@@ -239,77 +248,167 @@ export default function TeamMemberPage() {
     : []
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-6">
       {/* Back nav */}
       <button
         onClick={() => router.push('/team')}
-        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4 w-fit"
+        className="flex items-center gap-1.5 text-sm transition-colors w-fit"
+        style={{ color: 'var(--on-surface-variant)' }}
+        onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.color = 'var(--on-surface)')}
+        onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.color = 'var(--on-surface-variant)')}
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Team
       </button>
 
-      <div className="grid grid-cols-3 gap-6">
-        {/* ── Left column ── */}
-        <div className="col-span-1 flex flex-col gap-4">
-          {/* Identity card */}
-          <div className="bg-card border border-border rounded-lg p-4 flex flex-col items-center text-center gap-3">
-            <MemberAvatar name={m.name} size="lg" className="h-16 w-16 text-xl" />
-            <div>
-              <h1 className="text-base font-semibold text-foreground">{m.name}</h1>
-              <p className="text-sm text-muted-foreground">{m.role}</p>
-            </div>
-            <DepartmentBadge department={m.department} />
-
-            {/* Action buttons */}
-            <div className="flex gap-2 mt-1 w-full">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => setEditOpen(true)}
-              >
-                <Edit2 className="h-3.5 w-3.5" />
-                Edit
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setDeleteOpen(true)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+      {/* ── Profile Header (asymmetric bento) ── */}
+      <div className="grid grid-cols-12 gap-6">
+        {/* Main Identity Card */}
+        <div
+          className="col-span-12 lg:col-span-8 p-8 rounded-xl relative overflow-hidden"
+          style={cardStyle}
+        >
+          {/* Decorative blur */}
+          <div
+            className="absolute top-0 right-0 w-64 h-64 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none"
+            style={{ background: 'rgba(0,83,219,0.05)' }}
+          />
+          <div className="relative flex flex-col md:flex-row items-start gap-8">
+            <MemberAvatar name={m.name} size="lg" className="h-24 w-24 text-3xl shrink-0" />
+            <div className="flex-1 space-y-4 w-full">
+              <div className="flex justify-between items-start flex-wrap gap-3">
+                <div>
+                  <h1
+                    className="text-3xl font-extrabold tracking-tight"
+                    style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
+                  >
+                    {m.name}
+                  </h1>
+                  <p className="font-medium mt-1" style={{ color: 'var(--on-surface-variant)' }}>
+                    {m.role} · <span style={{ color: 'var(--on-surface-variant)' }}>{m.department}</span>
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+                    <Edit2 className="h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+              {/* Quick stats */}
+              <div className="grid grid-cols-3 gap-4 pt-2">
+                <div
+                  className="p-3 rounded-lg"
+                  style={{ background: 'var(--surface-container-low)', borderLeft: '4px solid var(--primary)' }}
+                >
+                  <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--on-surface-variant)' }}>Open Tasks</div>
+                  <div className="text-xl font-bold" style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}>
+                    {openTasks.length}
+                  </div>
+                </div>
+                <div
+                  className="p-3 rounded-lg"
+                  style={{ background: 'var(--surface-container-low)', borderLeft: '4px solid var(--tertiary)' }}
+                >
+                  <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--on-surface-variant)' }}>1:1s Logged</div>
+                  <div className="text-xl font-bold" style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}>
+                    {(m.oneOnOnes ?? []).length}
+                  </div>
+                </div>
+                <div
+                  className="p-3 rounded-lg"
+                  style={{ background: 'var(--surface-container-low)', borderLeft: '4px solid var(--secondary-container)' }}
+                >
+                  <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--on-surface-variant)' }}>Department</div>
+                  <div className="text-sm font-bold truncate" style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}>
+                    <DepartmentBadge department={m.department} />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Delegation level card */}
-          <div className="bg-card border border-border rounded-lg p-4 flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Delegation Level</span>
-            <p className="text-lg font-semibold text-foreground">
-              Level {m.delegationLevel} — {delegLabel}
-            </p>
-            <p className="text-xs text-muted-foreground">{delegDesc}</p>
+        {/* Delegation Level Sidebar Card */}
+        <div
+          className="col-span-12 lg:col-span-4 p-8 rounded-xl flex flex-col justify-between"
+          style={cardStyle}
+        >
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h3
+                className="font-bold text-lg"
+                style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
+              >
+                Delegation Level
+              </h3>
+            </div>
+            <div className="space-y-4">
+              <div
+                className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold"
+                style={{ background: 'var(--primary-container)', color: 'var(--on-primary-container)' }}
+              >
+                Lvl {m.delegationLevel}: {delegLabel}
+              </div>
+              <div className="w-full rounded-full h-2" style={{ background: 'var(--surface-container)' }}>
+                <div
+                  className="h-2 rounded-full transition-all"
+                  style={{ width: `${(m.delegationLevel / 4) * 100}%`, background: 'var(--primary)' }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] font-bold uppercase tracking-tighter px-1" style={{ color: 'var(--on-surface-variant)' }}>
+                <span>Do</span>
+                <span>Research</span>
+                <span>Decide</span>
+                <span>Own</span>
+              </div>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--on-surface-variant)' }}>
+                {delegDesc}
+              </p>
+            </div>
           </div>
-
-          {/* 1:1 Schedule */}
           {(m.oneOnOneDay || m.oneOnOneTime) && (
-            <div className="bg-card border border-border rounded-lg p-4 flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">1:1 Schedule</span>
-              <p className="text-sm text-foreground">
+            <div
+              className="mt-6 p-4 rounded-lg"
+              style={{ background: 'var(--surface-container-low)' }}
+            >
+              <div className="text-[10px] uppercase tracking-widest mb-1 font-bold" style={{ color: 'var(--on-surface-variant)' }}>
+                1:1 Schedule
+              </div>
+              <p className="text-sm font-medium" style={{ color: 'var(--on-surface)' }}>
                 {[m.oneOnOneDay, m.oneOnOneTime].filter(Boolean).join(' ')}
               </p>
             </div>
           )}
+        </div>
+      </div>
 
+      {/* ── Multi-Grid Content ── */}
+      <div className="grid grid-cols-12 gap-6">
+        {/* Left column: Skills + Coaching */}
+        <div className="col-span-12 lg:col-span-4 space-y-6">
           {/* Skills */}
           {skillsList.length > 0 && (
-            <div className="bg-card border border-border rounded-lg p-4 flex flex-col gap-2">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Skills</span>
-              <div className="flex flex-wrap gap-1.5">
+            <div className="p-6 rounded-xl" style={cardStyle}>
+              <h3
+                className="font-bold mb-4"
+                style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
+              >
+                Core Competencies
+              </h3>
+              <div className="flex flex-wrap gap-2">
                 {skillsList.map(skill => (
                   <span
                     key={skill}
-                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground border border-border"
+                    className="px-3 py-1 rounded-full text-xs font-medium"
+                    style={{
+                      background: 'var(--surface-container)',
+                      color: 'var(--on-surface)',
+                      border: '1px solid rgba(169,180,185,0.2)',
+                    }}
                   >
                     {skill}
                   </span>
@@ -320,45 +419,78 @@ export default function TeamMemberPage() {
 
           {/* Coaching Notes */}
           {m.coachingNotes && (
-            <div className="bg-card border border-border rounded-lg p-4 flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Coaching Notes</span>
-              <p className="text-sm text-foreground whitespace-pre-wrap">{m.coachingNotes}</p>
+            <div className="p-6 rounded-xl" style={cardStyle}>
+              <h3
+                className="font-bold mb-4"
+                style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
+              >
+                Coaching Notes
+              </h3>
+              <div
+                className="p-4 rounded-r-lg"
+                style={{
+                  background: 'rgba(134,84,0,0.05)',
+                  borderLeft: '2px solid var(--tertiary)',
+                }}
+              >
+                <p className="text-sm leading-snug whitespace-pre-wrap" style={{ color: 'var(--on-surface)' }}>
+                  {m.coachingNotes}
+                </p>
+              </div>
             </div>
           )}
         </div>
 
-        {/* ── Right column ── */}
-        <div className="col-span-2 flex flex-col gap-4">
+        {/* Right column: Tasks + 1:1s */}
+        <div className="col-span-12 lg:col-span-8 space-y-6">
           {/* Active Tasks */}
-          <div className="bg-card border border-border rounded-lg p-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Active Tasks</span>
-              <span className="text-xs font-semibold bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+          <div className="rounded-xl overflow-hidden" style={cardStyle}>
+            <div
+              className="flex items-center justify-between px-6 py-4"
+              style={{ borderBottom: '1px solid var(--surface-container)' }}
+            >
+              <h3
+                className="font-bold text-base"
+                style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
+              >
+                Active Tasks
+              </h3>
+              <span
+                className="text-xs font-semibold rounded-full px-2.5 py-0.5"
+                style={{ background: 'var(--surface-container)', color: 'var(--on-surface-variant)' }}
+              >
                 {openTasks.length}
               </span>
             </div>
 
             {openTasks.length === 0 ? (
-              <EmptyState
-                icon={<ClipboardList className="h-8 w-8" />}
-                title="No open tasks"
-                description="This team member has no active tasks."
-              />
+              <div className="p-6">
+                <EmptyState
+                  icon={<ClipboardList className="h-8 w-8" />}
+                  title="No open tasks"
+                  description="This team member has no active tasks."
+                />
+              </div>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div className="divide-y" style={{ borderColor: 'var(--surface-container)' }}>
                 {openTasks.map(task => (
                   <button
                     key={task.id}
                     onClick={() => router.push(`/tasks/${task.id}`)}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-border bg-background hover:border-ring/40 transition-colors text-left w-full"
+                    className="flex items-center gap-4 px-6 py-4 w-full text-left transition-colors"
+                    style={{ background: 'transparent' }}
+                    onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-low)')}
+                    onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'transparent')}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
+                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--on-surface)' }}>
+                        {task.title}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-3 shrink-0">
                       <PriorityBadge priority={task.priority} />
                       {task.dueDate && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--on-surface-variant)' }}>
                           <Calendar className="h-3 w-3" />
                           <span>{formatDate(task.dueDate)}</span>
                         </div>
@@ -371,22 +503,35 @@ export default function TeamMemberPage() {
           </div>
 
           {/* Recent 1:1s */}
-          <div className="bg-card border border-border rounded-lg p-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recent 1:1s</span>
-              <span className="text-xs font-semibold bg-muted text-muted-foreground rounded-full px-2 py-0.5">
+          <div className="rounded-xl overflow-hidden" style={cardStyle}>
+            <div
+              className="flex items-center justify-between px-6 py-4"
+              style={{ borderBottom: '1px solid var(--surface-container)' }}
+            >
+              <h3
+                className="font-bold text-base"
+                style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
+              >
+                Recent 1:1s
+              </h3>
+              <span
+                className="text-xs font-semibold rounded-full px-2.5 py-0.5"
+                style={{ background: 'var(--surface-container)', color: 'var(--on-surface-variant)' }}
+              >
                 {recentOneOnOnes.length}
               </span>
             </div>
 
             {recentOneOnOnes.length === 0 ? (
-              <EmptyState
-                icon={<MessageSquare className="h-8 w-8" />}
-                title="No 1:1s logged yet"
-                description="1:1 sessions with this team member will appear here."
-              />
+              <div className="p-6">
+                <EmptyState
+                  icon={<MessageSquare className="h-8 w-8" />}
+                  title="No 1:1s logged yet"
+                  description="1:1 sessions with this team member will appear here."
+                />
+              </div>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div className="divide-y" style={{ borderColor: 'var(--surface-container)' }}>
                 {recentOneOnOnes.map(oo => {
                   const actionCount = Array.isArray(oo.actionItems)
                     ? oo.actionItems.length
@@ -395,11 +540,16 @@ export default function TeamMemberPage() {
                     <button
                       key={oo.id}
                       onClick={() => router.push(`/one-on-ones/${oo.id}`)}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-border bg-background hover:border-ring/40 transition-colors text-left w-full"
+                      className="flex items-center gap-4 px-6 py-4 w-full text-left transition-colors"
+                      style={{ background: 'transparent' }}
+                      onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-low)')}
+                      onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'transparent')}
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground">{formatDate(oo.date)}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-sm font-semibold" style={{ color: 'var(--on-surface)' }}>
+                          {formatDate(oo.date)}
+                        </p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--on-surface-variant)' }}>
                           {actionCount} action {actionCount === 1 ? 'item' : 'items'}
                         </p>
                       </div>
@@ -429,14 +579,17 @@ export default function TeamMemberPage() {
 
       {/* Edit dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          className="max-w-lg max-h-[90vh] overflow-y-auto"
+          style={{ background: 'var(--surface-container-lowest)' }}
+        >
           <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogTitle style={{ fontFamily: 'Manrope, sans-serif' }}>Edit Profile</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit} className="flex flex-col gap-4">
             {/* Name */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Name *</label>
+              <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Name *</label>
               <Input
                 placeholder="Full name"
                 value={editForm.name}
@@ -447,7 +600,7 @@ export default function TeamMemberPage() {
 
             {/* Role */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Role *</label>
+              <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Role *</label>
               <Input
                 placeholder="Job title or role"
                 value={editForm.role}
@@ -459,7 +612,7 @@ export default function TeamMemberPage() {
             <div className="grid grid-cols-2 gap-3">
               {/* Department */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Department</label>
+                <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Department</label>
                 <Select value={editForm.department} onValueChange={(v: string | null) => setEditForm(f => ({ ...f, department: v ?? '' }))}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select…" />
@@ -474,7 +627,7 @@ export default function TeamMemberPage() {
 
               {/* Status */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Status</label>
+                <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Status</label>
                 <Select value={editForm.status} onValueChange={(v: string | null) => setEditForm(f => ({ ...f, status: v ?? 'active' }))}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select…" />
@@ -492,7 +645,7 @@ export default function TeamMemberPage() {
 
             {/* Delegation Level */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Delegation Level</label>
+              <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Delegation Level</label>
               <Select value={editForm.delegationLevel} onValueChange={(v: string | null) => setEditForm(f => ({ ...f, delegationLevel: v ?? '1' }))}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select…" />
@@ -508,7 +661,7 @@ export default function TeamMemberPage() {
 
             {/* Skills */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Skills</label>
+              <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Skills</label>
               <Textarea
                 placeholder="e.g. SQL, Python, Excel (comma-separated)"
                 rows={2}
@@ -520,7 +673,7 @@ export default function TeamMemberPage() {
             <div className="grid grid-cols-2 gap-3">
               {/* 1:1 Day */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">1:1 Day</label>
+                <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>1:1 Day</label>
                 <Select value={editForm.oneOnOneDay} onValueChange={(v: string | null) => setEditForm(f => ({ ...f, oneOnOneDay: v ?? '' }))}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select…" />
@@ -535,7 +688,7 @@ export default function TeamMemberPage() {
 
               {/* 1:1 Time */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">1:1 Time</label>
+                <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>1:1 Time</label>
                 <Input
                   placeholder="10:00 AM"
                   value={editForm.oneOnOneTime}
@@ -546,7 +699,7 @@ export default function TeamMemberPage() {
 
             {/* Coaching Notes */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Coaching Notes</label>
+              <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Coaching Notes</label>
               <Textarea
                 placeholder="Private notes about this team member…"
                 rows={3}

@@ -11,15 +11,15 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-gradient-to-br from-[var(--primary-container)] to-primary text-white shadow-lg shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all",
+          "bg-gradient-to-r from-primary to-[var(--primary-dim)] text-[var(--on-primary)] shadow-sm shadow-primary/20 hover:opacity-90 active:scale-[0.98] transition-all",
         outline:
-          "border border-[var(--outline-variant)]/40 bg-transparent text-foreground hover:bg-[var(--surface-container-low)] transition-colors",
+          "border border-[var(--outline-variant)] bg-transparent text-[var(--on-surface)] hover:bg-[var(--surface-container-low)] transition-colors",
         secondary:
-          "bg-[var(--surface-container-high)] text-foreground hover:bg-[var(--surface-container-highest)] transition-colors",
+          "bg-[var(--surface-container-high)] text-[var(--on-surface)] hover:bg-[var(--surface-container-highest)] transition-colors",
         ghost:
-          "hover:bg-[var(--surface-container-low)] text-foreground transition-colors",
+          "hover:bg-[var(--surface-container-low)] text-[var(--on-surface)] transition-colors",
         destructive:
-          "bg-destructive text-white hover:bg-destructive/90 transition-colors",
+          "bg-[var(--error)] text-[var(--on-error)] hover:opacity-90 transition-colors",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
