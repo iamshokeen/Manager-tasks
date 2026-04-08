@@ -31,6 +31,12 @@ interface TaskCreateForm {
   projectId: string
 }
 
+function getTomorrow(): string {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  return d.toISOString().split('T')[0]
+}
+
 const EMPTY_FORM: TaskCreateForm = {
   title: '',
   department: '',
@@ -50,7 +56,7 @@ interface TaskCreatePanelProps {
 }
 
 export function TaskCreatePanel({ open, onClose, onCreated }: TaskCreatePanelProps) {
-  const [form, setForm] = useState<TaskCreateForm>(EMPTY_FORM)
+  const [form, setForm] = useState<TaskCreateForm>(() => ({ ...EMPTY_FORM, dueDate: getTomorrow() }))
   const [submitting, setSubmitting] = useState(false)
 
   const currentUser = useCurrentUser()
@@ -60,7 +66,7 @@ export function TaskCreatePanel({ open, onClose, onCreated }: TaskCreatePanelPro
   const { projects } = useProjects()
 
   function reset() {
-    setForm(EMPTY_FORM)
+    setForm({ ...EMPTY_FORM, dueDate: getTomorrow() })
   }
 
   function handleClose() {
