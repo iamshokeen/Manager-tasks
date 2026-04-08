@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { getStakeholders, createStakeholder } from '@/lib/services/stakeholders'
+import { canRoleAsync } from '@/lib/rbac'
 
 export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const role = (session.user as { role?: string }).role ?? ''
+  if (!await canRoleAsync(role, 'stakeholder_crm', 'view')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
     const stakeholders = await getStakeholders()
@@ -17,6 +20,8 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const role = (session.user as { role?: string }).role ?? ''
+  if (!await canRoleAsync(role, 'stakeholder_crm', 'edit')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
     const body = await req.json()

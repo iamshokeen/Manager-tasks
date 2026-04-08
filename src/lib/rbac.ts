@@ -2,6 +2,8 @@
 import type { Role, User } from '@prisma/client'
 import { prisma } from './prisma'
 
+const RBAC_SETTING_KEY = 'rbac_rules'
+
 // ─── Resource access rules ────────────────────────────────────────────────────
 
 const RESOURCE_RULES: Record<string, Record<string, Role[]>> = {
@@ -47,6 +49,57 @@ export function canAccess(user: User, resource: string, action: string): boolean
   const allowed = resourceRules[action]
   if (!allowed) return false
   return allowed.includes(user.role)
+}
+
+// Lightweight check — takes a role string instead of a full User object.
+// Use this in API routes where you have session.user.role (no DB call needed).
+export function canRole(role: string, resource: string, action: string): boolean {
+  const resourceRules = RESOURCE_RULES[resource]
+  if (!resourceRules) return false
+  const allowed = resourceRules[action]
+  if (!allowed) return false
+  return allowed.includes(role as Role)
+}
+
+// ─── DB-backed rules ──────────────────────────────────────────────────────────
+
+// Returns the effective RBAC rules: DB overrides merged on top of hardcoded defaults.
+export async function getResourceRules(): Promise<Record<string, Record<string, Role[]>>> {
+  try {
+    const setting = await prisma.setting.findUnique({ where: { key: RBAC_SETTING_KEY } })
+    if (!setting) return RESOURCE_RULES
+    const overrides = JSON.parse(setting.value) as Record<string, Record<string, string[]>>
+    // Deep merge: DB rules replace the action arrays for each resource
+    const merged: Record<string, Record<string, Role[]>> = { ...RESOURCE_RULES }
+    for (const [resource, actions] of Object.entries(overrides)) {
+      merged[resource] = { ...(merged[resource] ?? {}), ...Object.fromEntries(
+        Object.entries(actions).map(([action, roles]) => [action, roles as Role[]])
+      )}
+    }
+    return merged
+  } catch {
+    return RESOURCE_RULES
+  }
+}
+
+// Async version of canRole that reads from DB (with hardcoded fallback).
+// Use this in API routes so SUPER_ADMIN can configure permissions live.
+export async function canRoleAsync(role: string, resource: string, action: string): Promise<boolean> {
+  const rules = await getResourceRules()
+  const resourceRules = rules[resource]
+  if (!resourceRules) return false
+  const allowed = resourceRules[action]
+  if (!allowed) return false
+  return allowed.includes(role as Role)
+}
+
+// Save the full rules object to the DB. Called from /api/admin/rbac.
+export async function saveResourceRules(rules: Record<string, Record<string, string[]>>): Promise<void> {
+  await prisma.setting.upsert({
+    where: { key: RBAC_SETTING_KEY },
+    update: { value: JSON.stringify(rules) },
+    create: { key: RBAC_SETTING_KEY, value: JSON.stringify(rules) },
+  })
 }
 
 // ─── Scope WHERE clause ───────────────────────────────────────────────────────

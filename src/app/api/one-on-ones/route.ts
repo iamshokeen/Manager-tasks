@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { getOneOnOnes, createOneOnOne } from '@/lib/services/one-on-ones'
+import { canRoleAsync } from '@/lib/rbac'
 
 export async function GET(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const role = (session.user as { role?: string }).role ?? ''
+  if (!await canRoleAsync(role, 'one_on_ones', 'view')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { searchParams } = new URL(req.url)
   const memberId = searchParams.get('memberId') ?? undefined
@@ -19,6 +22,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const role = (session.user as { role?: string }).role ?? ''
+  if (!await canRoleAsync(role, 'one_on_ones', 'create')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
     const body = await req.json()

@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { getTask, updateTask, deleteTask } from '@/lib/services/tasks'
+import { canRoleAsync } from '@/lib/rbac'
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
@@ -20,6 +21,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const role = (session.user as { role?: string }).role ?? ''
+  if (!await canRoleAsync(role, 'tasks', 'edit')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await params
   try {
@@ -34,6 +37,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const role = (session.user as { role?: string }).role ?? ''
+  if (!await canRoleAsync(role, 'tasks', 'delete')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
     const { id } = await params

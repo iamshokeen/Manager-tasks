@@ -8,7 +8,7 @@ import {
   LayoutDashboard, FolderKanban, CheckSquare, ListTodo, RefreshCw,
   Users, MessageSquare, Handshake, BarChart3, TrendingUp, Hotel,
   FileText, BookOpen, Settings, StickyNote, Bell, ShieldCheck,
-  UserCheck, Building2, Activity, UserCircle
+  UserCheck, Building2, Activity, UserCircle, Lock
 } from 'lucide-react'
 
 type Role = 'SUPER_ADMIN' | 'MANAGER' | 'SENIOR_IC' | 'DIRECT_REPORT' | 'EXEC_VIEWER' | 'GUEST'
@@ -68,6 +68,7 @@ const ADMIN_NAV: NavGroup = {
     { href: '/dashboard/admin/approvals', label: 'Approvals', Icon: ShieldCheck },
     { href: '/dashboard/admin/workspaces', label: 'Workspaces', Icon: Building2 },
     { href: '/dashboard/admin/activity-log', label: 'Activity', Icon: Activity },
+    { href: '/dashboard/admin/rbac', label: 'Permissions', Icon: Lock },
   ],
 }
 

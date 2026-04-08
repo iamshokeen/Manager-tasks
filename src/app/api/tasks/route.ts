@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { getTasks, createTask } from '@/lib/services/tasks'
+import { canRoleAsync } from '@/lib/rbac'
 import type { TaskFilters } from '@/types'
 
 export async function GET(req: Request) {
@@ -44,6 +45,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const role = (session.user as { role?: string }).role ?? ''
+  if (!await canRoleAsync(role, 'tasks', 'create')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
     const body = await req.json()
