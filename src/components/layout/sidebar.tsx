@@ -82,6 +82,7 @@ const ROLE_HIDDEN: Record<string, Role[]> = {
   '/metrics': ['EXEC_VIEWER', 'GUEST'],
   '/reports': ['EXEC_VIEWER', 'GUEST'],
   '/projects': ['EXEC_VIEWER', 'GUEST'],
+  '/playbook': ['MANAGER', 'SENIOR_IC', 'DIRECT_REPORT', 'EXEC_VIEWER', 'GUEST'],
 }
 
 function filterNavForRole(role: Role): NavGroup[] {
