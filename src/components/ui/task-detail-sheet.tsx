@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn, STATUS_LABELS, TASK_STATUSES, PRIORITIES, formatDate } from '@/lib/utils'
 import { useDepartments } from '@/hooks/use-departments'
+import { useTeam } from '@/hooks/use-team'
 
 const fetcher = (url: string) => fetch(url).then(r => r.json()).then(r => r.data)
 
@@ -36,6 +37,11 @@ interface TaskDetail {
   assignee?: { id: string; name: string } | null
   assignedByName?: string | null
   department?: string | null
+}
+
+interface TeamMember {
+  id: string
+  name: string
 }
 
 interface Activity {
@@ -85,6 +91,9 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
   // Department dropdown
   const [deptOpen, setDeptOpen] = useState(false)
 
+  // Assignee dropdown
+  const [assigneeOpen, setAssigneeOpen] = useState(false)
+
   // AI summary
   const [summary, setSummary] = useState<string | null>(null)
 
@@ -93,6 +102,11 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
   const [loadingProgress, setLoadingProgress] = useState(false)
 
   const { departments } = useDepartments()
+  const { members } = useTeam()
+  const { data: meData } = useSWR<{ id: string; name: string; teamMemberId?: string }>(
+    open ? '/api/auth/me' : null,
+    (url: string) => fetch(url).then(r => r.json()).then(r => r.data)
+  )
 
   async function fetchProgressReport() {
     if (!taskId) return
@@ -112,6 +126,19 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
       setLoadingProgress(false)
     }
   }
+
+  // Close all dropdowns on outside click
+  useEffect(() => {
+    if (!statusOpen && !priorityOpen && !deptOpen && !assigneeOpen) return
+    function handler() {
+      setStatusOpen(false)
+      setPriorityOpen(false)
+      setDeptOpen(false)
+      setAssigneeOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [statusOpen, priorityOpen, deptOpen, assigneeOpen])
 
   // Sync state when task loads
   useEffect(() => {
@@ -182,6 +209,22 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
     setDeptOpen(false)
     await patchTask({ department: dept })
     toast.success('Department updated')
+  }
+
+  async function changeAssignee(memberId: string | null) {
+    setAssigneeOpen(false)
+    await patchTask({ assigneeId: memberId })
+    toast.success(memberId ? 'Assigned' : 'Unassigned')
+  }
+
+  async function assignToMe() {
+    if (!meData?.teamMemberId) {
+      toast.error('Your account isn\'t linked to a team member profile')
+      return
+    }
+    setAssigneeOpen(false)
+    await patchTask({ assigneeId: meData.teamMemberId })
+    toast.success('Assigned to you')
   }
 
   const activities = activitiesData?.slice(0, 5) ?? []
@@ -325,12 +368,66 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
                 </div>
 
                 {/* Assignee */}
-                {task.assignee && (
-                  <div className="flex items-center gap-1.5">
-                    <MemberAvatar name={task.assignee.name} size="sm" />
-                    <span className="text-xs text-muted-foreground">{task.assignee.name}</span>
-                  </div>
-                )}
+                <div className="relative">
+                  <button
+                    onClick={() => { setAssigneeOpen(v => !v); setStatusOpen(false); setPriorityOpen(false); setDeptOpen(false) }}
+                    className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                    title="Change assignee"
+                  >
+                    {task.assignee ? (
+                      <>
+                        <MemberAvatar name={task.assignee.name} size="sm" />
+                        <span className="text-xs text-muted-foreground">{task.assignee.name}</span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-muted-foreground border border-dashed border-border rounded px-2 py-0.5">
+                        Unassigned
+                      </span>
+                    )}
+                  </button>
+                  {assigneeOpen && (
+                    <div className="absolute top-full left-0 mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[180px]">
+                      {/* Assign to me */}
+                      {meData?.teamMemberId && meData.teamMemberId !== task.assignee?.id && (
+                        <button
+                          onClick={assignToMe}
+                          className="w-full text-left px-3 py-1.5 text-sm text-primary font-medium hover:bg-muted transition-colors flex items-center gap-2"
+                        >
+                          <MemberAvatar name={meData.name} size="sm" />
+                          Assign to me
+                        </button>
+                      )}
+                      {/* Divider */}
+                      {meData?.teamMemberId && <div className="border-t border-border/50 my-1" />}
+                      {/* Team members */}
+                      {(members as TeamMember[]).map(m => (
+                        <button
+                          key={m.id}
+                          onClick={() => changeAssignee(m.id)}
+                          className={cn(
+                            'w-full text-left px-3 py-1.5 text-sm hover:bg-muted transition-colors flex items-center gap-2',
+                            task.assignee?.id === m.id && 'text-primary font-medium'
+                          )}
+                        >
+                          <MemberAvatar name={m.name} size="sm" />
+                          {m.name}
+                        </button>
+                      ))}
+                      {/* Unassign */}
+                      {task.assignee && (
+                        <>
+                          <div className="border-t border-border/50 my-1" />
+                          <button
+                            onClick={() => changeAssignee(null)}
+                            className="w-full text-left px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
+                          >
+                            Unassign
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Due date */}
                 {task.dueDate && (
@@ -340,6 +437,14 @@ export function TaskDetailSheet({ taskId, open, onClose, onTaskUpdated }: TaskDe
                   </div>
                 )}
               </div>
+
+              {/* Assigned by */}
+              {task.assignedByName && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground -mt-3">
+                  <span>Assigned by</span>
+                  <span className="font-medium text-foreground/70">{task.assignedByName}</span>
+                </div>
+              )}
 
               {/* Description */}
               <div className="space-y-2">
