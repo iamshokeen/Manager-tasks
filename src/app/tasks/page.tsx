@@ -80,6 +80,7 @@ interface TaskShape {
   dueDate?: string | null
   assignee?: { id: string; name: string } | null
   assignedByName?: string | null
+  isSelfTask?: boolean
   stakeholders?: Array<{ stakeholder: { id: string; name: string } }>
 }
 
@@ -504,7 +505,7 @@ export default function TasksPage() {
               {(tasks as TaskShape[]).filter(t => t.status !== 'done').map(task => {
                 const overdue   = isOverdue(task.dueDate ?? null)
                 const today     = isDueToday(task.dueDate ?? null)
-                const isMyTask  = !!myTeamMemberId && task.assignee?.id === myTeamMemberId
+                const isMyTask  = (!!myTeamMemberId && task.assignee?.id === myTeamMemberId) || !!task.isSelfTask
                 return (
                   <div
                     key={task.id}
@@ -611,7 +612,7 @@ export default function TasksPage() {
                           key={task.id}
                           task={task}
                           onClick={() => { setSelectedTaskId(task.id); setSheetOpen(true) }}
-                          isMyTask={!!myTeamMemberId && task.assignee?.id === myTeamMemberId}
+                          isMyTask={(!!myTeamMemberId && task.assignee?.id === myTeamMemberId) || !!task.isSelfTask}
                         />
                       ))
                     )}

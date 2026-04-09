@@ -23,6 +23,7 @@ interface TaskShape {
   department?: string
   dueDate?: string | null
   assignee?: { id: string; name: string } | null
+  isSelfTask?: boolean
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -232,7 +233,7 @@ export function TaskCalendarView({ tasks, onTaskClick, mutate, myTeamMemberId }:
             <CalColumn id="unscheduled">
               {unscheduled.length === 0
                 ? <p className="text-[10px] text-muted-foreground/40 text-center py-6">All scheduled</p>
-                : unscheduled.map(t => <CalCard key={t.id} task={t} viewMode={viewMode} onClick={() => onTaskClick(t.id)} syncing={syncingId === t.id} isMyTask={!!myTeamMemberId && t.assignee?.id === myTeamMemberId} />)
+                : unscheduled.map(t => <CalCard key={t.id} task={t} viewMode={viewMode} onClick={() => onTaskClick(t.id)} syncing={syncingId === t.id} isMyTask={(!!myTeamMemberId && t.assignee?.id === myTeamMemberId) || !!t.isSelfTask} />)
               }
             </CalColumn>
           </div>
@@ -258,7 +259,7 @@ export function TaskCalendarView({ tasks, onTaskClick, mutate, myTeamMemberId }:
                   {colTasks.length === 0
                     ? <div className="border-2 border-dashed border-[var(--outline-variant)]/30 rounded-md h-16 flex items-center justify-center text-[10px] text-muted-foreground/40 hover:border-primary/40 hover:text-primary/40 transition-colors">Drop here</div>
                     : <>
-                        {visible.map(t => <CalCard key={t.id} task={t} viewMode={viewMode} onClick={() => onTaskClick(t.id)} syncing={syncingId === t.id} isMyTask={!!myTeamMemberId && t.assignee?.id === myTeamMemberId} />)}
+                        {visible.map(t => <CalCard key={t.id} task={t} viewMode={viewMode} onClick={() => onTaskClick(t.id)} syncing={syncingId === t.id} isMyTask={(!!myTeamMemberId && t.assignee?.id === myTeamMemberId) || !!t.isSelfTask} />)}
                         {overflow && (
                           <button
                             onClick={() => setExpandedCols(s => { const n = new Set(s); n.add(key); return n })}
