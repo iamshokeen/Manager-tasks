@@ -91,10 +91,25 @@ export async function POST(req: Request) {
       })
       await setAuthCookie(jwtToken)
 
+      // Auto-link to TeamMember by name if not already linked
+      let existingTeamMemberId = existingUser.teamMemberId
+      if (!existingUser.teamMemberId && existingUser.name) {
+        const match = await prisma.teamMember.findFirst({
+          where: {
+            name: { equals: existingUser.name.trim(), mode: 'insensitive' },
+            user: null,
+          },
+        })
+        if (match) existingTeamMemberId = match.id
+      }
+
       // Update lastLoginAt
       await prisma.user.update({
         where: { id: existingUser.id },
-        data: { lastLoginAt: new Date() },
+        data: {
+          lastLoginAt: new Date(),
+          ...(existingTeamMemberId && !existingUser.teamMemberId ? { teamMemberId: existingTeamMemberId } : {}),
+        },
       })
 
       return NextResponse.json({ redirect: '/' }, { status: 200 })
@@ -164,9 +179,24 @@ export async function POST(req: Request) {
     })
     await setAuthCookie(jwtToken)
 
+    // Auto-link new user to TeamMember by name
+    let newTeamMemberId: string | undefined
+    if (newUserName) {
+      const match = await prisma.teamMember.findFirst({
+        where: {
+          name: { equals: newUserName.trim(), mode: 'insensitive' },
+          user: null,
+        },
+      })
+      if (match) newTeamMemberId = match.id
+    }
+
     await prisma.user.update({
       where: { id: newUser.id },
-      data: { lastLoginAt: new Date() },
+      data: {
+        lastLoginAt: new Date(),
+        ...(newTeamMemberId ? { teamMemberId: newTeamMemberId } : {}),
+      },
     })
 
     return NextResponse.json({ redirect: '/' }, { status: 200 })

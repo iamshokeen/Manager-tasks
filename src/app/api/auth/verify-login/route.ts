@@ -67,13 +67,28 @@ export async function POST(req: Request) {
     const token = await signJWT({ userId: user.id, email: user.email, role: user.role })
     await setAuthCookie(token)
 
-    // Update lastLoginAt and clear OTP fields
+    // Auto-link to TeamMember by name if not already linked
+    let resolvedTeamMemberId = user.teamMemberId
+    if (!user.teamMemberId && user.name) {
+      const match = await prisma.teamMember.findFirst({
+        where: {
+          name: { equals: user.name.trim(), mode: 'insensitive' },
+          user: null, // not already linked to another User
+        },
+      })
+      if (match) {
+        resolvedTeamMemberId = match.id
+      }
+    }
+
+    // Update lastLoginAt, clear OTP fields, and persist teamMemberId link if found
     await prisma.user.update({
       where: { id: user.id },
       data: {
         lastLoginAt: new Date(),
         verifyToken: null,
         verifyExpiry: null,
+        ...(resolvedTeamMemberId && !user.teamMemberId ? { teamMemberId: resolvedTeamMemberId } : {}),
       },
     })
 
