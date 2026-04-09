@@ -17,12 +17,13 @@ const BASE_NAV: NavGroup[] = [
   {
     group: 'Work',
     items: [
-      { href: '/projects',   label: 'Projects',    icon: 'folder' },
-      { href: '/tasks',      label: 'Tasks',        icon: 'checklist' },
-      { href: '/my-tasks',   label: 'My Tasks',     icon: 'task_alt' },
-      { href: '/cadence',    label: 'Rounds',       icon: 'repeat' },
-      { href: '/notes',      label: 'Notes',        icon: 'sticky_note_2' },
-      { href: '/follow-ups', label: 'Open Loops',   icon: 'track_changes' },
+      { href: '/projects',       label: 'Projects',       icon: 'folder' },
+      { href: '/tasks',          label: 'Tasks',           icon: 'checklist' },
+      { href: '/my-tasks',       label: 'My Tasks',        icon: 'task_alt' },
+      { href: '/email-to-tasks', label: 'Email → Tasks',   icon: 'forward_to_inbox' },
+      { href: '/cadence',        label: 'Rounds',          icon: 'repeat' },
+      { href: '/notes',          label: 'Notes',           icon: 'sticky_note_2' },
+      { href: '/follow-ups',     label: 'Open Loops',      icon: 'track_changes' },
     ],
   },
   {
