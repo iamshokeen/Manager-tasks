@@ -17,7 +17,7 @@ const BASE_NAV: NavGroup[] = [
   {
     group: 'Work',
     items: [
-      { href: '/projects',   label: 'Projects',    icon: 'folder_kanban' },
+      { href: '/projects',   label: 'Projects',    icon: 'folder' },
       { href: '/tasks',      label: 'Tasks',        icon: 'checklist' },
       { href: '/my-tasks',   label: 'My Tasks',     icon: 'task_alt' },
       { href: '/cadence',    label: 'Rounds',       icon: 'repeat' },

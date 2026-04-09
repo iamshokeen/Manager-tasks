@@ -1127,6 +1127,7 @@ export default function FollowUpsPage() {
       </div>
 
       <CreateFollowUpDialog
+        key={spawnParentId ?? 'new'}
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreated={() => mutate()}
