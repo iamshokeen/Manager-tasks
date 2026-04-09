@@ -1103,16 +1103,16 @@ export default function FollowUpsPage() {
             {allFus.filter(fu => needsAttention(fu)).slice(0, 3).map(fu => (
               <div
                 key={fu.id}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ring-2 flex-shrink-0"
-                style={{ background: 'rgba(159,64,61,0.1)', color: 'var(--error)', ringColor: 'var(--surface)' }}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ring-2 ring-[var(--surface)] flex-shrink-0"
+                style={{ background: 'rgba(159,64,61,0.1)', color: 'var(--error)' }}
               >
                 {getInitials(fu.contactName)}
               </div>
             ))}
             {alertCount > 3 && (
               <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ring-2 flex-shrink-0"
-                style={{ background: 'var(--surface-container-highest)', color: 'var(--on-surface)', ringColor: 'var(--surface)' }}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ring-2 ring-[var(--surface)] flex-shrink-0"
+                style={{ background: 'var(--surface-container-highest)', color: 'var(--on-surface)' }}
               >
                 +{alertCount - 3}
               </div>

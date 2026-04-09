@@ -350,7 +350,7 @@ export default function StakeholdersPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Priority</label>
-                <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}>
+                <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v || f.priority }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="critical">Critical</SelectItem>
@@ -403,7 +403,7 @@ export default function StakeholdersPage() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>Priority</label>
-                <Select value={editForm.priority} onValueChange={v => setEditForm(f => ({ ...f, priority: v }))}>
+                <Select value={editForm.priority} onValueChange={v => setEditForm(f => ({ ...f, priority: v || f.priority }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="critical">Critical</SelectItem>
