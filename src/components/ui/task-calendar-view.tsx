@@ -65,8 +65,8 @@ function isToday(d: Date): boolean {
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 const OVERFLOW_AT = 4
 
-function CalCard({ task, viewMode, onClick, syncing }: {
-  task: TaskShape; viewMode: 'priority' | 'dept' | 'assignee'; onClick: () => void; syncing: boolean
+function CalCard({ task, viewMode, onClick, syncing, isMyTask }: {
+  task: TaskShape; viewMode: 'priority' | 'dept' | 'assignee'; onClick: () => void; syncing: boolean; isMyTask?: boolean
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id })
   const overdue = isOverdue(task.dueDate ?? null)
@@ -81,7 +81,12 @@ function CalCard({ task, viewMode, onClick, syncing }: {
   return (
     <div
       ref={setNodeRef} {...attributes} {...listeners}
-      style={{ opacity: isDragging ? 0.35 : 1, borderLeftColor: color }}
+      style={{
+        opacity: isDragging ? 0.35 : 1,
+        borderLeftColor: color,
+        background: isMyTask ? 'rgba(0,83,219,0.05)' : undefined,
+        boxShadow: isMyTask ? '0 0 0 1px rgba(0,83,219,0.15)' : undefined,
+      }}
       className="bg-card border-l-4 p-3 rounded-md hover:bg-primary/5 transition-all cursor-grab active:cursor-grabbing select-none shadow-sm"
       onClick={() => { if (!isDragging) onClick() }}
     >
@@ -121,9 +126,10 @@ interface TaskCalendarViewProps {
   tasks: TaskShape[]
   onTaskClick: (id: string) => void
   mutate: () => void
+  myTeamMemberId?: string | null
 }
 
-export function TaskCalendarView({ tasks, onTaskClick, mutate }: TaskCalendarViewProps) {
+export function TaskCalendarView({ tasks, onTaskClick, mutate, myTeamMemberId }: TaskCalendarViewProps) {
   const [weekOffset, setWeekOffset] = useState(0)
   const [viewMode, setViewMode] = useState<'priority' | 'dept' | 'assignee'>('priority')
   const [expandedCols, setExpandedCols] = useState<Set<string>>(new Set())
@@ -226,7 +232,7 @@ export function TaskCalendarView({ tasks, onTaskClick, mutate }: TaskCalendarVie
             <CalColumn id="unscheduled">
               {unscheduled.length === 0
                 ? <p className="text-[10px] text-muted-foreground/40 text-center py-6">All scheduled</p>
-                : unscheduled.map(t => <CalCard key={t.id} task={t} viewMode={viewMode} onClick={() => onTaskClick(t.id)} syncing={syncingId === t.id} />)
+                : unscheduled.map(t => <CalCard key={t.id} task={t} viewMode={viewMode} onClick={() => onTaskClick(t.id)} syncing={syncingId === t.id} isMyTask={!!myTeamMemberId && t.assignee?.id === myTeamMemberId} />)
               }
             </CalColumn>
           </div>
@@ -252,7 +258,7 @@ export function TaskCalendarView({ tasks, onTaskClick, mutate }: TaskCalendarVie
                   {colTasks.length === 0
                     ? <div className="border-2 border-dashed border-[var(--outline-variant)]/30 rounded-md h-16 flex items-center justify-center text-[10px] text-muted-foreground/40 hover:border-primary/40 hover:text-primary/40 transition-colors">Drop here</div>
                     : <>
-                        {visible.map(t => <CalCard key={t.id} task={t} viewMode={viewMode} onClick={() => onTaskClick(t.id)} syncing={syncingId === t.id} />)}
+                        {visible.map(t => <CalCard key={t.id} task={t} viewMode={viewMode} onClick={() => onTaskClick(t.id)} syncing={syncingId === t.id} isMyTask={!!myTeamMemberId && t.assignee?.id === myTeamMemberId} />)}
                         {overflow && (
                           <button
                             onClick={() => setExpandedCols(s => { const n = new Set(s); n.add(key); return n })}

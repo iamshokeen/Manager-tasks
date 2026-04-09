@@ -107,9 +107,10 @@ function DroppableColumn({ id, children }: { id: string; children: React.ReactNo
 interface TaskCardProps {
   task: TaskShape
   onClick: () => void
+  isMyTask?: boolean
 }
 
-function TaskCard({ task, onClick }: TaskCardProps) {
+function TaskCard({ task, onClick, isMyTask }: TaskCardProps) {
   const overdue = isOverdue(task.dueDate ?? null)
   const today = isDueToday(task.dueDate ?? null)
   const dueDateStyle = overdue
@@ -123,8 +124,9 @@ function TaskCard({ task, onClick }: TaskCardProps) {
       onClick={onClick}
       className="rounded-xl p-4 cursor-pointer transition-all group"
       style={{
-        background: 'var(--surface-container-lowest)',
+        background: isMyTask ? 'rgba(0,83,219,0.04)' : 'var(--surface-container-lowest)',
         boxShadow: '0 8px 30px rgb(42,52,57,0.04)',
+        borderLeft: isMyTask ? '3px solid var(--primary)' : '3px solid transparent',
       }}
       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 30px rgb(42,52,57,0.08)' }}
       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 30px rgb(42,52,57,0.04)' }}
@@ -183,9 +185,10 @@ function TaskCard({ task, onClick }: TaskCardProps) {
 interface SortableTaskCardProps {
   task: TaskShape
   onClick: () => void
+  isMyTask?: boolean
 }
 
-function SortableTaskCard({ task, onClick }: SortableTaskCardProps) {
+function SortableTaskCard({ task, onClick, isMyTask }: SortableTaskCardProps) {
   const {
     attributes,
     listeners,
@@ -209,7 +212,7 @@ function SortableTaskCard({ task, onClick }: SortableTaskCardProps) {
       {...listeners}
       className="cursor-grab active:cursor-grabbing select-none"
     >
-      <TaskCard task={task} onClick={onClick} />
+      <TaskCard task={task} onClick={onClick} isMyTask={isMyTask} />
     </div>
   )
 }
@@ -473,6 +476,7 @@ export default function TasksPage() {
           tasks={tasks as TaskShape[]}
           onTaskClick={(id) => { setSelectedTaskId(id); setSheetOpen(true) }}
           mutate={mutate}
+          myTeamMemberId={myTeamMemberId}
         />
       )}
 
@@ -498,16 +502,21 @@ export default function TasksPage() {
                 <span>Due</span>
               </div>
               {(tasks as TaskShape[]).filter(t => t.status !== 'done').map(task => {
-                const overdue = isOverdue(task.dueDate ?? null)
-                const today   = isDueToday(task.dueDate ?? null)
+                const overdue   = isOverdue(task.dueDate ?? null)
+                const today     = isDueToday(task.dueDate ?? null)
+                const isMyTask  = !!myTeamMemberId && task.assignee?.id === myTeamMemberId
                 return (
                   <div
                     key={task.id}
                     onClick={() => { setSelectedTaskId(task.id); setSheetOpen(true) }}
                     className="grid grid-cols-[1fr_100px_90px_120px_90px_90px] gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all group items-center"
-                    style={{ background: 'var(--surface-container-lowest)', boxShadow: 'var(--shadow-card)' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-container-low)' }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-container-lowest)' }}
+                    style={{
+                      background: isMyTask ? 'rgba(0,83,219,0.04)' : 'var(--surface-container-lowest)',
+                      boxShadow: 'var(--shadow-card)',
+                      borderLeft: isMyTask ? '3px solid var(--primary)' : '3px solid transparent',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = isMyTask ? 'rgba(0,83,219,0.07)' : 'var(--surface-container-low)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isMyTask ? 'rgba(0,83,219,0.04)' : 'var(--surface-container-lowest)' }}
                   >
                     <p className="text-sm font-semibold truncate transition-colors group-hover:text-[var(--primary)]" style={{ color: 'var(--on-surface)' }}>{task.title}</p>
                     <span className={cn(
@@ -602,6 +611,7 @@ export default function TasksPage() {
                           key={task.id}
                           task={task}
                           onClick={() => { setSelectedTaskId(task.id); setSheetOpen(true) }}
+                          isMyTask={!!myTeamMemberId && task.assignee?.id === myTeamMemberId}
                         />
                       ))
                     )}
