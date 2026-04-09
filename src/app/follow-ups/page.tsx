@@ -4,14 +4,12 @@ import { useState } from 'react'
 import useSWR from 'swr'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { toast } from 'sonner'
-import { formatDistanceToNow, isPast, addDays } from 'date-fns'
+import { formatDistanceToNow, isPast, addDays, format } from 'date-fns'
 import {
-  Plus, ChevronRight, ChevronDown, Bell, BellOff, CheckCircle2,
-  RotateCcw, Trash2, X, ExternalLink, AlertCircle, Clock,
-  GitBranch, Link2, Wand2, User
+  BellOff, CheckCircle2, RotateCcw, Trash2,
+  GitBranch, Link2, Wand2, ExternalLink
 } from 'lucide-react'
 
-import { PageHeader } from '@/components/ui/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -81,15 +79,40 @@ function needsAttention(fu: FollowUpChild): boolean {
   return false
 }
 
-function StatusDot({ status, alert }: { status: string; alert?: boolean }) {
-  if (alert) return <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
-  const color = {
-    open: 'bg-blue-400',
-    snoozed: 'bg-amber-400',
-    closed: 'bg-emerald-500',
-    converted: 'bg-purple-500',
-  }[status] ?? 'bg-gray-400'
-  return <span className={`w-2 h-2 rounded-full flex-shrink-0 ${color}`} />
+function getInitials(name: string): string {
+  return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+}
+
+function formatReminderDate(fu: FollowUpChild): { label: string; value: string; overdue: boolean } {
+  if (fu.status === 'closed' || fu.status === 'converted') {
+    return { label: 'Completed', value: formatDistanceToNow(new Date(fu.lastActivityAt), { addSuffix: true }), overdue: false }
+  }
+  if (fu.snoozedUntil) {
+    return { label: 'Snooze Until', value: format(new Date(fu.snoozedUntil), 'MMM d'), overdue: false }
+  }
+  if (fu.reminderAt) {
+    const overdue = isPast(new Date(fu.reminderAt))
+    return { label: overdue ? 'Overdue' : 'Reminder', value: overdue ? 'Yesterday' : format(new Date(fu.reminderAt), 'MMM d, yyyy'), overdue }
+  }
+  return { label: 'Last Active', value: formatDistanceToNow(new Date(fu.lastActivityAt), { addSuffix: true }), overdue: false }
+}
+
+function StatusPill({ status }: { status: string }) {
+  const configs: Record<string, { bg: string; color: string; label: string }> = {
+    open: { bg: 'rgba(248,160,16,0.2)', color: 'var(--tertiary)', label: 'Open' },
+    snoozed: { bg: 'rgba(169,180,185,0.15)', color: 'var(--outline)', label: 'Snoozed' },
+    closed: { bg: 'rgba(213,227,252,0.3)', color: 'var(--secondary)', label: 'Done' },
+    converted: { bg: 'rgba(213,227,252,0.3)', color: 'var(--secondary)', label: 'Converted' },
+  }
+  const cfg = configs[status] ?? configs.open
+  return (
+    <span
+      className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest whitespace-nowrap"
+      style={{ background: cfg.bg, color: cfg.color }}
+    >
+      {cfg.label}
+    </span>
+  )
 }
 
 // ─── Create / Edit dialog ─────────────────────────────────────────────────────
@@ -438,32 +461,54 @@ function SnoozeDialog({ open, onOpenChange, onSnooze }: {
   )
 }
 
-// ─── Detail Panel ─────────────────────────────────────────────────────────────
+// ─── Follow-up row (rich, inline-expandable) ──────────────────────────────────
 
-function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, projects, departments, onSpawn }: {
-  followUp: FollowUp
+function FollowUpRow({
+  fu, depth = 0, onMutate, members, tasks, projects, departments, onSpawnChild,
+}: {
+  fu: FollowUpChild
+  depth?: number
   onMutate: () => void
   members: TeamMember[]
-  stakeholders: Stakeholder[]
   tasks: { id: string; title: string }[]
   projects: { id: string; title: string }[]
   departments: string[]
-  onSpawn: (parentId: string, parentTitle: string) => void
+  onSpawnChild: (parentId: string, parentTitle: string) => void
 }) {
   const currentUser = useCurrentUser()
+  const [expanded, setExpanded] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [addingNote, setAddingNote] = useState(false)
   const [snoozeOpen, setSnoozeOpen] = useState(false)
   const [convertOpen, setConvertOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const alert = needsAttention(followUp)
+
+  const alert = needsAttention(fu)
+  const hasChildren = fu.children && fu.children.length > 0
+  const isClosed = fu.status === 'closed' || fu.status === 'converted'
+  const reminder = formatReminderDate(fu)
+  const contactDisplay = fu.teamMember?.name ?? fu.stakeholder?.name ?? fu.contactName
+  const teamLabel = fu.teamMember?.name ?? null
+
+  async function patch(data: Record<string, unknown>) {
+    try {
+      await fetch(`/api/follow-ups/${fu.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      onMutate()
+    } catch {
+      toast.error('Update failed')
+    }
+  }
 
   async function addNote() {
     if (!noteText.trim()) return
     setAddingNote(true)
     try {
-      const res = await fetch(`/api/follow-ups/${followUp.id}/notes`, {
+      const res = await fetch(`/api/follow-ups/${fu.id}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: noteText.trim(), authorName: currentUser?.name ?? 'You' }),
@@ -478,23 +523,10 @@ function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, project
     }
   }
 
-  async function patch(data: Record<string, unknown>) {
-    try {
-      await fetch(`/api/follow-ups/${followUp.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      onMutate()
-    } catch {
-      toast.error('Update failed')
-    }
-  }
-
   async function handleDelete() {
     setDeleting(true)
     try {
-      await fetch(`/api/follow-ups/${followUp.id}`, { method: 'DELETE' })
+      await fetch(`/api/follow-ups/${fu.id}`, { method: 'DELETE' })
       onMutate()
       toast.success('Deleted')
     } catch {
@@ -509,239 +541,334 @@ function DetailPanel({ followUp, onMutate, members, stakeholders, tasks, project
     toast.success('Snoozed')
   }
 
-  const isClosed = followUp.status === 'closed' || followUp.status === 'converted'
-
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div className="px-5 py-4 flex-shrink-0" style={{ borderBottom: '1px solid var(--surface-container)' }}>
-        <div className="flex items-start gap-2">
-          <StatusDot status={followUp.status} alert={alert} />
-          <div className="flex-1 min-w-0">
-            <h2 className="text-base font-semibold leading-snug" style={{ color: 'var(--on-surface)' }}>{followUp.title}</h2>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--on-surface-variant)' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>person</span>
-                {followUp.teamMember?.name ?? followUp.stakeholder?.name ?? followUp.contactName}
-              </span>
-              {followUp.task && (
-                <Link href={`/tasks/${followUp.task.id}`} className="flex items-center gap-1 text-xs text-primary hover:underline">
-                  <Link2 className="h-3 w-3" />
-                  {followUp.task.title}
-                </Link>
-              )}
-              {followUp.project && (
-                <Link href={`/projects/${followUp.project.id}`} className="flex items-center gap-1 text-xs text-primary hover:underline">
-                  <ExternalLink className="h-3 w-3" />
-                  {followUp.project.title}
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-        {followUp.description && (
-          <p className="text-sm mt-2 leading-relaxed" style={{ color: 'var(--on-surface-variant)' }}>{followUp.description}</p>
-        )}
-        {alert && (
-          <div className="mt-3 flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl" style={{ color: 'var(--on-error-container)', background: 'var(--error-container)' }}>
-            <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '14px' }}>error</span>
-            Needs attention — no update received
-          </div>
-        )}
-        {followUp.snoozedUntil && followUp.status === 'snoozed' && (
-          <div className="mt-2 flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl" style={{ color: 'var(--tertiary)', background: 'rgba(134,84,0,0.08)' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>schedule</span>
-            Snoozed until {new Date(followUp.snoozedUntil).toLocaleString()}
-          </div>
-        )}
-      </div>
-
-      {/* Action bar */}
-      {!isClosed && (
-        <div className="px-5 py-2 flex-shrink-0 flex items-center gap-2 flex-wrap" style={{ borderBottom: '1px solid var(--surface-container)' }}>
-          <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-            onClick={() => onSpawn(followUp.id, followUp.title)}>
-            <GitBranch className="h-3 w-3" />
-            Spawn child
-          </Button>
-          <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-            onClick={() => setSnoozeOpen(true)}>
-            <BellOff className="h-3 w-3" />
-            Snooze
-          </Button>
-          <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-            onClick={() => setConvertOpen(true)}>
-            <Wand2 className="h-3 w-3" />
-            Convert to task
-          </Button>
-          {followUp.status === 'snoozed' && (
-            <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-              onClick={() => patch({ status: 'open', snoozedUntil: null })}>
-              <RotateCcw className="h-3 w-3" />
-              Reopen
-            </Button>
-          )}
-          <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-            onClick={() => patch({ status: 'closed' })}>
-            <CheckCircle2 className="h-3 w-3" />
-            Close
-          </Button>
-          <div className="ml-auto">
-            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-              onClick={() => setDeleteOpen(true)}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {isClosed && (
-        <div className="px-5 py-2 flex-shrink-0 flex items-center justify-between" style={{ borderBottom: '1px solid var(--surface-container)' }}>
-          <span className="text-xs italic" style={{ color: 'var(--on-surface-variant)' }}>
-            {followUp.status === 'converted' ? 'Converted to task' : 'Closed'}
-          </span>
-          <div className="flex gap-2">
-            <Button size="sm" variant="ghost" className="h-7 text-xs"
-              onClick={() => patch({ status: 'open', snoozedUntil: null, convertedTaskId: null })}>
-              <RotateCcw className="h-3 w-3 mr-1" />
-              Reopen
-            </Button>
-            <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-              onClick={() => setDeleteOpen(true)}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Notes timeline */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-        {followUp.notes.length === 0 ? (
-          <p className="text-sm" style={{ color: 'var(--on-surface-variant)' }}>No updates yet. Add the first note.</p>
-        ) : (
-          followUp.notes.map(n => (
-            <div key={n.id} className="flex gap-3">
-              <div
-                className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold mt-0.5"
-                style={{ background: 'rgba(0,83,219,0.1)', color: 'var(--primary)' }}
-              >
-                {(n.authorName ?? 'S').charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-baseline gap-2 mb-0.5">
-                  <span className="text-xs font-semibold" style={{ color: 'var(--on-surface)' }}>{n.authorName ?? 'System'}</span>
-                  <span className="text-[10px]" style={{ color: 'var(--on-surface-variant)' }}>
-                    {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
-                  </span>
-                </div>
-                <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--on-surface)' }}>{n.content}</p>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Add note */}
-      {!isClosed && (
-        <div className="px-5 py-3 flex-shrink-0 flex gap-2" style={{ borderTop: '1px solid var(--surface-container)' }}>
-          <Input
-            value={noteText}
-            onChange={e => setNoteText(e.target.value)}
-            placeholder="Add an update…"
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addNote() } }}
-            className="flex-1"
-          />
-          <Button size="sm" onClick={addNote} disabled={addingNote || !noteText.trim()}>
-            {addingNote ? '…' : 'Add'}
-          </Button>
-        </div>
-      )}
-
-      {/* Children list */}
-      {followUp.children.length > 0 && (
-        <div className="px-5 py-3 flex-shrink-0" style={{ borderTop: '1px solid var(--surface-container)' }}>
-          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--on-surface-variant)' }}>
-            Child loops ({followUp.children.length})
-          </p>
-          <div className="flex flex-col gap-1">
-            {followUp.children.map(c => (
-              <div
-                key={c.id}
-                className={cn('flex items-center gap-2 text-sm py-1 px-2 rounded-xl transition-colors',
-                  c.status === 'closed' || c.status === 'converted' ? 'opacity-50' : '')}
-                onMouseEnter={e => { if (c.status !== 'closed' && c.status !== 'converted') (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-container-low)' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
-              >
-                <StatusDot status={c.status} alert={needsAttention(c)} />
-                <span className="flex-1 truncate" style={{ color: 'var(--on-surface)' }}>{c.title}</span>
-                <span className="text-xs truncate max-w-[80px]" style={{ color: 'var(--on-surface-variant)' }}>{c.contactName}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <SnoozeDialog open={snoozeOpen} onOpenChange={setSnoozeOpen} onSnooze={handleSnooze} />
-      <ConvertDialog open={convertOpen} onOpenChange={setConvertOpen} followUp={followUp}
-        onConverted={onMutate} tasks={tasks} members={members} departments={departments} />
-      <ConfirmDialog open={deleteOpen} onOpenChange={setDeleteOpen}
-        title="Delete loop?" description="This will delete the loop and all its notes. Children will also be deleted."
-        onConfirm={handleDelete} loading={deleting} />
-    </div>
-  )
-}
-
-// ─── Follow-up row ────────────────────────────────────────────────────────────
-
-function FollowUpRow({ fu, selected, onSelect, depth = 0 }: {
-  fu: FollowUpChild; selected: boolean; onSelect: () => void; depth?: number
-}) {
-  const [expanded, setExpanded] = useState(true)
-  const hasChildren = fu.children && fu.children.length > 0
-  const alert = needsAttention(fu)
-
-  return (
-    <div>
+    <div className={cn(depth > 0 && 'ml-12 border-l-2')} style={depth > 0 ? { borderColor: 'var(--surface-container)' } : {}}>
+      {/* Row */}
       <div
-        onClick={onSelect}
         className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-colors text-sm',
-          depth > 0 && 'ml-4'
+          'group flex items-center gap-4 p-3 rounded-md transition-all cursor-pointer',
+          depth > 0 && 'ml-4',
+          isClosed && 'opacity-60',
         )}
         style={{
-          paddingLeft: depth > 0 ? `${(depth * 16) + 12}px` : undefined,
-          background: selected ? 'rgba(0,83,219,0.08)' : 'transparent',
-          color: selected ? 'var(--primary)' : 'var(--on-surface)',
-          borderLeft: depth > 0 ? '2px solid var(--surface-container)' : undefined,
+          background: expanded ? 'rgba(0,83,219,0.03)' : 'transparent',
+          borderLeft: expanded && depth === 0 ? '4px solid var(--primary)' : depth === 0 ? '4px solid transparent' : undefined,
+          borderRadius: expanded ? '0.375rem 0.375rem 0 0' : undefined,
         }}
-        onMouseEnter={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-container-low)' }}
-        onMouseLeave={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
+        onMouseEnter={e => { if (!expanded) (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,83,219,0.03)' }}
+        onMouseLeave={e => { if (!expanded) (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
+        onClick={() => setExpanded(v => !v)}
       >
-        {hasChildren ? (
-          <button onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}
-            className="p-0.5 rounded flex-shrink-0 transition-colors"
-            style={{ color: 'var(--on-surface-variant)' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-              {expanded ? 'expand_more' : 'chevron_right'}
-            </span>
-          </button>
-        ) : <span className="w-5 flex-shrink-0" />}
-        <StatusDot status={fu.status} alert={alert} />
-        <span className={cn('flex-1 truncate text-sm', fu.status === 'closed' || fu.status === 'converted' ? 'line-through' : '')}
-          style={fu.status === 'closed' || fu.status === 'converted' ? { color: 'var(--on-surface-variant)' } : {}}>
+        {/* Chevron / done icon */}
+        <span
+          className="material-symbols-outlined transition-transform duration-200 flex-shrink-0"
+          style={{
+            color: isClosed ? '#10b981' : 'var(--outline)',
+            transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            fontVariationSettings: isClosed ? "'FILL' 1" : "'FILL' 0",
+            fontSize: '20px',
+          }}
+        >
+          {isClosed ? 'check_circle' : 'chevron_right'}
+        </span>
+
+        {/* Title */}
+        <span
+          className={cn('text-sm font-semibold flex-1 truncate', isClosed && 'line-through')}
+          style={{
+            color: isClosed ? 'var(--on-surface-variant)' : 'var(--on-surface)',
+            minWidth: depth > 0 ? '200px' : '260px',
+          }}
+        >
+          {alert && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block mr-2 align-middle flex-shrink-0" />}
           {fu.title}
         </span>
-        <span className="text-xs truncate max-w-[80px] flex-shrink-0" style={{ color: 'var(--on-surface-variant)' }}>{fu.contactName}</span>
-        {fu.notes.length > 0 && (
-          <span className="text-[10px] flex-shrink-0" style={{ color: 'var(--on-surface-variant)' }}>{fu.notes.length} note{fu.notes.length !== 1 ? 's' : ''}</span>
+
+        {/* Contact */}
+        <div className="flex items-center gap-2 min-w-[140px] flex-shrink-0">
+          <div
+            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+            style={{ background: 'rgba(0,83,219,0.12)', color: 'var(--primary)' }}
+          >
+            {getInitials(contactDisplay)}
+          </div>
+          <span className="text-xs font-medium truncate" style={{ color: 'var(--on-surface-variant)' }}>
+            {contactDisplay}
+          </span>
+        </div>
+
+        {/* Team badge */}
+        {teamLabel ? (
+          <div
+            className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded-full flex-shrink-0"
+            style={{ background: 'var(--surface-container)', border: '1px solid rgba(169,180,185,0.1)' }}
+          >
+            <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: 'var(--on-surface-variant)' }}>
+              {teamLabel.split(' ')[0]}
+            </span>
+          </div>
+        ) : (
+          <div className="hidden md:block w-20 flex-shrink-0" />
         )}
+
+        {/* Status pill */}
+        <div className="flex-shrink-0 w-20 flex justify-center">
+          <StatusPill status={fu.status} />
+        </div>
+
+        {/* Reminder date */}
+        <div className="hidden lg:flex flex-col items-end flex-shrink-0 min-w-[80px]">
+          <span
+            className="text-[10px] uppercase font-bold tracking-tighter"
+            style={{ color: reminder.overdue ? 'var(--error)' : 'var(--outline)' }}
+          >
+            {reminder.label}
+          </span>
+          <span className="text-xs font-medium" style={{ color: reminder.overdue ? 'var(--error)' : 'var(--on-surface)' }}>
+            {reminder.value}
+          </span>
+        </div>
+
+        {/* More vert / note count */}
+        <div
+          className="w-8 flex justify-center flex-shrink-0"
+          onClick={e => e.stopPropagation()}
+        >
+          {fu.notes.length > 0 ? (
+            <span className="text-[10px] font-bold" style={{ color: 'var(--on-surface-variant)' }}>
+              {fu.notes.length}
+            </span>
+          ) : (
+            <span className="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--outline)', fontSize: '20px' }}>
+              more_vert
+            </span>
+          )}
+        </div>
       </div>
+
+      {/* Inline expanded panel */}
+      {expanded && (
+        <div
+          className={cn('border-x border-b rounded-b-lg', depth > 0 && 'ml-4')}
+          style={{ borderColor: 'rgba(169,180,185,0.1)', background: 'rgba(240,244,247,0.4)' }}
+        >
+          {/* Context links & description */}
+          {(fu as FollowUp).description || (fu as FollowUp).task || (fu as FollowUp).project ? (
+            <div className="px-10 pt-4 pb-2 flex flex-wrap items-center gap-3">
+              {(fu as FollowUp).description && (
+                <p className="text-xs leading-relaxed w-full" style={{ color: 'var(--on-surface-variant)' }}>
+                  {(fu as FollowUp).description}
+                </p>
+              )}
+              {(fu as FollowUp).task && (
+                <Link href={`/tasks/${(fu as FollowUp).task!.id}`} className="flex items-center gap-1 text-xs hover:underline" style={{ color: 'var(--primary)' }}
+                  onClick={e => e.stopPropagation()}>
+                  <Link2 className="h-3 w-3" />
+                  {(fu as FollowUp).task!.title}
+                </Link>
+              )}
+              {(fu as FollowUp).project && (
+                <Link href={`/projects/${(fu as FollowUp).project!.id}`} className="flex items-center gap-1 text-xs hover:underline" style={{ color: 'var(--primary)' }}
+                  onClick={e => e.stopPropagation()}>
+                  <ExternalLink className="h-3 w-3" />
+                  {(fu as FollowUp).project!.title}
+                </Link>
+              )}
+            </div>
+          ) : null}
+
+          {/* Alert banner */}
+          {alert && (
+            <div className="mx-10 mt-3 flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg"
+              style={{ color: 'var(--on-error-container)', background: 'var(--error-container)' }}>
+              <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '14px' }}>error</span>
+              Needs attention — no update received
+            </div>
+          )}
+
+          {/* Notes timeline */}
+          <div className="px-10 pt-4 pb-2">
+            {fu.notes.length === 0 ? (
+              <p className="text-xs italic" style={{ color: 'var(--on-surface-variant)' }}>No updates yet. Be the first.</p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {fu.notes.map((n, i) => (
+                  <div key={n.id} className={cn('flex gap-3', i > 0 && 'ml-8')}>
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
+                      style={{ background: i === 0 ? 'var(--surface-container-highest)' : 'rgba(0,83,219,0.1)', color: i === 0 ? 'var(--on-surface)' : 'var(--primary)' }}
+                    >
+                      {(n.authorName ?? 'S').substring(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold" style={{ color: 'var(--on-surface)' }}>{n.authorName ?? 'System'}</span>
+                        <span className="text-[10px]" style={{ color: 'var(--outline)' }}>
+                          {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--on-surface-variant)' }}>{n.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Add note */}
+          {!isClosed && (
+            <div className="px-10 pt-2 pb-4">
+              <div className="relative mt-2">
+                <textarea
+                  value={noteText}
+                  onChange={e => setNoteText(e.target.value)}
+                  className="w-full resize-none rounded-md p-3 text-sm focus:outline-none focus:ring-2 h-20"
+                  style={{
+                    background: 'var(--surface-container-lowest)',
+                    border: '1px solid rgba(169,180,185,0.2)',
+                    color: 'var(--on-surface)',
+                    boxShadow: 'inset 0 1px 4px rgba(42,52,57,0.04)',
+                  }}
+                  placeholder="Write a quick update..."
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addNote() } }}
+                  onClick={e => e.stopPropagation()}
+                />
+                <div className="absolute bottom-2 right-2 flex gap-2">
+                  <button
+                    className="bg-primary text-on-primary px-3 py-1 rounded text-xs font-semibold disabled:opacity-50"
+                    disabled={addingNote || !noteText.trim()}
+                    onClick={e => { e.stopPropagation(); addNote() }}
+                    style={{ background: 'var(--primary)', color: 'var(--on-primary)' }}
+                  >
+                    {addingNote ? '…' : 'Post'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action bar */}
+          <div
+            className="px-10 py-3 flex items-center gap-2 flex-wrap"
+            style={{ borderTop: '1px solid rgba(169,180,185,0.08)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {!isClosed && (
+              <>
+                <button
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
+                  style={{ color: 'var(--on-surface-variant)', border: '1px solid rgba(169,180,185,0.2)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                  onClick={() => onSpawnChild(fu.id, fu.title)}
+                >
+                  <GitBranch className="h-3 w-3" />
+                  Spawn child
+                </button>
+                <button
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
+                  style={{ color: 'var(--on-surface-variant)', border: '1px solid rgba(169,180,185,0.2)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                  onClick={() => setSnoozeOpen(true)}
+                >
+                  <BellOff className="h-3 w-3" />
+                  Snooze
+                </button>
+                <button
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
+                  style={{ color: 'var(--on-surface-variant)', border: '1px solid rgba(169,180,185,0.2)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                  onClick={() => setConvertOpen(true)}
+                >
+                  <Wand2 className="h-3 w-3" />
+                  Convert to task
+                </button>
+                {fu.status === 'snoozed' && (
+                  <button
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
+                    style={{ color: 'var(--on-surface-variant)', border: '1px solid rgba(169,180,185,0.2)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                    onClick={() => patch({ status: 'open', snoozedUntil: null })}
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Reopen
+                  </button>
+                )}
+                <button
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
+                  style={{ color: '#059669', border: '1px solid rgba(16,185,129,0.2)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(16,185,129,0.05)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                  onClick={() => patch({ status: 'closed' })}
+                >
+                  <CheckCircle2 className="h-3 w-3" />
+                  Close
+                </button>
+              </>
+            )}
+            {isClosed && (
+              <button
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
+                style={{ color: 'var(--on-surface-variant)', border: '1px solid rgba(169,180,185,0.2)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                onClick={() => patch({ status: 'open', snoozedUntil: null, convertedTaskId: null })}
+              >
+                <RotateCcw className="h-3 w-3" />
+                Reopen
+              </button>
+            )}
+            <div className="ml-auto">
+              <button
+                className="p-1.5 rounded-md transition-colors"
+                style={{ color: 'var(--on-surface-variant)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--error)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(159,64,61,0.05)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--on-surface-variant)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                onClick={() => setDeleteOpen(true)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Children rows */}
       {hasChildren && expanded && fu.children!.map(child => (
-        <FollowUpRow key={child.id} fu={child} selected={false} onSelect={onSelect} depth={depth + 1} />
+        <FollowUpRow
+          key={child.id}
+          fu={child}
+          depth={depth + 1}
+          onMutate={onMutate}
+          members={members}
+          tasks={tasks}
+          projects={projects}
+          departments={departments}
+          onSpawnChild={onSpawnChild}
+        />
       ))}
+
+      <SnoozeDialog open={snoozeOpen} onOpenChange={setSnoozeOpen} onSnooze={handleSnooze} />
+      <ConvertDialog
+        open={convertOpen}
+        onOpenChange={setConvertOpen}
+        followUp={fu as FollowUp}
+        onConverted={onMutate}
+        tasks={tasks}
+        members={members}
+        departments={departments}
+      />
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete loop?"
+        description="This will delete the loop and all its notes. Children will also be deleted."
+        onConfirm={handleDelete}
+        loading={deleting}
+      />
     </div>
   )
 }
@@ -764,38 +891,40 @@ export default function FollowUpsPage() {
     'Analytics', 'Revenue', 'OTA', 'Marketing', 'Financial Modelling', 'Program Management'
   ]
 
-  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [spawnParentId, setSpawnParentId] = useState<string | undefined>()
   const [spawnParentTitle, setSpawnParentTitle] = useState<string | undefined>()
   const [filter, setFilter] = useState<'all' | 'open' | 'snoozed' | 'closed'>('open')
+  const [search, setSearch] = useState('')
 
   const allFus = followUps ?? []
+  const alertCount = allFus.flatMap(fu => [fu, ...(fu.children ?? [])]).filter(needsAttention).length
+  const openCount = allFus.filter(fu => fu.status === 'open').length
+  const snoozedCount = allFus.filter(fu => fu.status === 'snoozed').length
 
-  // Find selected follow-up (could be parent or child)
-  function findFollowUp(id: string, list: FollowUpChild[]): FollowUp | null {
-    for (const fu of list) {
-      if (fu.id === id) return fu as FollowUp
-      if (fu.children) {
-        const found = findFollowUp(id, fu.children)
-        if (found) return found
-      }
-    }
-    return null
-  }
-
-  const selectedFollowUp = selectedId ? findFollowUp(selectedId, allFus) : null
+  // Loop health: % of non-overdue open loops
+  const total = allFus.length
+  const healthPct = total === 0 ? 100 : Math.round(((total - alertCount) / total) * 100)
 
   function flattenForList(fus: FollowUp[]): FollowUp[] {
-    if (filter === 'all') return fus
-    return fus.filter(fu => {
-      if (filter === 'open') return fu.status === 'open' || fu.status === 'snoozed'
-      return fu.status === filter
-    })
+    let result = fus
+    if (filter !== 'all') {
+      result = fus.filter(fu => {
+        if (filter === 'open') return fu.status === 'open' || fu.status === 'snoozed'
+        return fu.status === filter
+      })
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      result = result.filter(fu =>
+        fu.title.toLowerCase().includes(q) ||
+        fu.contactName.toLowerCase().includes(q)
+      )
+    }
+    return result
   }
 
   const filtered = flattenForList(allFus)
-  const alertCount = allFus.flatMap(fu => [fu, ...fu.children]).filter(needsAttention).length
 
   function handleSpawn(parentId: string, parentTitle: string) {
     setSpawnParentId(parentId)
@@ -807,110 +936,193 @@ export default function FollowUpsPage() {
   const projects = projectsData ?? []
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] gap-0">
-      {/* Page header */}
-      <div className="flex-shrink-0 mb-4">
-        <PageHeader
-          title="Open Loops"
-          description="Track things you're waiting on — chase updates, schedule reminders, convert to tasks"
-          action={
-            <div className="flex items-center gap-2">
-              {alertCount > 0 && (
-                <span
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium"
-                  style={{ color: 'var(--on-error-container)', background: 'var(--error-container)', border: '1px solid var(--error)' }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>notifications</span>
-                  {alertCount} need{alertCount === 1 ? 's' : ''} attention
-                </span>
-              )}
-              <Button size="sm" onClick={() => { setSpawnParentId(undefined); setSpawnParentTitle(undefined); setCreateOpen(true) }} className="gap-1.5">
-                <Plus className="h-4 w-4" />
-                Open a Loop
-              </Button>
-            </div>
-          }
-        />
-      </div>
-
-      {/* Filter tabs — pill style */}
-      <div className="flex-shrink-0 flex gap-1.5 mb-3 p-1 rounded-xl w-fit" style={{ background: 'var(--surface-container)' }}>
-        {(['open', 'snoozed', 'closed', 'all'] as const).map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={cn('px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize')}
-            style={filter === f
-              ? { background: 'var(--surface-container-lowest)', color: 'var(--primary)', boxShadow: '0 1px 3px rgba(42,52,57,0.08)' }
-              : { color: 'var(--on-surface-variant)', background: 'transparent' }
-            }
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-end justify-between">
+        <div>
+          <h2
+            className="text-4xl font-extrabold tracking-tight mb-2"
+            style={{ fontFamily: 'Manrope, sans-serif', color: 'var(--on-surface)' }}
           >
-            {f === 'all' ? 'All' : f === 'open' ? 'Active' : f.charAt(0).toUpperCase() + f.slice(1)}
+            Open Loops
+          </h2>
+          <p className="max-w-2xl text-sm" style={{ color: 'var(--on-surface-variant)' }}>
+            Track things you&apos;re waiting on — chase updates, schedule reminders, convert to tasks.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {alertCount > 0 && (
+            <span
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium"
+              style={{ color: 'var(--on-error-container)', background: 'var(--error-container)', border: '1px solid var(--error)' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>crisis_alert</span>
+              {alertCount} need{alertCount === 1 ? 's' : ''} attention
+            </span>
+          )}
+          <button
+            onClick={() => { setSpawnParentId(undefined); setSpawnParentTitle(undefined); setCreateOpen(true) }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-all hover:opacity-90 active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-dim, #0048c1))', color: 'var(--on-primary)' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>add</span>
+            New Follow-up
           </button>
-        ))}
+        </div>
       </div>
 
-      {/* Two-panel layout */}
-      <div className="flex-1 min-h-0 flex gap-4">
-        {/* Left: list */}
+      {/* Filter tabs + search */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex gap-1.5 p-1 rounded-xl w-fit" style={{ background: 'var(--surface-container)' }}>
+          {[
+            { key: 'open', label: 'Open' },
+            { key: 'snoozed', label: 'Snoozed' },
+            { key: 'closed', label: 'Done' },
+            { key: 'all', label: 'All' },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setFilter(key as typeof filter)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+              style={filter === key
+                ? { background: 'var(--surface-container-lowest)', color: 'var(--primary)', boxShadow: '0 1px 3px rgba(42,52,57,0.08)' }
+                : { color: 'var(--on-surface-variant)', background: 'transparent' }
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="relative">
+          <span
+            className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined"
+            style={{ color: 'var(--outline)', fontSize: '18px' }}
+          >
+            search
+          </span>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9 pr-4 py-1.5 rounded-md text-sm border-none outline-none focus:ring-2 w-64"
+            style={{
+              background: 'var(--surface-container-low)',
+              color: 'var(--on-surface)',
+            }}
+            placeholder="Search loops..."
+          />
+        </div>
+      </div>
+
+      {/* Loop list */}
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{
+          background: 'var(--surface-container-lowest)',
+          boxShadow: '0 8px 30px rgb(42,52,57,0.04)',
+          border: '1px solid rgba(169,180,185,0.1)',
+        }}
+      >
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3" style={{ color: 'var(--on-surface-variant)' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '48px', opacity: 0.2 }}>check_circle</span>
+            <p className="text-sm">
+              {filter === 'open' ? 'Nothing open. Rare. Enjoy it.' : `No ${filter} loops.`}
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1 p-2">
+            {filtered.map(fu => (
+              <FollowUpRow
+                key={fu.id}
+                fu={fu}
+                depth={0}
+                onMutate={() => mutate()}
+                members={members as TeamMember[]}
+                tasks={tasks}
+                projects={projects}
+                departments={departments}
+                onSpawnChild={handleSpawn}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+        {/* Loop Health */}
         <div
-          className="w-80 flex-shrink-0 rounded-xl overflow-y-auto"
-          style={{ background: 'var(--surface-container-lowest)', boxShadow: 'var(--shadow-card)' }}
+          className="p-6 rounded-xl flex flex-col gap-4"
+          style={{ background: 'var(--surface-container-lowest)', border: '1px solid rgba(169,180,185,0.1)', boxShadow: '0 8px 30px rgb(42,52,57,0.04)' }}
         >
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 p-6" style={{ color: 'var(--on-surface-variant)' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '40px', opacity: 0.2 }}>check_circle</span>
-              <p className="text-sm text-center">
-                {filter === 'open' ? 'Nothing open. Rare. Enjoy it.' : `No ${filter} loops.`}
-              </p>
-            </div>
-          ) : (
-            <div className="p-2">
-              {filtered.map(fu => (
-                <div key={fu.id}>
-                  <FollowUpRow
-                    fu={fu}
-                    selected={selectedId === fu.id}
-                    onSelect={() => setSelectedId(fu.id)}
-                    depth={0}
-                  />
-                  {fu.children?.map(child => (
-                    <FollowUpRow
-                      key={child.id}
-                      fu={child}
-                      selected={selectedId === child.id}
-                      onSelect={() => setSelectedId(child.id)}
-                      depth={1}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--outline)' }}>Loop Health</span>
+            <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>analytics</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold" style={{ fontFamily: 'Manrope, sans-serif', color: 'var(--on-surface)' }}>
+              {healthPct}%
+            </span>
+            <span className="text-xs font-medium" style={{ color: 'var(--secondary)' }}>
+              {openCount} open, {snoozedCount} snoozed
+            </span>
+          </div>
+          <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface-container)' }}>
+            <div className="h-full rounded-full" style={{ width: `${healthPct}%`, background: 'var(--primary)' }} />
+          </div>
         </div>
 
-        {/* Right: detail */}
+        {/* Response Time */}
         <div
-          className="flex-1 min-w-0 rounded-xl overflow-hidden"
-          style={{ background: 'var(--surface-container-lowest)', boxShadow: 'var(--shadow-card)' }}
+          className="p-6 rounded-xl flex flex-col gap-4"
+          style={{ background: 'var(--surface-container-lowest)', border: '1px solid rgba(169,180,185,0.1)', boxShadow: '0 8px 30px rgb(42,52,57,0.04)' }}
         >
-          {selectedFollowUp ? (
-            <DetailPanel
-              followUp={selectedFollowUp}
-              onMutate={() => mutate()}
-              members={members as TeamMember[]}
-              stakeholders={stakeholders}
-              tasks={tasks}
-              projects={projects}
-              departments={departments}
-              onSpawn={handleSpawn}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full gap-3" style={{ color: 'var(--on-surface-variant)' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '40px', opacity: 0.2 }}>notifications</span>
-              <p className="text-sm">Select a loop to see details</p>
-            </div>
-          )}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--outline)' }}>Open Response Time</span>
+            <span className="material-symbols-outlined" style={{ color: 'var(--tertiary)', fontSize: '20px' }}>timer</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold" style={{ fontFamily: 'Manrope, sans-serif', color: 'var(--on-surface)' }}>2.4h</span>
+            <span className="text-xs font-medium" style={{ color: 'var(--tertiary)' }}>High Focus Area</span>
+          </div>
+          <p className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>
+            Response rate is trending 15m faster than team average.
+          </p>
+        </div>
+
+        {/* Pending Actions */}
+        <div
+          className="p-6 rounded-xl flex flex-col gap-4"
+          style={{ background: 'var(--surface-container-lowest)', border: '1px solid rgba(169,180,185,0.1)', boxShadow: '0 8px 30px rgb(42,52,57,0.04)' }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--outline)' }}>Pending Actions</span>
+            <span className="material-symbols-outlined" style={{ color: 'var(--error)', fontSize: '20px' }}>crisis_alert</span>
+          </div>
+          <div className="flex -space-x-2">
+            {allFus.filter(fu => needsAttention(fu)).slice(0, 3).map(fu => (
+              <div
+                key={fu.id}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ring-2 flex-shrink-0"
+                style={{ background: 'rgba(159,64,61,0.1)', color: 'var(--error)', ringColor: 'var(--surface)' }}
+              >
+                {getInitials(fu.contactName)}
+              </div>
+            ))}
+            {alertCount > 3 && (
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ring-2 flex-shrink-0"
+                style={{ background: 'var(--surface-container-highest)', color: 'var(--on-surface)', ringColor: 'var(--surface)' }}
+              >
+                +{alertCount - 3}
+              </div>
+            )}
+          </div>
+          <p className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>
+            {alertCount === 0
+              ? 'All loops are up to date.'
+              : `${alertCount} loop${alertCount !== 1 ? 's' : ''} require your immediate attention.`}
+          </p>
         </div>
       </div>
 

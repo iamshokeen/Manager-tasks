@@ -453,7 +453,7 @@ function TeamAccessCard() {
 
 interface SettingsSectionProps {
   title: string
-  icon: React.ReactNode
+  icon: string  // Material Symbol name
   children: React.ReactNode
   defaultOpen?: boolean
   danger?: boolean
@@ -465,24 +465,32 @@ function SettingsSection({ title, icon, children, defaultOpen = true, danger = f
   return (
     <section className="flex flex-col gap-4">
       <div
-        className="flex items-center justify-between pb-2 border-b cursor-pointer"
-        style={{ borderColor: danger ? 'rgba(159,64,61,0.2)' : 'var(--surface-container-highest, #d9e4ea)' }}
+        className="flex items-center justify-between pb-2 cursor-pointer"
+        style={{ borderBottom: `1px solid ${danger ? 'rgba(159,64,61,0.2)' : 'var(--surface-container-highest)'}` }}
         onClick={() => setOpen(v => !v)}
       >
         <h3
-          className="font-headline font-bold text-lg flex items-center gap-2"
-          style={{ color: danger ? 'var(--error)' : 'var(--on-surface)' }}
+          className="font-bold text-lg flex items-center gap-2"
+          style={{ fontFamily: 'Manrope, sans-serif', color: danger ? 'var(--error)' : 'var(--on-surface)' }}
         >
-          <span style={{ color: danger ? 'var(--error)' : 'var(--primary)' }}>{icon}</span>
+          <span
+            className="material-symbols-outlined"
+            style={{ color: danger ? 'var(--error)' : 'var(--primary)', fontSize: '22px' }}
+          >
+            {icon}
+          </span>
           {title}
         </h3>
-        <ChevronDown
-          className="h-5 w-5 transition-transform"
+        <span
+          className="material-symbols-outlined transition-transform duration-200"
           style={{
-            color: 'var(--on-surface-variant)',
+            color: 'var(--outline)',
+            fontSize: '22px',
             transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
           }}
-        />
+        >
+          expand_more
+        </span>
       </div>
 
       {open && (
@@ -490,14 +498,73 @@ function SettingsSection({ title, icon, children, defaultOpen = true, danger = f
           className="p-6 rounded-xl border"
           style={{
             background: danger ? 'rgba(159,64,61,0.03)' : 'var(--surface-container-lowest)',
-            borderColor: danger ? 'rgba(159,64,61,0.1)' : 'rgba(169,180,185,0.15)',
-            boxShadow: '0 8px 30px rgba(42,52,57,0.03)',
+            borderColor: danger ? 'rgba(159,64,61,0.1)' : 'rgba(169,180,185,0.1)',
+            boxShadow: '0 8px 30px rgba(42,52,57,0.02)',
           }}
         >
           {children}
         </div>
       )}
     </section>
+  )
+}
+
+// ─── Workspace Settings ────────────────────────────────────────────────────────
+
+function WorkspaceSettings() {
+  const [name, setName] = useState('Kairos Global')
+  const [domain, setDomain] = useState('kairos-hq.com')
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Logo */}
+      <div className="md:col-span-1 flex flex-col items-center gap-3 border-r pr-6" style={{ borderColor: 'rgba(169,180,185,0.1)' }}>
+        <div
+          className="relative group w-32 h-32 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-dashed cursor-pointer"
+          style={{ background: 'var(--surface-container-high)', borderColor: 'var(--outline-variant)' }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '40px', color: 'var(--outline)', opacity: 0.4 }}>
+            domain
+          </span>
+          <div
+            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ background: 'rgba(42,52,57,0.4)' }}
+          >
+            <span className="material-symbols-outlined text-white" style={{ fontSize: '24px' }}>upload</span>
+          </div>
+        </div>
+        <p className="text-xs font-medium uppercase tracking-widest text-center" style={{ color: 'var(--outline)' }}>Brand Mark</p>
+      </div>
+      {/* Fields */}
+      <div className="md:col-span-2 flex flex-col gap-4 justify-center">
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 ml-1" style={{ color: 'var(--on-surface-variant)' }}>
+            Workspace Name
+          </label>
+          <input
+            className="w-full rounded-lg px-4 py-2.5 text-sm font-medium border-none outline-none focus:ring-2 transition-all"
+            style={{ background: 'var(--surface-container-low)', color: 'var(--on-surface)' }}
+            value={name}
+            onChange={e => setName(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 ml-1" style={{ color: 'var(--on-surface-variant)' }}>
+            Business Domain
+          </label>
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2" style={{ fontSize: '16px', color: 'var(--outline)' }}>
+              language
+            </span>
+            <input
+              className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm font-medium border-none outline-none focus:ring-2 transition-all"
+              style={{ background: 'var(--surface-container-low)', color: 'var(--on-surface)' }}
+              value={domain}
+              onChange={e => setDomain(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -592,13 +659,28 @@ export default function SettingsPage() {
   }
 
   return (
-    <div>
-      <PageHeader title="Settings" description="Configuration, sync, and automation controls" />
+    <div className="max-w-4xl pb-20">
+      {/* Header */}
+      <div className="mb-10">
+        <h2
+          className="text-3xl font-extrabold tracking-tight mb-1"
+          style={{ fontFamily: 'Manrope, sans-serif', color: 'var(--on-surface)' }}
+        >
+          Configuration
+        </h2>
+        <p className="text-sm" style={{ color: 'var(--on-surface-variant)' }}>
+          Manage organization global parameters and visual presence.
+        </p>
+      </div>
 
-      <div className="max-w-4xl flex flex-col gap-10 pb-10">
+      <div className="flex flex-col gap-10">
+        {/* Workspace */}
+        <SettingsSection title="Workspace Settings" icon="domain">
+          <WorkspaceSettings />
+        </SettingsSection>
 
         {/* Appearance */}
-        <SettingsSection title="Appearance" icon={<Palette className="h-5 w-5" />}>
+        <SettingsSection title="Appearance" icon="palette">
           <p className="text-sm mb-5" style={{ color: 'var(--on-surface-variant)' }}>
             Choose a theme for the interface
           </p>
@@ -606,22 +688,22 @@ export default function SettingsPage() {
         </SettingsSection>
 
         {/* Departments */}
-        <SettingsSection title="Department Tags" icon={<Building2 className="h-5 w-5" />}>
+        <SettingsSection title="Department Tags" icon="label">
           <DepartmentsCard />
         </SettingsSection>
 
         {/* Team Access */}
-        <SettingsSection title="Team Access" icon={<Users className="h-5 w-5" />}>
+        <SettingsSection title="Team Access" icon="group">
           <TeamAccessCard />
         </SettingsSection>
 
         {/* Revenue Targets Upload */}
-        <SettingsSection title="Revenue Targets (FY27)" icon={<Database className="h-5 w-5" />}>
+        <SettingsSection title="Revenue Targets (FY27)" icon="upload_file">
           <TargetsUpload />
         </SettingsSection>
 
         {/* Sheets Sync */}
-        <SettingsSection title="Google Sheets Sync" icon={<RefreshCw className="h-5 w-5" />}>
+        <SettingsSection title="Google Sheets Sync" icon="sync">
           <p className="text-sm mb-3" style={{ color: 'var(--on-surface-variant)' }}>
             Last synced: {lastSynced ? formatDate(lastSynced) : 'Never'}
           </p>
@@ -635,7 +717,7 @@ export default function SettingsPage() {
         </SettingsSection>
 
         {/* Automation */}
-        <SettingsSection title="Run Automations" icon={<Zap className="h-5 w-5" />}>
+        <SettingsSection title="Run Automations" icon="bolt">
           <div className="flex flex-wrap gap-3">
             <Button variant="outline" onClick={handlePrepTasks} disabled={prepLoading}>
               {prepLoading ? 'Generating...' : 'Generate Prep Tasks'}
@@ -643,32 +725,76 @@ export default function SettingsPage() {
           </div>
         </SettingsSection>
 
-        {/* Data Export */}
-        <SettingsSection title="Data Export" icon={<Download className="h-5 w-5" />} danger>
-          <div className="flex items-center justify-between gap-6">
-            <div className="flex-1">
-              <h4 className="font-bold text-sm" style={{ color: 'var(--on-surface)' }}>
-                Data Exportation
-              </h4>
-              <p className="text-xs mt-1" style={{ color: 'var(--on-surface-variant)' }}>
-                Download a full JSON backup of all your data.
-              </p>
-            </div>
-            <Button variant="outline" onClick={handleExport} disabled={exporting}>
-              <Download className="h-4 w-4 mr-2" />
-              {exporting ? 'Exporting...' : 'Export All Data (JSON)'}
-            </Button>
-          </div>
-        </SettingsSection>
-
         {/* Help */}
-        <SettingsSection title="Help & Onboarding" icon={<HelpCircle className="h-5 w-5" />} defaultOpen={false}>
+        <SettingsSection title="Help & Onboarding" icon="help_outline" defaultOpen={false}>
           <p className="text-sm mb-4" style={{ color: 'var(--on-surface-variant)' }}>
             Relaunch the onboarding tour at any time. The tour adapts to your role.
           </p>
           <HelpSection />
         </SettingsSection>
 
+        {/* Danger Zone */}
+        <SettingsSection title="Danger Zone" icon="warning" danger>
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between gap-6">
+              <div className="flex-1">
+                <h4 className="font-bold text-sm" style={{ color: 'var(--on-surface)' }}>Data Exportation</h4>
+                <p className="text-xs mt-1" style={{ color: 'var(--on-surface-variant)' }}>
+                  Request a permanent archive of all workspace activity and configuration files.
+                </p>
+              </div>
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="px-5 py-2 rounded-lg font-bold text-sm transition-colors disabled:opacity-50"
+                style={{ background: 'var(--surface-container-high)', color: 'var(--on-surface)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-highest)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-high)' }}
+              >
+                {exporting ? 'Exporting…' : 'Export Data'}
+              </button>
+            </div>
+            <div className="h-px w-full" style={{ background: 'rgba(159,64,61,0.1)' }} />
+            <div className="flex items-center justify-between gap-6">
+              <div className="flex-1">
+                <h4 className="font-bold text-sm" style={{ color: 'var(--error)' }}>Clear Workspace Environment</h4>
+                <p className="text-xs mt-1" style={{ color: 'var(--on-surface-variant)' }}>
+                  Irreversibly delete all temporary data, cache, and historical logs. This action cannot be undone.
+                </p>
+              </div>
+              <button
+                className="px-5 py-2 rounded-lg font-bold text-sm text-white shadow-sm transition-all active:scale-95"
+                style={{ background: 'var(--error)' }}
+                onClick={() => toast.error('This action is disabled in demo mode.')}
+              >
+                Clear Environment
+              </button>
+            </div>
+          </div>
+        </SettingsSection>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-10 pt-8 flex justify-end gap-3">
+        <button
+          className="px-6 py-2.5 rounded-lg font-semibold text-sm transition-colors"
+          style={{ color: 'var(--on-surface)' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+        >
+          Discard
+        </button>
+        <button
+          className="px-8 py-2.5 rounded-lg font-bold text-sm shadow-lg transition-all active:scale-95"
+          style={{
+            background: 'linear-gradient(135deg, var(--primary), #0048c1)',
+            color: 'var(--on-primary)',
+            boxShadow: '0 4px 14px rgba(0,83,219,0.3)',
+          }}
+          onClick={() => toast.success('Settings saved')}
+        >
+          Save Changes
+        </button>
       </div>
     </div>
   )

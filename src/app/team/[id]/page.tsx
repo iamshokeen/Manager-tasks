@@ -121,8 +121,132 @@ const EMPTY_EDIT_FORM: EditMemberForm = {
 
 const cardStyle: React.CSSProperties = {
   background: 'var(--surface-container-lowest)',
-  boxShadow: 'var(--shadow-card)',
+  boxShadow: '0 8px 30px rgb(42,52,57,0.04)',
   borderRadius: '0.75rem',
+}
+
+function TabPanel({
+  openTasks,
+  recentOneOnOnes,
+  onNavigate,
+}: {
+  openTasks: TaskItem[]
+  recentOneOnOnes: OneOnOneItem[]
+  onNavigate: (path: string) => void
+}) {
+  const [tab, setTab] = useState<'tasks' | 'oneOnOnes'>('tasks')
+  const tabs = [
+    { key: 'tasks', label: 'Active Tasks', count: openTasks.length },
+    { key: 'oneOnOnes', label: '1:1 History', count: recentOneOnOnes.length },
+  ]
+
+  return (
+    <div className="col-span-12 lg:col-span-8 rounded-xl overflow-hidden" style={cardStyle}>
+      {/* Tab bar */}
+      <div className="flex" style={{ borderBottom: '1px solid var(--surface-container)' }}>
+        {tabs.map(t => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key as typeof tab)}
+            className="px-8 py-4 text-sm font-medium transition-colors relative"
+            style={{
+              color: tab === t.key ? 'var(--primary)' : 'var(--on-surface-variant)',
+              borderBottom: tab === t.key ? '2px solid var(--primary)' : '2px solid transparent',
+              fontWeight: tab === t.key ? 700 : 500,
+            }}
+          >
+            {t.label}
+            {t.count > 0 && (
+              <span
+                className="ml-2 text-[10px] font-bold rounded-full px-1.5 py-0.5"
+                style={{ background: 'var(--surface-container)', color: 'var(--on-surface-variant)' }}
+              >
+                {t.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Tasks tab */}
+      {tab === 'tasks' && (
+        openTasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3" style={{ color: 'var(--on-surface-variant)' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '40px', opacity: 0.2 }}>task_alt</span>
+            <p className="text-sm">No active tasks assigned.</p>
+          </div>
+        ) : (
+          <div className="divide-y" style={{ borderColor: 'var(--surface-container)' }}>
+            {openTasks.map(task => (
+              <button
+                key={task.id}
+                onClick={() => onNavigate(`/tasks/${task.id}`)}
+                className="flex items-center gap-4 px-6 py-4 w-full text-left transition-colors group"
+                style={{ background: 'transparent' }}
+                onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-low)')}
+                onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'transparent')}
+              >
+                <div
+                  className="w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 group-hover:border-primary transition-colors"
+                  style={{ borderColor: 'rgba(169,180,185,0.4)' }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: 'var(--on-surface)' }}>
+                    {task.title}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <PriorityBadge priority={task.priority} />
+                  {task.dueDate && (
+                    <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--on-surface-variant)' }}>
+                      <Calendar className="h-3 w-3" />
+                      <span>{formatDate(task.dueDate)}</span>
+                    </div>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        )
+      )}
+
+      {/* 1:1 History tab */}
+      {tab === 'oneOnOnes' && (
+        recentOneOnOnes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3" style={{ color: 'var(--on-surface-variant)' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '40px', opacity: 0.2 }}>forum</span>
+            <p className="text-sm">No 1:1 sessions logged yet.</p>
+          </div>
+        ) : (
+          <div className="divide-y" style={{ borderColor: 'var(--surface-container)' }}>
+            {recentOneOnOnes.map(oo => {
+              const actionCount = Array.isArray(oo.actionItems)
+                ? oo.actionItems.length
+                : (oo.actionItemsCount ?? 0)
+              return (
+                <button
+                  key={oo.id}
+                  onClick={() => onNavigate(`/one-on-ones/${oo.id}`)}
+                  className="flex items-center gap-4 px-6 py-4 w-full text-left transition-colors"
+                  style={{ background: 'transparent' }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-low)')}
+                  onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'transparent')}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold" style={{ color: 'var(--on-surface)' }}>{formatDate(oo.date)}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--on-surface-variant)' }}>
+                      {actionCount} action {actionCount === 1 ? 'item' : 'items'}
+                    </p>
+                  </div>
+                  {oo.mood && <MoodBadge mood={oo.mood} />}
+                </button>
+              )
+            })}
+          </div>
+        )
+      )}
+    </div>
+  )
 }
 
 export default function TeamMemberPage() {
@@ -249,17 +373,14 @@ export default function TeamMemberPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Back nav */}
-      <button
-        onClick={() => router.push('/team')}
-        className="flex items-center gap-1.5 text-sm transition-colors w-fit"
-        style={{ color: 'var(--on-surface-variant)' }}
-        onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.color = 'var(--on-surface)')}
-        onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.color = 'var(--on-surface-variant)')}
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Team
-      </button>
+      {/* Breadcrumbs */}
+      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--on-surface-variant)' }}>
+        <button onClick={() => router.push('/team')} className="hover:underline" style={{ color: 'var(--on-surface-variant)' }}>Team</button>
+        <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>chevron_right</span>
+        <span style={{ color: 'var(--on-surface)' }}>Member Profile</span>
+        <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>chevron_right</span>
+        <span style={{ color: 'var(--primary)' }}>{m.name}</span>
+      </div>
 
       {/* ── Profile Header (asymmetric bento) ── */}
       <div className="grid grid-cols-12 gap-6">
@@ -268,121 +389,117 @@ export default function TeamMemberPage() {
           className="col-span-12 lg:col-span-8 p-8 rounded-xl relative overflow-hidden"
           style={cardStyle}
         >
-          {/* Decorative blur */}
           <div
             className="absolute top-0 right-0 w-64 h-64 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none"
             style={{ background: 'rgba(0,83,219,0.05)' }}
           />
           <div className="relative flex flex-col md:flex-row items-start gap-8">
-            <MemberAvatar name={m.name} size="lg" className="h-24 w-24 text-3xl shrink-0" />
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              <MemberAvatar name={m.name} size="lg" className="border-4 border-white shadow-lg" style={{ height: '8rem', width: '8rem', fontSize: '1.875rem' }} />
+              <button
+                onClick={() => setEditOpen(true)}
+                className="absolute bottom-1 right-1 bg-white p-1.5 rounded-full shadow-md transition-colors"
+                style={{ color: 'var(--on-surface-variant)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-low)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'white' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>
+              </button>
+            </div>
             <div className="flex-1 space-y-4 w-full">
               <div className="flex justify-between items-start flex-wrap gap-3">
                 <div>
-                  <h1
-                    className="text-3xl font-extrabold tracking-tight"
-                    style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
-                  >
+                  <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}>
                     {m.name}
                   </h1>
                   <p className="font-medium mt-1" style={{ color: 'var(--on-surface-variant)' }}>
-                    {m.role} · <span style={{ color: 'var(--on-surface-variant)' }}>{m.department}</span>
+                    {m.role} • {m.department}
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-                    <Edit2 className="h-3.5 w-3.5" />
+                  <button
+                    onClick={() => setEditOpen(true)}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                    style={{ border: '1px solid rgba(169,180,185,0.3)', color: 'var(--on-surface-variant)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+                  >
                     Edit
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  </button>
+                  <button
+                    onClick={() => setDeleteOpen(true)}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-all"
+                    style={{ background: 'var(--primary)', color: 'var(--on-primary)' }}
+                  >
+                    Promote
+                  </button>
                 </div>
               </div>
               {/* Quick stats */}
               <div className="grid grid-cols-3 gap-4 pt-2">
-                <div
-                  className="p-3 rounded-lg"
-                  style={{ background: 'var(--surface-container-low)', borderLeft: '4px solid var(--primary)' }}
-                >
-                  <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--on-surface-variant)' }}>Open Tasks</div>
-                  <div className="text-xl font-bold" style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}>
-                    {openTasks.length}
+                {[
+                  { label: 'Open Tasks', value: openTasks.length, border: 'var(--primary)' },
+                  { label: '1:1s Logged', value: (m.oneOnOnes ?? []).length, border: 'var(--tertiary)' },
+                  { label: 'Delegation Lvl', value: `Lvl ${m.delegationLevel}`, border: 'var(--secondary-container)' },
+                ].map(stat => (
+                  <div
+                    key={stat.label}
+                    className="p-3 rounded-lg"
+                    style={{ background: 'var(--surface-container-low)', borderLeft: `4px solid ${stat.border}` }}
+                  >
+                    <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--on-surface-variant)' }}>{stat.label}</div>
+                    <div className="text-xl font-bold" style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}>{stat.value}</div>
                   </div>
-                </div>
-                <div
-                  className="p-3 rounded-lg"
-                  style={{ background: 'var(--surface-container-low)', borderLeft: '4px solid var(--tertiary)' }}
-                >
-                  <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--on-surface-variant)' }}>1:1s Logged</div>
-                  <div className="text-xl font-bold" style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}>
-                    {(m.oneOnOnes ?? []).length}
-                  </div>
-                </div>
-                <div
-                  className="p-3 rounded-lg"
-                  style={{ background: 'var(--surface-container-low)', borderLeft: '4px solid var(--secondary-container)' }}
-                >
-                  <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--on-surface-variant)' }}>Department</div>
-                  <div className="text-sm font-bold truncate" style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}>
-                    <DepartmentBadge department={m.department} />
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
         {/* Delegation Level Sidebar Card */}
-        <div
-          className="col-span-12 lg:col-span-4 p-8 rounded-xl flex flex-col justify-between"
-          style={cardStyle}
-        >
+        <div className="col-span-12 lg:col-span-4 p-8 rounded-xl flex flex-col justify-between" style={cardStyle}>
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h3
-                className="font-bold text-lg"
-                style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
-              >
+              <h3 className="font-bold text-lg" style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}>
                 Delegation Level
               </h3>
+              <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>info</span>
             </div>
             <div className="space-y-4">
-              <div
-                className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold"
-                style={{ background: 'var(--primary-container)', color: 'var(--on-primary-container)' }}
-              >
-                Lvl {m.delegationLevel}: {delegLabel}
+              <div className="flex items-center justify-between">
+                <span
+                  className="text-xs font-bold px-2 py-1 rounded uppercase"
+                  style={{ background: 'rgba(0,83,219,0.1)', color: 'var(--primary)' }}
+                >
+                  Lvl {m.delegationLevel}: {delegLabel}
+                </span>
+                <span className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>
+                  {delegDesc}
+                </span>
               </div>
-              <div className="w-full rounded-full h-2" style={{ background: 'var(--surface-container)' }}>
-                <div
-                  className="h-2 rounded-full transition-all"
-                  style={{ width: `${(m.delegationLevel / 4) * 100}%`, background: 'var(--primary)' }}
-                />
+              <input
+                type="range" min="1" max="4" value={m.delegationLevel} readOnly
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-primary"
+                style={{ background: 'var(--surface-container)' }}
+              />
+              <div className="flex justify-between text-[10px] text-outline font-bold px-1 uppercase tracking-tighter">
+                <span>Task</span>
+                <span>Project</span>
+                <span>Division</span>
+                <span>Strategic</span>
               </div>
-              <div className="flex justify-between text-[10px] font-bold uppercase tracking-tighter px-1" style={{ color: 'var(--on-surface-variant)' }}>
-                <span>Do</span>
-                <span>Research</span>
-                <span>Decide</span>
-                <span>Own</span>
-              </div>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--on-surface-variant)' }}>
-                {delegDesc}
-              </p>
             </div>
           </div>
-          {(m.oneOnOneDay || m.oneOnOneTime) && (
-            <div
-              className="mt-6 p-4 rounded-lg"
-              style={{ background: 'var(--surface-container-low)' }}
-            >
-              <div className="text-[10px] uppercase tracking-widest mb-1 font-bold" style={{ color: 'var(--on-surface-variant)' }}>
-                1:1 Schedule
-              </div>
-              <p className="text-sm font-medium" style={{ color: 'var(--on-surface)' }}>
-                {[m.oneOnOneDay, m.oneOnOneTime].filter(Boolean).join(' ')}
-              </p>
-            </div>
-          )}
+          <button
+            className="w-full mt-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors text-sm"
+            style={{ background: 'var(--surface-container-high)', color: 'var(--on-surface)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-highest)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-high)' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>history_edu</span>
+            View Audit Log
+          </button>
         </div>
       </div>
 
@@ -391,180 +508,83 @@ export default function TeamMemberPage() {
         {/* Left column: Skills + Coaching */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
           {/* Skills */}
-          {skillsList.length > 0 && (
-            <div className="p-6 rounded-xl" style={cardStyle}>
-              <h3
-                className="font-bold mb-4"
-                style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
-              >
+          <div className="p-6 rounded-xl" style={cardStyle}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold" style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}>
                 Core Competencies
               </h3>
-              <div className="flex flex-wrap gap-2">
-                {skillsList.map(skill => (
+              <button onClick={() => setEditOpen(true)}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--primary)', fontSize: '22px' }}>add_circle</span>
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {skillsList.length === 0 ? (
+                <p className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>No skills listed. Edit profile to add.</p>
+              ) : (
+                skillsList.map((skill, i) => (
                   <span
                     key={skill}
-                    className="px-3 py-1 rounded-full text-xs font-medium"
+                    className="px-3 py-1 rounded-full text-xs font-medium cursor-pointer"
                     style={{
-                      background: 'var(--surface-container)',
-                      color: 'var(--on-surface)',
-                      border: '1px solid rgba(169,180,185,0.2)',
+                      background: i === 0 ? 'rgba(0,83,219,0.1)' : 'var(--surface-container)',
+                      color: i === 0 ? 'var(--primary)' : 'var(--on-surface)',
+                      border: i === 0 ? '1px solid rgba(0,83,219,0.2)' : '1px solid rgba(169,180,185,0.2)',
+                      fontWeight: i === 0 ? 700 : 500,
                     }}
                   >
                     {skill}
                   </span>
-                ))}
-              </div>
+                ))
+              )}
             </div>
-          )}
+          </div>
 
           {/* Coaching Notes */}
-          {m.coachingNotes && (
-            <div className="p-6 rounded-xl" style={cardStyle}>
-              <h3
-                className="font-bold mb-4"
-                style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
-              >
-                Coaching Notes
-              </h3>
+          <div className="p-6 rounded-xl" style={cardStyle}>
+            <h3 className="font-bold mb-4" style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}>
+              Coaching Notes
+            </h3>
+            {m.coachingNotes && (
               <div
-                className="p-4 rounded-r-lg"
-                style={{
-                  background: 'rgba(134,84,0,0.05)',
-                  borderLeft: '2px solid var(--tertiary)',
-                }}
+                className="p-4 rounded-r-lg mb-4"
+                style={{ background: 'rgba(134,84,0,0.07)', borderLeft: '2px solid var(--tertiary)' }}
               >
-                <p className="text-sm leading-snug whitespace-pre-wrap" style={{ color: 'var(--on-surface)' }}>
-                  {m.coachingNotes}
+                <div className="text-[10px] text-tertiary font-bold uppercase tracking-wider mb-1">
+                  Current Note
+                </div>
+                <p className="text-sm italic leading-snug whitespace-pre-wrap" style={{ color: 'var(--on-surface)' }}>
+                  &quot;{m.coachingNotes}&quot;
                 </p>
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right column: Tasks + 1:1s */}
-        <div className="col-span-12 lg:col-span-8 space-y-6">
-          {/* Active Tasks */}
-          <div className="rounded-xl overflow-hidden" style={cardStyle}>
-            <div
-              className="flex items-center justify-between px-6 py-4"
-              style={{ borderBottom: '1px solid var(--surface-container)' }}
-            >
-              <h3
-                className="font-bold text-base"
-                style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
-              >
-                Active Tasks
-              </h3>
-              <span
-                className="text-xs font-semibold rounded-full px-2.5 py-0.5"
-                style={{ background: 'var(--surface-container)', color: 'var(--on-surface-variant)' }}
-              >
-                {openTasks.length}
-              </span>
-            </div>
-
-            {openTasks.length === 0 ? (
-              <div className="p-6">
-                <EmptyState
-                  icon={<ClipboardList className="h-8 w-8" />}
-                  title="No open tasks"
-                  description="This team member has no active tasks."
-                />
-              </div>
-            ) : (
-              <div className="divide-y" style={{ borderColor: 'var(--surface-container)' }}>
-                {openTasks.map(task => (
-                  <button
-                    key={task.id}
-                    onClick={() => router.push(`/tasks/${task.id}`)}
-                    className="flex items-center gap-4 px-6 py-4 w-full text-left transition-colors"
-                    style={{ background: 'transparent' }}
-                    onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-low)')}
-                    onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'transparent')}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--on-surface)' }}>
-                        {task.title}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <PriorityBadge priority={task.priority} />
-                      {task.dueDate && (
-                        <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--on-surface-variant)' }}>
-                          <Calendar className="h-3 w-3" />
-                          <span>{formatDate(task.dueDate)}</span>
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
             )}
-          </div>
-
-          {/* Recent 1:1s */}
-          <div className="rounded-xl overflow-hidden" style={cardStyle}>
-            <div
-              className="flex items-center justify-between px-6 py-4"
-              style={{ borderBottom: '1px solid var(--surface-container)' }}
-            >
-              <h3
-                className="font-bold text-base"
-                style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
+            <textarea
+              className="w-full resize-none rounded-lg p-3 text-sm focus:outline-none focus:ring-2"
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid rgba(169,180,185,0.3)',
+                color: 'var(--on-surface)',
+              }}
+              placeholder="Add a new private coaching note..."
+              rows={4}
+            />
+            <div className="flex justify-end mt-2">
+              <button
+                className="text-xs font-bold hover:underline"
+                style={{ color: 'var(--primary)' }}
+                onClick={() => setEditOpen(true)}
               >
-                Recent 1:1s
-              </h3>
-              <span
-                className="text-xs font-semibold rounded-full px-2.5 py-0.5"
-                style={{ background: 'var(--surface-container)', color: 'var(--on-surface-variant)' }}
-              >
-                {recentOneOnOnes.length}
-              </span>
+                Save Note
+              </button>
             </div>
-
-            {recentOneOnOnes.length === 0 ? (
-              <div className="p-6">
-                <EmptyState
-                  icon={<MessageSquare className="h-8 w-8" />}
-                  title="No 1:1s logged yet"
-                  description="1:1 sessions with this team member will appear here."
-                />
-              </div>
-            ) : (
-              <div className="divide-y" style={{ borderColor: 'var(--surface-container)' }}>
-                {recentOneOnOnes.map(oo => {
-                  const actionCount = Array.isArray(oo.actionItems)
-                    ? oo.actionItems.length
-                    : (oo.actionItemsCount ?? 0)
-                  return (
-                    <button
-                      key={oo.id}
-                      onClick={() => router.push(`/one-on-ones/${oo.id}`)}
-                      className="flex items-center gap-4 px-6 py-4 w-full text-left transition-colors"
-                      style={{ background: 'transparent' }}
-                      onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-low)')}
-                      onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'transparent')}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold" style={{ color: 'var(--on-surface)' }}>
-                          {formatDate(oo.date)}
-                        </p>
-                        <p className="text-xs mt-0.5" style={{ color: 'var(--on-surface-variant)' }}>
-                          {actionCount} action {actionCount === 1 ? 'item' : 'items'}
-                        </p>
-                      </div>
-                      {oo.mood && (
-                        <div className="shrink-0">
-                          <MoodBadge mood={oo.mood} />
-                        </div>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Right column: Tabbed Tasks + 1:1s */}
+        <TabPanel
+          openTasks={openTasks}
+          recentOneOnOnes={recentOneOnOnes}
+          onNavigate={router.push}
+        />
       </div>
 
       {/* Delete confirm dialog */}

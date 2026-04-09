@@ -255,13 +255,13 @@ export function TaskDetailPanel({ taskId, open, onClose, onTaskUpdated }: TaskDe
       />
 
       {/* Panel */}
-      <div className="fixed inset-y-0 right-0 z-50 flex flex-col w-full max-w-[560px] bg-[var(--surface-container)] border-l border-border shadow-2xl">
+      <div className="fixed inset-y-0 right-0 z-50 flex flex-col w-full max-w-[560px] shadow-[-8px_0_30px_rgba(42,52,57,0.1)]" style={{ background: 'var(--surface-container-high)' }}>
 
         {/* Cover gradient area */}
-        <div className="relative h-[100px] flex-shrink-0 overflow-hidden bg-gradient-to-br from-[var(--surface-container-high)] to-[var(--surface-container-highest)]">
-          <div className="absolute inset-0 opacity-30"
+        <div className="relative h-32 flex-shrink-0 overflow-hidden" style={{ background: 'linear-gradient(135deg, var(--primary) 0%, #0048c1 100%)' }}>
+          <div className="absolute inset-0 opacity-20"
             style={{
-              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(201,169,110,0.06) 20px, rgba(201,169,110,0.06) 40px)',
+              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.04) 20px, rgba(255,255,255,0.04) 40px)',
             }}
           />
           <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-[var(--surface-container)] to-transparent" />

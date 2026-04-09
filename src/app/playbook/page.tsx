@@ -1,184 +1,318 @@
 'use client'
 import { useState } from 'react'
-import { cn } from '@/lib/utils'
-import { ChevronDown } from 'lucide-react'
-import { PageHeader } from '@/components/ui/page-header'
 
-function PlaybookSection({ title, content }: { title: string; content: string }) {
-  const [open, setOpen] = useState(false)
-  const parsed = content.split(/\*\*(.+?)\*\*/g).map((part, i) =>
-    i % 2 === 1 ? (
-      <strong key={i} className="text-foreground font-semibold">
-        {part}
-      </strong>
-    ) : (
-      part
-    )
-  )
+interface SopCard {
+  id: string
+  title: string
+  description: string
+  status: 'active' | 'review' | 'archived'
+}
+
+interface FrameworkCard {
+  label: string
+  text: string
+  border: string
+}
+
+function AccordionSection({
+  icon,
+  iconBg,
+  iconColor,
+  title,
+  subtitle,
+  children,
+  defaultOpen = false,
+}: {
+  icon: string
+  iconBg: string
+  iconColor: string
+  title: string
+  subtitle: string
+  children: React.ReactNode
+  defaultOpen?: boolean
+}) {
+  const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
-      <button
-        className="w-full flex items-center justify-between px-5 py-4 text-left bg-card hover:bg-card/80 transition-colors"
+    <div
+      className="rounded-xl overflow-hidden"
+      style={{
+        background: 'var(--surface-container-lowest)',
+        boxShadow: '0 8px 30px rgb(42,52,57,0.04)',
+        border: '1px solid rgba(169,180,185,0.1)',
+      }}
+    >
+      <div
+        className="flex items-center justify-between p-6 cursor-pointer transition-colors"
+        style={{ background: open ? 'rgba(240,244,247,0.8)' : 'rgba(240,244,247,0.5)' }}
         onClick={() => setOpen(!open)}
+        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(240,244,247,0.8)' }}
+        onMouseLeave={e => { if (!open) (e.currentTarget as HTMLDivElement).style.background = 'rgba(240,244,247,0.5)' }}
       >
-        <span className="font-medium text-foreground">{title}</span>
-        <ChevronDown
-          className={cn(
-            'h-4 w-4 text-muted-foreground transition-transform shrink-0',
-            open && 'rotate-180'
-          )}
-        />
-      </button>
-      {open && (
-        <div className="px-5 py-4 border-t border-border">
-          <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-            {parsed}
+        <div className="flex items-center gap-4">
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center"
+            style={{ background: iconBg, color: iconColor }}
+          >
+            <span className="material-symbols-outlined">{icon}</span>
           </div>
+          <div>
+            <h3 className="text-lg font-bold" style={{ fontFamily: 'Manrope, sans-serif', color: 'var(--on-surface)' }}>{title}</h3>
+            <p className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>{subtitle}</p>
+          </div>
+        </div>
+        <span
+          className="material-symbols-outlined transition-transform duration-200"
+          style={{ color: 'var(--outline)', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        >
+          expand_more
+        </span>
+      </div>
+      {open && (
+        <div className="p-8" style={{ borderTop: '1px solid rgba(169,180,185,0.05)' }}>
+          {children}
         </div>
       )}
     </div>
   )
 }
 
-const SECTIONS = [
-  {
-    title: '5Cs Framework',
-    content: `The 5Cs help you diagnose why someone isn't performing.
+const SOPS: SopCard[] = [
+  { id: 'SOP-042', title: 'Cloud Infrastructure Migration', description: 'Step-by-step migration guide for legacy databases to AWS instances.', status: 'active' },
+  { id: 'SOP-109', title: 'Executive Talent Acquisition', description: 'Standardized interview matrix and vetting process for C-suite roles.', status: 'review' },
+  { id: 'SOP-071', title: 'Incident Response Protocol', description: 'L1-L4 severity triage system with automated escalation paths.', status: 'active' },
+  { id: 'SOP-088', title: 'Quarterly Business Review Format', description: 'Structured agenda and KPI reporting framework for QBRs.', status: 'active' },
+]
 
-**Context** — Do they understand the why? Share the bigger picture.
-**Clarity** — Are expectations crystal clear? Define done explicitly.
-**Competence** — Do they have the skills? Train, pair, or reassign.
-**Commitment** — Are they motivated? Address engagement and ownership.
-**Communication** — Is there a feedback loop? Create regular check-ins.
+const FRAMEWORKS: FrameworkCard[] = [
+  { label: 'Objective-Driven', text: 'Clear OKRs updated bi-weekly.', border: 'var(--primary)' },
+  { label: 'Feedback Loops', text: 'Continuous performance streams.', border: 'var(--tertiary)' },
+  { label: 'Scale Logic', text: 'Modular growth parameters.', border: 'var(--secondary)' },
+]
 
-Use this before assuming someone is underperforming. Most issues trace back to one of these five.`,
-  },
-  {
-    title: '1:1 Meeting Mastery',
-    content: `1:1s are your most important management tool. They belong to your direct report.
-
-**Structure (30 min):**
-5 min: Their wins and blockers
-10 min: Their priorities this week
-10 min: Your coaching, feedback, context
-5 min: Action items recap
-
-**Rules:**
-Never cancel. Reschedule if needed.
-Ask "What do you need from me?" every session.
-Take notes. Review last session's action items.
-Use SBI for any feedback you give.
-
-**Signs of a good 1:1:** They bring the agenda. They leave with clarity. You learn something new.`,
-  },
-  {
-    title: 'Delegation Framework (4 Levels)',
-    content: `Match delegation level to competence and confidence per task.
-
-**Level 1 — Do:** "Here's exactly what to do. Execute this."
-Use for: New hires, critical low-margin-for-error work.
-
-**Level 2 — Research:** "Investigate and bring me your findings. I'll decide."
-Use for: Building analytical skills, low-stakes decisions.
-
-**Level 3 — Decide:** "Analyze, make a recommendation. I'll approve."
-Use for: Building decision-making, medium-stakes work.
-
-**Level 4 — Own:** "This is yours. Update me on outcomes."
-Use for: High performers, their domain expertise.
-
-Delegation level is per-task, not per-person.`,
-  },
-  {
-    title: 'SBI Feedback Model',
-    content: `SBI makes feedback specific, objective, and actionable.
-
-**Situation:** Describe the specific context. When and where.
-"In yesterday's OTA review meeting..."
-
-**Behavior:** Describe the observable behavior. Not interpretation.
-"...you interrupted the KAM twice while they were presenting numbers..."
-
-**Impact:** Describe the effect on you, the team, or the work.
-"...which made them uncomfortable and the data wasn't fully heard."
-
-**Then ask, don't tell:** "What was going on for you?"
-
-**Positive SBI matters too.** Use it to reinforce what's working, not just to correct.`,
-  },
-  {
-    title: 'Stakeholder Management Playbook',
-    content: `Your stakeholders are your context providers, decision authorities, and career sponsors.
-
-**The pre-wire rule:** Never surprise a senior stakeholder in a meeting. Pre-wire decisions 1:1 first.
-
-**Weekly async update to your Home VP (5 bullets max):**
-1. Revenue progress
-2. Key win this week
-3. Key challenge and how you're handling it
-4. One risk to flag
-5. One ask or decision needed
-
-**Managing up:** Surface problems early. Bring solutions, not just problems. Make their job easier.`,
-  },
-  {
-    title: 'First 90 Days Guide',
-    content: `**Days 1–30: Listen and Learn**
-Don't change anything. Understand the existing system first.
-Have 1:1 kickoffs with each report: role, challenges, what they need.
-Map your stakeholders. Identify what's on fire and what's being ignored.
-
-**Days 31–60: Diagnose**
-Use 5Cs to assess each person's delegation level.
-Set initial goals and success metrics with each report.
-Identify the 2-3 highest-leverage changes you can make.
-Establish your cadence rhythm.
-
-**Days 61–90: Deliver**
-Execute on your highest-leverage changes.
-Make your first visible win.
-Calibrate delegation levels. Push ownership down.
-Do a personal retro: What did you underestimate? What's working?`,
-  },
-  {
-    title: 'Coaching vs Directing',
-    content: `**Directing** (telling): You have the answer. Speed matters. Stakes are high.
-"Here's exactly what to do: X, then Y, then Z by Friday."
-Use when: New person, urgent situation, truly no time.
-
-**Coaching** (asking): They probably have the answer. Growth matters more than speed.
-"What do you think the right move is? What have you tried? What's stopping you?"
-Use when: They have the capability, building ownership matters.
-
-**The trap:** Experienced managers over-direct because it's faster short-term. But directing creates dependency. Coaching creates capability.
-
-**For your team:** KAMs (level 3) should be coached. Junior OTA resource (level 1) needs more directing for now.`,
-  },
-  {
-    title: 'Managing Multiple Departments',
-    content: `You manage 5 people across 6 departments. This requires context-switching discipline.
-
-**Each department has its own rhythm:** Don't apply OTA logic to Analytics. Don't apply Revenue logic to Finance.
-
-**Weekly cadence:**
-Monday standup: All team, week priorities
-Wednesday: OTA deep-dive (MMT, campaigns, booking pipeline)
-Thursday: Revenue + Analytics (occupancy, pricing, automation)
-Monthly retro: Reflect, recalibrate, celebrate wins
-
-**Cognitive load management:** Use this app to maintain context between meetings. Your notes and action items are your external memory. Review before each 1:1 and department review.`,
-  },
+const RECENTEDITS = [
+  { icon: 'edit', iconBg: 'rgba(0,83,219,0.1)', iconColor: 'var(--primary)', title: 'Updated SOP-042', meta: '2 hours ago • by Alex S.' },
+  { icon: 'add_circle', iconBg: 'rgba(134,84,0,0.1)', iconColor: 'var(--tertiary)', title: 'New Management Framework', meta: 'Yesterday • by Sarah K.' },
+  { icon: 'delete', iconBg: 'rgba(159,64,61,0.1)', iconColor: 'var(--error)', title: 'Archived SOP-012', meta: 'Oct 24 • by System' },
 ]
 
 export default function PlaybookPage() {
   return (
-    <div>
-      <PageHeader title="Playbook" description="People management frameworks for daily reference" />
-      <div className="space-y-2">
-        {SECTIONS.map(s => (
-          <PlaybookSection key={s.title} title={s.title} content={s.content} />
-        ))}
+    <div className="space-y-6">
+      {/* Hero header */}
+      <div className="flex items-end justify-between mb-4">
+        <div>
+          <h2
+            className="text-4xl font-extrabold tracking-tight mb-2"
+            style={{ fontFamily: 'Manrope, sans-serif', color: 'var(--on-surface)' }}
+          >
+            Operational Frameworks
+          </h2>
+          <p className="max-w-2xl text-sm" style={{ color: 'var(--on-surface-variant)' }}>
+            The core architectural blueprints for organizational efficiency. High-density access to established standard operating procedures and management playbooks.
+          </p>
+        </div>
+        <div
+          className="flex items-center gap-2 px-4 py-2 rounded-lg"
+          style={{ background: 'rgba(248,160,16,0.1)', border: '1px solid rgba(248,160,16,0.2)' }}
+        >
+          <span className="material-symbols-outlined" style={{ color: 'var(--tertiary)', fontVariationSettings: "'FILL' 1" }}>verified_user</span>
+          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--tertiary)' }}>SUPER_ADMIN Access Only</span>
+        </div>
       </div>
+
+      <div className="grid grid-cols-12 gap-6">
+        {/* Main Accordion Area */}
+        <div className="col-span-12 lg:col-span-8 space-y-4">
+          {/* Operating Procedures */}
+          <AccordionSection
+            icon="settings_suggest"
+            iconBg="var(--primary-container)"
+            iconColor="var(--primary)"
+            title="Operating Procedures"
+            subtitle="Standard runtime parameters for cross-functional teams"
+            defaultOpen
+          >
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <h4 className="text-md font-bold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
+                  <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'var(--primary)' }} />
+                  Incident Response Protocol
+                </h4>
+                <div className="p-4 rounded-lg space-y-2" style={{ background: 'var(--surface-container-low)' }}>
+                  <ul className="space-y-2 text-sm" style={{ color: 'var(--on-surface-variant)' }}>
+                    <li className="flex gap-2"><span className="font-bold" style={{ color: 'var(--on-surface)' }}>Triage Phase:</span> Identify the severity level (L1-L4) within 15 minutes of initial trigger detection.</li>
+                    <li className="flex gap-2"><span className="font-bold" style={{ color: 'var(--on-surface)' }}>Escalation Path:</span> Auto-notify relevant Lead Architect if uptime drops below the 99.9% threshold.</li>
+                    <li className="flex gap-2"><span className="font-bold" style={{ color: 'var(--on-surface)' }}>Post-Mortem:</span> Every incident requires a full technical audit within 24 hours of resolution.</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <h4 className="text-md font-bold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
+                  <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'var(--primary)' }} />
+                  Quality Assurance Cycle
+                </h4>
+                <p className="text-sm leading-relaxed pl-3.5" style={{ color: 'var(--on-surface-variant)' }}>
+                  All modular components must undergo rigorous testing before being merged into the master ledger. This includes peer reviews, automated unit tests, and performance benchmarking.
+                </p>
+              </div>
+            </div>
+          </AccordionSection>
+
+          {/* SOP Library */}
+          <AccordionSection
+            icon="library_books"
+            iconBg="rgba(248,160,16,0.2)"
+            iconColor="var(--tertiary)"
+            title="SOP Library"
+            subtitle="Validated procedures for recurring task execution"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {SOPS.map(sop => (
+                <div
+                  key={sop.id}
+                  className="p-4 rounded-xl transition-all"
+                  style={{ border: '1px solid rgba(169,180,185,0.1)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,83,219,0.03)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] uppercase font-bold tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>{sop.id}</span>
+                    <span
+                      className="px-2 py-0.5 text-[10px] font-bold rounded-full uppercase"
+                      style={
+                        sop.status === 'active'
+                          ? { background: 'rgba(16,185,129,0.1)', color: '#059669' }
+                          : { background: 'rgba(248,160,16,0.15)', color: 'var(--tertiary)' }
+                      }
+                    >
+                      {sop.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <h5 className="font-bold text-sm mb-2" style={{ color: 'var(--on-surface)' }}>{sop.title}</h5>
+                  <p className="text-xs mb-4" style={{ color: 'var(--on-surface-variant)' }}>{sop.description}</p>
+                  <button className="text-[10px] font-black uppercase tracking-tighter flex items-center gap-1" style={{ color: 'var(--primary)' }}>
+                    View Protocol <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </AccordionSection>
+
+          {/* Management Frameworks */}
+          <AccordionSection
+            icon="account_tree"
+            iconBg="rgba(213,227,252,0.5)"
+            iconColor="var(--secondary)"
+            title="Management Frameworks"
+            subtitle="Decision-making structures and organizational charts"
+          >
+            <div className="space-y-4">
+              <p className="text-sm mb-4" style={{ color: 'var(--on-surface-variant)' }}>
+                Our management philosophy adheres to the <strong style={{ color: 'var(--on-surface)' }}>Asymmetric Execution</strong> model, prioritizing high-leverage activities through decentralized decision-making.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {FRAMEWORKS.map(f => (
+                  <div
+                    key={f.label}
+                    className="p-4 rounded-lg"
+                    style={{ background: 'var(--surface)', borderLeft: `4px solid ${f.border}` }}
+                  >
+                    <p className="text-xs font-bold mb-1" style={{ color: 'var(--on-surface)' }}>{f.label}</p>
+                    <p className="text-[11px]" style={{ color: 'var(--on-surface-variant)' }}>{f.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </AccordionSection>
+        </div>
+
+        {/* Right Side Widgets */}
+        <div className="col-span-12 lg:col-span-4 space-y-6">
+          {/* Command Metrics */}
+          <div
+            className="rounded-xl p-6"
+            style={{ background: 'var(--surface-container)', border: '1px solid rgba(169,180,185,0.1)' }}
+          >
+            <h4
+              className="text-sm font-black uppercase tracking-widest mb-4"
+              style={{ fontFamily: 'Manrope, sans-serif', color: 'var(--on-surface)' }}
+            >
+              Command Metrics
+            </h4>
+            <div className="space-y-4">
+              {[
+                { label: 'Total Playbooks', value: '128', progress: 75, color: 'var(--primary)' },
+                { label: 'Compliance Rating', value: '98.4%', progress: 98, color: '#10b981' },
+                { label: 'Active Frameworks', value: '12', progress: 60, color: 'var(--primary)' },
+              ].map(m => (
+                <div key={m.label}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>{m.label}</span>
+                    <span
+                      className="text-lg font-bold"
+                      style={{ fontFamily: 'Manrope, sans-serif', color: m.color === '#10b981' ? '#059669' : 'var(--on-surface)' }}
+                    >
+                      {m.value}
+                    </span>
+                  </div>
+                  <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'rgba(169,180,185,0.2)' }}>
+                    <div className="h-full rounded-full" style={{ width: `${m.progress}%`, background: m.color }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Edits */}
+          <div
+            className="rounded-xl p-6"
+            style={{
+              background: 'var(--surface-container-lowest)',
+              boxShadow: '0 8px 30px rgb(42,52,57,0.04)',
+              border: '1px solid rgba(169,180,185,0.1)',
+            }}
+          >
+            <h4
+              className="text-sm font-black uppercase tracking-widest mb-6"
+              style={{ fontFamily: 'Manrope, sans-serif', color: 'var(--on-surface)' }}
+            >
+              Recent Edits
+            </h4>
+            <div className="space-y-6">
+              {RECENTEDITS.map(item => (
+                <div key={item.title} className="flex gap-4">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: item.iconBg }}
+                  >
+                    <span className="material-symbols-outlined text-sm" style={{ color: item.iconColor }}>{item.icon}</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold" style={{ color: 'var(--on-surface)' }}>{item.title}</p>
+                    <p className="text-[10px]" style={{ color: 'var(--on-surface-variant)' }}>{item.meta}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              className="w-full mt-6 py-2 rounded-lg text-xs font-bold transition-colors"
+              style={{ border: '1px solid rgba(169,180,185,0.3)', color: 'var(--on-surface-variant)' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-low)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+            >
+              Audit Full History
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* FAB */}
+      <button
+        className="fixed bottom-8 right-8 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-2xl transition-transform hover:scale-110 z-50"
+        style={{ background: 'var(--inverse-surface)' }}
+      >
+        <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+      </button>
     </div>
   )
 }

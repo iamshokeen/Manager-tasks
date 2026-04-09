@@ -77,47 +77,71 @@ const EMPTY_FORM: AddMemberForm = {
   coachingNotes: '',
 }
 
+const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
+  active:   { bg: 'rgba(16,185,129,0.1)',  color: '#059669', label: 'Active'   },
+  hiring:   { bg: 'rgba(248,160,16,0.15)', color: '#865400', label: 'Hiring'   },
+  inactive: { bg: 'rgba(169,180,185,0.2)', color: 'var(--outline)', label: 'Inactive' },
+  on_leave: { bg: 'rgba(213,227,252,0.4)', color: 'var(--secondary)', label: 'On Leave' },
+  exited:   { bg: 'rgba(159,64,61,0.1)',   color: 'var(--error)', label: 'Exited'   },
+}
+
 function MemberStatusBadge({ status }: { status: string }) {
-  const config = MEMBER_STATUS_CONFIG[status] ?? MEMBER_STATUS_CONFIG.inactive
+  const s = STATUS_STYLE[status] ?? STATUS_STYLE.inactive
   return (
     <span
-      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
-      style={{ background: config.bg, color: config.color }}
+      className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+      style={{ background: s.bg, color: s.color }}
     >
-      {config.label}
+      {s.label}
     </span>
   )
 }
 
+function DelegationDots({ level }: { level: number }) {
+  const MAX = 5
+  return (
+    <div className="flex gap-0.5">
+      {Array.from({ length: MAX }).map((_, i) => (
+        <div
+          key={i}
+          className="w-2.5 h-1.5 rounded-sm"
+          style={{ background: i < level ? 'var(--primary)' : 'rgba(169,180,185,0.3)' }}
+        />
+      ))}
+    </div>
+  )
+}
+
 function MemberCard({ member, onClick }: { member: MemberSummary; onClick: () => void }) {
-  const delegLabel = DELEGATION_LEVELS[member.delegationLevel as keyof typeof DELEGATION_LEVELS] ?? 'Do'
   const oneOnOne = member.oneOnOneDay
-    ? `${member.oneOnOneDay}${member.oneOnOneTime ? ` ${member.oneOnOneTime}` : ''}`
+    ? `${member.oneOnOneDay}${member.oneOnOneTime ? ` @ ${member.oneOnOneTime}` : ''}`
     : null
 
   return (
     <div
       onClick={onClick}
-      className="rounded-xl p-5 flex flex-col gap-4 cursor-pointer group transition-all hover:-translate-y-0.5"
+      className="rounded-xl p-5 flex flex-col gap-4 cursor-pointer group transition-all"
       style={{
         background: 'var(--surface-container-lowest)',
-        boxShadow: 'var(--shadow-card)',
-        border: '1px solid transparent',
+        border: '1px solid rgba(169,180,185,0.05)',
+        boxShadow: '0 8px 30px rgb(42,52,57,0.04)',
       }}
       onMouseEnter={e => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(0,83,219,0.15)'
+        (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,83,219,0.03)'
+        ;(e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(0,83,219,0.08)'
       }}
       onMouseLeave={e => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'transparent'
+        (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-container-lowest)'
+        ;(e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(169,180,185,0.05)'
       }}
     >
       {/* Top: avatar + name/role + status */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <MemberAvatar name={member.name} size="lg" />
+          <MemberAvatar name={member.name} size="lg" className="border-2 border-surface shadow-sm" />
           <div className="flex-1 min-w-0">
             <p
-              className="text-sm font-semibold truncate transition-colors"
+              className="text-sm font-bold truncate leading-tight"
               style={{ color: 'var(--on-surface)', fontFamily: 'Manrope, sans-serif' }}
             >
               {member.name}
@@ -135,42 +159,47 @@ function MemberCard({ member, onClick }: { member: MemberSummary; onClick: () =>
         <DepartmentBadge department={member.department} />
       </div>
 
-      {/* Divider */}
-      <div className="h-px" style={{ background: 'var(--surface-container)' }} />
-
-      {/* Stats row */}
-      <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--on-surface-variant)' }}>
-        <div
-          className="flex-1 p-2 rounded-lg"
-          style={{ background: 'var(--surface-container-low)', borderLeft: '3px solid var(--primary)' }}
-        >
-          <div className="text-[10px] uppercase tracking-widest mb-0.5" style={{ color: 'var(--on-surface-variant)' }}>
-            Delegation
-          </div>
-          <div className="font-bold text-xs" style={{ color: 'var(--on-surface)' }}>{delegLabel}</div>
+      {/* Delegation + 1:1 */}
+      <div className="flex flex-col gap-3 pt-1">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-medium uppercase tracking-tight" style={{ color: 'var(--outline)' }}>Delegation</span>
+          <DelegationDots level={member.delegationLevel} />
         </div>
-        <div
-          className="flex-1 p-2 rounded-lg"
-          style={{ background: 'var(--surface-container-low)', borderLeft: '3px solid var(--tertiary)' }}
-        >
-          <div className="text-[10px] uppercase tracking-widest mb-0.5" style={{ color: 'var(--on-surface-variant)' }}>
-            Tasks
+        {oneOnOne && (
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-tight" style={{ color: 'var(--outline)' }}>1:1 Session</span>
+            <span className="text-[11px] font-semibold" style={{ color: 'var(--on-surface-variant)' }}>{oneOnOne}</span>
           </div>
-          <div className="font-bold text-xs" style={{ color: 'var(--on-surface)' }}>{member.taskCount ?? 0}</div>
-        </div>
+        )}
       </div>
 
-      {/* 1:1 */}
-      {oneOnOne && (
-        <div className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>
-          <span className="font-medium" style={{ color: 'var(--on-surface)' }}>1:1:</span> {oneOnOne}
+      {/* Footer */}
+      <div
+        className="mt-auto pt-3 flex items-center justify-between"
+        style={{ borderTop: '1px solid rgba(169,180,185,0.1)' }}
+      >
+        <div className="flex items-center gap-1.5">
+          <span className="material-symbols-outlined" style={{ fontSize: '16px', color: 'var(--tertiary)' }}>task_alt</span>
+          <span className="text-xs font-bold" style={{ color: 'var(--on-surface)' }}>
+            {member.taskCount ?? 0}
+            <span className="font-normal" style={{ color: 'var(--outline)' }}> Open Tasks</span>
+          </span>
         </div>
-      )}
-
-      {/* View profile link */}
-      <div className="flex items-center gap-1 text-xs mt-auto pt-1" style={{ color: 'var(--primary)' }}>
-        <span className="font-medium">View Profile</span>
-        <ChevronRight className="h-3.5 w-3.5" />
+        <button
+          className="p-1.5 rounded-lg transition-all"
+          style={{ color: 'var(--outline)' }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--primary)'
+            ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,83,219,0.05)'
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--outline)'
+            ;(e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
+        </button>
       </div>
     </div>
   )
@@ -235,15 +264,28 @@ export default function TeamPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Your People"
-        action={
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Add to Your People
-          </Button>
-        }
-      />
+      {/* Header */}
+      <div className="flex items-end justify-between">
+        <div>
+          <h2
+            className="text-4xl font-extrabold tracking-tight mb-2"
+            style={{ fontFamily: 'Manrope, sans-serif', color: 'var(--on-surface)' }}
+          >
+            Team Roster
+          </h2>
+          <p className="text-sm" style={{ color: 'var(--on-surface-variant)' }}>
+            Manage your team members, delegation levels, and 1:1 schedules.
+          </p>
+        </div>
+        <Button
+          onClick={() => setDialogOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm"
+          style={{ background: 'linear-gradient(135deg, var(--primary), #0048c1)', color: 'var(--on-primary)' }}
+        >
+          <Plus className="h-4 w-4" />
+          Add Member
+        </Button>
+      </div>
 
       {/* Filter / Search bar */}
       <div
@@ -258,14 +300,15 @@ export default function TeamPage() {
           <input
             className="bg-transparent border-none focus:outline-none text-sm w-full"
             style={{ color: 'var(--on-surface)' }}
-            placeholder="Search members..."
+            placeholder="Quick search..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
         {!isLoading && (
-          <div className="text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>
-            {filtered.length} member{filtered.length !== 1 ? 's' : ''}
+          <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--on-surface-variant)' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>info</span>
+            Total Members: {filtered.length}
           </div>
         )}
       </div>
