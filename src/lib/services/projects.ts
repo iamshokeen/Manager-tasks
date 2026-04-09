@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 
 export async function getProjects(
   filters: { stage?: string; department?: string } = {},
-  ownershipFilter?: { userId: string; teamMemberId?: string }
+  ownershipFilter?: { userId: string; teamMemberId?: string; isSuperAdmin?: boolean }
 ) {
   const baseWhere: Prisma.ProjectWhereInput = {
     ...(filters.stage && { stage: filters.stage }),
@@ -12,15 +12,26 @@ export async function getProjects(
   }
 
   if (ownershipFilter) {
-    const { userId, teamMemberId } = ownershipFilter
-    const involvementClauses: Prisma.ProjectWhereInput[] = [
-      { createdByUserId: userId },
-      { tasks: { some: { createdByUserId: userId } } },
-    ]
-    if (teamMemberId) {
-      involvementClauses.push({ tasks: { some: { assigneeId: teamMemberId } } })
+    const { userId, teamMemberId, isSuperAdmin } = ownershipFilter
+
+    if (isSuperAdmin) {
+      // Super admin / manager: only see projects they created, or projects with a linked stakeholder
+      baseWhere.OR = [
+        { createdByUserId: userId },
+        { stakeholderId: { not: null } },
+        { stakeholders: { some: {} } },
+      ]
+    } else {
+      // Everyone else: see projects they created, or have tasks assigned to them
+      const involvementClauses: Prisma.ProjectWhereInput[] = [
+        { createdByUserId: userId },
+        { tasks: { some: { createdByUserId: userId } } },
+      ]
+      if (teamMemberId) {
+        involvementClauses.push({ tasks: { some: { assigneeId: teamMemberId } } })
+      }
+      baseWhere.OR = involvementClauses
     }
-    baseWhere.OR = involvementClauses
   }
 
   return prisma.project.findMany({

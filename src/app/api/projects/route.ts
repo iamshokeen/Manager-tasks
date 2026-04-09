@@ -13,10 +13,13 @@ export async function GET(req: Request) {
     department: searchParams.get('department') ?? undefined,
   }
 
-  // Only show projects you're involved in; SUPER_ADMIN sees all
-  const ownershipFilter = user.role === 'SUPER_ADMIN'
-    ? undefined
-    : { userId: user.id, teamMemberId: user.teamMemberId ?? undefined }
+  // SUPER_ADMIN: see only projects they created or that have a stakeholder linked
+  // Everyone else: see projects they created or have tasks assigned to them
+  const ownershipFilter = {
+    userId: user.id,
+    teamMemberId: user.teamMemberId ?? undefined,
+    isSuperAdmin: user.role === 'SUPER_ADMIN',
+  }
 
   try {
     const projects = await getProjects(filters, ownershipFilter)
