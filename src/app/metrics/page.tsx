@@ -280,7 +280,7 @@ export default function MetricsDashboard() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <KpiCard label="Revenue (Month)" value={formatCrore(ciMonth)} sub="Occupied month" />
-          <KpiCard label="Revenue YTD" value={formatCrore(ciYtd)} />
+          <KpiCard label="Check-in Revenue for the year" value={formatCrore(ciYtd)} />
           <KpiCard label="ARR YTD" value={`₹${formatIndianNumber(ciArrYtd)}`} sub="Avg room rate" />
           <KpiCard label="Bedroom Nights YTD" value={formatIndianNumber(ciBnYtd)} sub={`Weekday ${pct(ciWeekdayShare)}`} />
         </div>
