@@ -268,10 +268,77 @@ body {
 
 /* Print / PDF */
 @media print {
-  aside, header { display: none !important; }
+  @page { margin: 1.5cm; size: A4; }
+
+  /* Force background/color printing */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide chrome */
+  aside, header, nav { display: none !important; }
   main, [data-main] { margin-left: 0 !important; padding-top: 0 !important; }
-  body { background: #fff !important; color: #111 !important; }
-  @page { margin: 1.5cm; }
+
+  body { background: #ffffff !important; color: #111111 !important; }
+
+  /* Reset all CSS variables to clean light values so var() calls resolve correctly */
+  :root, [data-theme], [data-theme="gold"], [data-theme="dark"], [data-theme="ocean"] {
+    --background:               #ffffff;
+    --foreground:               #111111;
+    --surface:                  #ffffff;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low:    #f5f5f5;
+    --surface-container:        #ebebeb;
+    --surface-container-high:   #e0e0e0;
+    --on-surface:               #111111;
+    --on-surface-variant:       #555555;
+    --primary:                  #0053db;
+    --on-primary:               #ffffff;
+    --primary-container:        #dce8ff;
+    --on-primary-container:     #001a6b;
+    --secondary:                #555e71;
+    --tertiary:                 #7c3aed;
+    --on-tertiary-container:    #2e0063;
+    --error:                    #dc2626;
+    --outline:                  #cccccc;
+    --outline-variant:          #e0e0e0;
+    --shadow-card:              none;
+  }
+
+  /* Cards: clean bordered boxes, no shadows */
+  .rounded-xl, .rounded-lg {
+    border: 1px solid #dddddd !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    break-inside: avoid;
+  }
+
+  /* Sections stay together */
+  section { break-inside: avoid; margin-bottom: 1.5rem; }
+
+  /* Tables don't break mid-row */
+  table { break-inside: avoid; }
+  tr { break-inside: avoid; }
+
+  /* Force Tailwind color utility classes used in MixBar / AttainmentBar */
+  .bg-blue-500    { background-color: #3b82f6 !important; }
+  .bg-purple-500  { background-color: #a855f7 !important; }
+  .bg-pink-500    { background-color: #ec4899 !important; }
+  .bg-indigo-500  { background-color: #6366f1 !important; }
+  .bg-cyan-500    { background-color: #06b6d4 !important; }
+  .bg-slate-500   { background-color: #64748b !important; }
+  .bg-emerald-500 { background-color: #10b981 !important; }
+  .bg-teal-500    { background-color: #14b8a6 !important; }
+  .bg-amber-500   { background-color: #f59e0b !important; }
+  .bg-orange-500  { background-color: #f97316 !important; }
+
+  /* Progress bar tracks */
+  .bg-\[var\(--surface-container\)\],
+  [style*="background: var(--surface-container)"],
+  [style*="background:var(--surface-container)"] {
+    background: #e8e8e8 !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════

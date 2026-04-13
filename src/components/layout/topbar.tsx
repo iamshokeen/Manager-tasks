@@ -155,7 +155,7 @@ export function Topbar() {
 
         <button
           onClick={() => window.print()}
-          className="hidden md:flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+          className="hidden md:flex print:hidden items-center gap-1 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer"
           title="Download as PDF"
           style={{
             border: '1px solid rgba(169,180,185,0.5)',
