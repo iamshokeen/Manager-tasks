@@ -78,7 +78,7 @@ function buildReportHtml(data: any): string {
   ${data.metrics && data.metrics.checkin_revenue ? `
   <div style="background:#111318;border:1px solid #1E2028;border-radius:8px;padding:14px;margin-bottom:16px;">
     <div style="font-size:11px;color:#6B7280;margin-bottom:4px;">Check-in Revenue</div>
-    <div style="font-size:18px;font-weight:700;color:#C9A84C;">${formatCrore(data.metrics.checkin_revenue)} <span style="font-size:12px;color:#6B7280;">of ₹85 Cr</span></div>
+    <div style="font-size:18px;font-weight:700;color:#C9A84C;">${formatCrore(data.metrics.checkin_revenue)} <span style="font-size:12px;color:#6B7280;">of insert numbers here</span></div>
   </div>` : ''}
   <a href="${process.env.NEXT_PUBLIC_APP_URL}/reports" style="color:#C9A84C;font-size:12px;">View full report →</a>
 </body>

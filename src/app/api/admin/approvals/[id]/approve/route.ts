@@ -7,7 +7,7 @@ import { sendEmail } from '@/lib/mailer'
 import { AccessApproved } from '../../../../../../../emails/access-approved'
 import type { Role } from '@prisma/client'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://lohono-command-center.vercel.app'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://kairos-git-main-sakshamshokeen-5950s-projects.vercel.app'
 
 export async function PATCH(
   request: NextRequest,

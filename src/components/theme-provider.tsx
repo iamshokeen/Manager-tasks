@@ -38,7 +38,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    const saved = (localStorage.getItem('lohono-theme') as ThemeId) ?? 'gold'
+    const saved = (localStorage.getItem('kairos-theme') as ThemeId) ?? 'gold'
     applyTheme(saved)
     setThemeState(saved)
     setMounted(true)
@@ -46,7 +46,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   function setTheme(t: ThemeId) {
     setThemeState(t)
-    localStorage.setItem('lohono-theme', t)
+    localStorage.setItem('kairos-theme', t)
     applyTheme(t)
   }
 

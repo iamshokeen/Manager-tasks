@@ -9,7 +9,7 @@ import { PrismaPg } from '@prisma/adapter-pg'
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 const prisma = new PrismaClient({ adapter })
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'saksham.shokeen@lohono.com'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'saksham.shokeen@kairos.com'
 
 async function main() {
   console.log('Seeding database...')
@@ -62,7 +62,7 @@ async function main() {
       skills: 'MakeMyTrip relationship management, Campaign management, Rate negotiations',
       oneOnOneDay: 'Wednesday',
       oneOnOneTime: '10:00 AM',
-      coachingNotes: 'Primary MMT relationship owner. MMT = 80% of OTA revenue. Strategic priority. Delegation level 3.',
+      coachingNotes: 'Primary MMT relationship owner. MMT = insert numbers here of OTA revenue. Strategic priority. Delegation level 3.',
       delegationLevel: 3,
     },
   })
@@ -157,10 +157,10 @@ async function main() {
     where: { slug: 'platform' },
     update: {},
     create: {
-      name: 'Lohono Platform',
+      name: 'Kairos Platform',
       slug: 'platform',
       type: 'PLATFORM',
-      description: 'Main workspace for the Lohono Command Center platform',
+      description: 'Main workspace for the Kairos Command Center platform',
       createdBy: saksham.id,
     },
   })

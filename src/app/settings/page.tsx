@@ -647,7 +647,7 @@ export default function SettingsPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `lohono-export-${new Date().toISOString().split('T')[0]}.json`
+      a.download = `kairos-export-${new Date().toISOString().split('T')[0]}.json`
       a.click()
       URL.revokeObjectURL(url)
       toast.success('Export downloaded')

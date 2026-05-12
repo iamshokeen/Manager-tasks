@@ -7,7 +7,7 @@ import { sendEmail } from '@/lib/mailer'
 import { WorkspaceInvite } from '../../../../../emails/workspace-invite'
 import type { Role } from '@prisma/client'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://lohono-command-center.vercel.app' // KAIROS-TODO: Update fallback URL
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://kairos-git-main-sakshamshokeen-5950s-projects.vercel.app'
 
 // ─── GET: list all invites ────────────────────────────────────────────────────
 
