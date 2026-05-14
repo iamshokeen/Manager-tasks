@@ -573,7 +573,7 @@ export default function TasksPage() {
               <div
                 key={col.key}
                 className="flex flex-col min-h-0 rounded-xl p-2"
-                style={{ background: 'rgba(240,244,247,0.5)' }}
+                style={{ background: 'var(--surface-container)' }}
               >
                 {/* Column header */}
                 <div className="flex items-center justify-between px-3 py-4">
