@@ -34,14 +34,17 @@ const BASE_NAV: NavGroup[] = [
       { href: '/stakeholders', label: 'The Table',   icon: 'handshake' },
     ],
   },
-  {
-    group: 'Revenue',
-    items: [
-      { href: '/metrics',           label: 'Metrics',       icon: 'analytics' },
-      { href: '/assessment/ota',    label: 'Channel Pulse', icon: 'trending_up' },
-      { href: '/assessment/checkin',label: 'Check-in GMV',  icon: 'hotel' },
-    ],
-  },
+  // Revenue group (Metrics / Channel Pulse / Check-in GMV) is hidden from the
+  // sidebar per 2026-05-14 spec. Routes still exist and can be reached directly
+  // via URL or restored by un-commenting. Do not delete the code.
+  // {
+  //   group: 'Revenue',
+  //   items: [
+  //     { href: '/metrics',           label: 'Metrics',       icon: 'analytics' },
+  //     { href: '/assessment/ota',    label: 'Channel Pulse', icon: 'trending_up' },
+  //     { href: '/assessment/checkin',label: 'Check-in GMV',  icon: 'hotel' },
+  //   ],
+  // },
   {
     group: 'Reports',
     items: [{ href: '/reports', label: 'Reports', icon: 'summarize' }],

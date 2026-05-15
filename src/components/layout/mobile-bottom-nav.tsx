@@ -8,7 +8,7 @@ const NAV = [
   { href: '/tasks',    label: 'Tasks',    icon: 'checklist' },
   { href: '/projects', label: 'Projects', icon: 'folder_kanban' },
   { href: '/team',     label: 'Team',     icon: 'group' },
-  { href: '/metrics',  label: 'Metrics',  icon: 'analytics' },
+  { href: '/reports',  label: 'Reports',  icon: 'summarize' },
 ]
 
 export function MobileBottomNav() {

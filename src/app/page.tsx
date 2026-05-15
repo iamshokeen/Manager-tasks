@@ -30,11 +30,16 @@ const PRIORITY_STYLES: Record<string, { bg: string; color: string; label: string
   low:      { bg: 'var(--surface-container)',   color: 'var(--on-surface-variant)',     label: 'Low',    dot: 'var(--outline)' },
 }
 
+// 2026-05-14: Revenue / OTA / GMV widgets hidden across the app. Toggle this
+// flag back to `true` when revenue tracking is reactivated. Code paths below
+// remain intact so the dashboard rebuilds cleanly when the flag flips.
+const SHOW_REVENUE_KPIS = false
+
 export default function DashboardPage() {
   const currentUser = useCurrentUser()
   const role = currentUser?.role ?? 'DIRECT_REPORT'
   const isOperator = ['SUPER_ADMIN', 'MANAGER'].includes(role)
-  const canViewKpis = ['SUPER_ADMIN', 'MANAGER', 'EXEC_VIEWER'].includes(role)
+  const canViewKpis = SHOW_REVENUE_KPIS && ['SUPER_ADMIN', 'MANAGER', 'EXEC_VIEWER'].includes(role)
   const { tasks, isLoading: tasksLoading } = useTasks()
   const myName = currentUser?.name ?? undefined
   const { tasks: assignedByMeTasks, isLoading: assignedByMeLoading } = useTasks(
@@ -233,8 +238,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── 2. Revenue KPIs (col-4) ── */}
-        {canViewKpis ? (
+        {/* ── 2. Revenue KPIs (col-4) — hidden via SHOW_REVENUE_KPIS flag. ── */}
+        {SHOW_REVENUE_KPIS && canViewKpis ? (
           <div
             className="col-span-12 lg:col-span-4 p-6 rounded-xl space-y-5"
             style={{ background: 'var(--surface-container)' }}
@@ -309,15 +314,15 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
-        ) : (
+        ) : SHOW_REVENUE_KPIS ? (
           <div className="col-span-12 lg:col-span-4">
             <KpiLockedSection />
           </div>
-        )}
+        ) : null}
 
-        {/* ── 3. Priority Tasks (col-8) ── */}
+        {/* ── 3. Priority Tasks (col-8 → col-12 when revenue hidden) ── */}
         <div
-          className="col-span-12 lg:col-span-8 p-6 rounded-xl"
+          className={SHOW_REVENUE_KPIS ? 'col-span-12 lg:col-span-8 p-6 rounded-xl' : 'col-span-12 p-6 rounded-xl'}
           style={{ background: 'var(--surface-container-lowest)', boxShadow: 'var(--shadow-card)' }}
         >
           <div className="flex justify-between items-center mb-5">
