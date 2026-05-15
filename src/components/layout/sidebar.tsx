@@ -20,6 +20,7 @@ const BASE_NAV: NavGroup[] = [
       { href: '/projects',       label: 'Projects',       icon: 'folder' },
       { href: '/tasks',          label: 'Tasks',           icon: 'checklist' },
       { href: '/my-tasks',       label: 'My Tasks',        icon: 'task_alt' },
+      { href: '/schedules',      label: 'Schedules',       icon: 'event_repeat' },
       { href: '/email-to-tasks', label: 'Email → Tasks',   icon: 'forward_to_inbox' },
       { href: '/cadence',        label: 'Rounds',          icon: 'repeat' },
       { href: '/notes',          label: 'Notes',           icon: 'sticky_note_2' },
@@ -78,6 +79,7 @@ const ROLE_HIDDEN: Record<string, Role[]> = {
   '/metrics':             ['EXEC_VIEWER', 'GUEST'],
   '/reports':             ['EXEC_VIEWER', 'GUEST'],
   '/projects':            ['EXEC_VIEWER', 'GUEST'],
+  '/schedules':           ['EXEC_VIEWER', 'GUEST'],
   '/playbook':            ['MANAGER', 'SENIOR_IC', 'DIRECT_REPORT', 'EXEC_VIEWER', 'GUEST'],
 }
 
