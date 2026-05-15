@@ -32,4 +32,21 @@ export interface TaskFilters {
   assignedByName?: string
   contributorFilter?: { teamMemberId?: string; name: string }
   ownershipFilter?: { userId: string; teamMemberId?: string }
+  // Manager-chain visibility (2026-05-14 spec). When present, only tasks
+  // created by — or assigned to a TeamMember linked to — one of these user
+  // IDs are returned. SA bypass is handled at the route layer (passes no
+  // filter).
+  visibleUserIds?: string[]
+  sortBy?:
+    | 'due_asc' | 'due_desc'
+    | 'priority_desc' | 'priority_asc'
+    | 'created_desc' | 'created_asc'
+    | 'title_asc' | 'title_desc'
+  priorityIn?: string[]
+  departmentIn?: string[]
+  assigneeIdIn?: string[]
+  assignedByNameIn?: string[]
+  stakeholderIdIn?: string[]
+  dueWindow?: 'overdue' | 'today' | 'week' | 'month' | 'none' | 'any'
+  createdWindow?: 'today' | 'week' | 'month' | 'any'
 }
