@@ -2,8 +2,14 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { getTasks, createTask } from '@/lib/services/tasks'
-import { canRoleAsync } from '@/lib/rbac'
+import { canRoleAsync, getVisibleUserIds } from '@/lib/rbac'
 import type { TaskFilters } from '@/types'
+
+function parseList(value: string | null): string[] | undefined {
+  if (!value) return undefined
+  const parts = value.split(',').map((s) => s.trim()).filter(Boolean)
+  return parts.length ? parts : undefined
+}
 
 export async function GET(req: Request) {
   const session = await getSession()
@@ -20,15 +26,21 @@ export async function GET(req: Request) {
     stakeholderId: searchParams.get('stakeholderId') ?? undefined,
     search: searchParams.get('search') ?? undefined,
     assignedByName: searchParams.get('assignedByName') ?? undefined,
+    priorityIn: parseList(searchParams.get('priorityIn')),
+    departmentIn: parseList(searchParams.get('departmentIn')),
+    assigneeIdIn: parseList(searchParams.get('assigneeIdIn')),
+    assignedByNameIn: parseList(searchParams.get('assignedByNameIn')),
+    stakeholderIdIn: parseList(searchParams.get('stakeholderIdIn')),
+    dueWindow: (searchParams.get('dueWindow') as TaskFilters['dueWindow']) ?? undefined,
+    createdWindow: (searchParams.get('createdWindow') as TaskFilters['createdWindow']) ?? undefined,
+    sortBy: (searchParams.get('sortBy') as TaskFilters['sortBy']) ?? undefined,
   }
 
   const user = session.user as { id: string; role?: string; teamMemberId?: string }
-  // SUPER_ADMIN sees everything; everyone else sees only tasks they own or are assigned to
+  // Chain-based visibility. SA gets no filter (sees all).
   if (user.role !== 'SUPER_ADMIN') {
-    filters.ownershipFilter = {
-      userId: user.id,
-      teamMemberId: user.teamMemberId ?? undefined,
-    }
+    const visible = await getVisibleUserIds(user.id, user.role ?? '')
+    filters.visibleUserIds = Array.from(visible)
   }
 
   try {
@@ -50,7 +62,6 @@ export async function POST(req: Request) {
     if (!body.title || !body.department) {
       return NextResponse.json({ error: 'title and department are required' }, { status: 400 })
     }
-    // Stamp creator
     body.createdByUserId = user.id
     if (!body.assignedByName && user.name) body.assignedByName = user.name
     const task = await createTask(body)

@@ -9,6 +9,7 @@ import { useProjects } from '@/hooks/use-projects'
 import { useTeam } from '@/hooks/use-team'
 import { useStakeholders } from '@/hooks/use-stakeholders'
 import { useDepartments } from '@/hooks/use-departments'
+import { useCurrentUser } from '@/hooks/use-current-user'
 import { PageHeader } from '@/components/ui/page-header'
 import { DepartmentBadge } from '@/components/ui/department-badge'
 import { MemberAvatar } from '@/components/ui/member-avatar'
@@ -205,8 +206,14 @@ export default function ProjectsPage() {
   const { members } = useTeam()
   const { stakeholders } = useStakeholders()
   const { departments } = useDepartments()
+  const me = useCurrentUser()
+  const canCreateProject = me?.role === 'SUPER_ADMIN' || me?.role === 'MANAGER'
 
   function openCreateDialog(stage: Stage) {
+    if (!canCreateProject) {
+      toast.error('Only Super Admin and Manager can create projects')
+      return
+    }
     setDefaultStage(stage)
     setForm({ ...EMPTY_FORM, stage })
     setDialogOpen(true)
@@ -319,14 +326,16 @@ export default function ProjectsPage() {
                     {isLoading ? '…' : colProjects.length}
                   </span>
                 </div>
-                <button
-                  onClick={() => openCreateDialog(col.key)}
-                  className="transition-colors"
-                  style={{ color: 'var(--on-surface-variant)' }}
-                  title={`New project in ${col.label}`}
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+                {canCreateProject && (
+                  <button
+                    onClick={() => openCreateDialog(col.key)}
+                    className="transition-colors"
+                    style={{ color: 'var(--on-surface-variant)' }}
+                    title={`New project in ${col.label}`}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                )}
               </div>
 
               {/* Cards */}

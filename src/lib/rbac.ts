@@ -157,6 +157,92 @@ const DEFAULT_KPI_VISIBILITY: Record<string, Role[]> = {
   cadence_manager: ['SUPER_ADMIN', 'MANAGER'],
 }
 
+// ─── Manager-chain visibility (used for Task / Project / Note RBAC v2) ───────
+//
+// Rule (per 2026-05-14 spec): a user can see/edit any resource owned by
+// themselves OR by anyone in their downward manager-chain. SA bypasses.
+// Orphans (no manager assigned) are invisible to non-SA.
+
+/**
+ * Returns every userId in the downward manager-chain rooted at `rootUserId`,
+ * including the root itself. BFS over User.manager self-relation.
+ */
+export async function getDescendantUserIds(rootUserId: string): Promise<Set<string>> {
+  const result = new Set<string>([rootUserId])
+  let frontier: string[] = [rootUserId]
+  // Cap depth to avoid pathological loops in misconfigured org trees.
+  for (let depth = 0; depth < 12 && frontier.length > 0; depth++) {
+    const reports = await prisma.user.findMany({
+      where: { managerId: { in: frontier }, isActive: true },
+      select: { id: true },
+    })
+    const next: string[] = []
+    for (const r of reports) {
+      if (!result.has(r.id)) {
+        result.add(r.id)
+        next.push(r.id)
+      }
+    }
+    frontier = next
+  }
+  return result
+}
+
+/**
+ * Returns the set of userIds visible to `viewer`. SA → every active user.
+ * Otherwise the downward chain of viewer (incl. viewer).
+ */
+export async function getVisibleUserIds(viewerUserId: string, viewerRole: string): Promise<Set<string>> {
+  if (viewerRole === 'SUPER_ADMIN') {
+    const all = await prisma.user.findMany({ where: { isActive: true }, select: { id: true } })
+    return new Set(all.map((u) => u.id))
+  }
+  return getDescendantUserIds(viewerUserId)
+}
+
+/**
+ * True iff actor can manage target (target sits at or below actor in the chain).
+ * SA always true.
+ */
+export async function canManageUser(actorUserId: string, actorRole: string, targetUserId: string): Promise<boolean> {
+  if (actorRole === 'SUPER_ADMIN') return true
+  if (actorUserId === targetUserId) return true
+  const descendants = await getDescendantUserIds(actorUserId)
+  return descendants.has(targetUserId)
+}
+
+/**
+ * Resolve a TeamMember row to its linked User id, if any.
+ * TeamMember.userId is a unique nullable FK populated when invited users
+ * adopt an existing member row.
+ */
+export async function userIdFromTeamMember(teamMemberId: string | null | undefined): Promise<string | null> {
+  if (!teamMemberId) return null
+  const u = await prisma.user.findUnique({
+    where: { teamMemberId },
+    select: { id: true },
+  })
+  return u?.id ?? null
+}
+
+/**
+ * Permission check used by DELETE /api/tasks/[id].
+ * Allowed if: SA, OR task.createdByUserId === actor, OR actor manages the assignee.
+ */
+export async function canDeleteTask(
+  actorUserId: string,
+  actorRole: string,
+  task: { createdByUserId: string | null; assigneeId: string | null }
+): Promise<boolean> {
+  if (actorRole === 'SUPER_ADMIN') return true
+  if (task.createdByUserId && task.createdByUserId === actorUserId) return true
+  if (task.assigneeId) {
+    const assigneeUserId = await userIdFromTeamMember(task.assigneeId)
+    if (assigneeUserId && (await canManageUser(actorUserId, actorRole, assigneeUserId))) return true
+  }
+  return false
+}
+
 export async function isKpiVisible(
   user: User,
   kpiKey: string,

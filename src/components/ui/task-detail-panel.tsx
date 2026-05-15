@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import {
   X, ExternalLink, Calendar, ChevronDown, Plus, Sparkles,
-  User, Users, Building2, Layers,
+  User, Users, Building2, Layers, Trash2,
 } from 'lucide-react'
 import { cn, STATUS_LABELS, TASK_STATUSES, PRIORITIES, formatDate } from '@/lib/utils'
 import { SummarizeButton, SummaryCard } from '@/components/ui/summarize-button'
@@ -44,6 +44,7 @@ interface TaskDetail {
   stakeholders?: StakeholderLink[]
   project?: { id: string; title: string } | null
   createdAt?: string
+  createdByUserId?: string | null
 }
 
 interface Activity {
@@ -94,6 +95,40 @@ export function TaskDetailPanel({ taskId, open, onClose, onTaskUpdated }: TaskDe
   const { stakeholders: allStakeholders } = useStakeholders()
   const { members: teamMembers } = useTeam()
   const currentUser = useCurrentUser()
+
+  // Show delete only when the viewer is SA, the task's creator, or the
+  // assignee's manager. We can't compute "manager-of-assignee" client-side
+  // without an extra round-trip, so we show the button optimistically when
+  // creator/SA, and let the server enforce the manager case. Worst case the
+  // server returns 403 and we toast.
+  const canDelete = !!(
+    currentUser &&
+    task &&
+    (
+      currentUser.role === 'SUPER_ADMIN' ||
+      (task.createdByUserId && task.createdByUserId === currentUser.id) ||
+      currentUser.role === 'MANAGER'
+    )
+  )
+
+  async function handleDelete() {
+    if (!task) return
+    const ok = typeof window !== 'undefined' && window.confirm(`Delete "${task.title}"? This cannot be undone.`)
+    if (!ok) return
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        toast.error(body.error || 'Failed to delete')
+        return
+      }
+      toast.success('Task deleted')
+      onClose()
+      onTaskUpdated()
+    } catch {
+      toast.error('Failed to delete')
+    }
+  }
 
   useEffect(() => {
     if (task) {
@@ -267,6 +302,15 @@ export function TaskDetailPanel({ taskId, open, onClose, onTaskUpdated }: TaskDe
           <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-[var(--surface-container)] to-transparent" />
           {/* Cover action buttons */}
           <div className="absolute top-3 right-3 flex items-center gap-2">
+            {canDelete && (
+              <button
+                onClick={handleDelete}
+                title="Delete task"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-black/30 border border-white/10 text-[var(--outline)] hover:text-red-400 hover:border-red-400/40 transition-all cursor-pointer"
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
             {taskId && (
               <Link href={`/tasks/${taskId}`} target="_blank">
                 <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-black/30 border border-white/10 text-[var(--outline)] hover:text-[var(--fg)] hover:border-[var(--primary)] transition-all cursor-pointer">

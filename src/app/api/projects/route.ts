@@ -33,12 +33,16 @@ export async function POST(req: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const sessionUser = session.user as { id: string; role?: string }
+  if (sessionUser.role !== 'SUPER_ADMIN' && sessionUser.role !== 'MANAGER') {
+    return NextResponse.json({ error: 'Only Super Admin and Manager can create projects' }, { status: 403 })
+  }
+
   try {
     const body = await req.json()
     if (!body.title || !body.department) {
       return NextResponse.json({ error: 'title and department are required' }, { status: 400 })
     }
-    const sessionUser = session.user as { id: string }
     body.createdByUserId = sessionUser.id
     const project = await createProject(body)
     return NextResponse.json({ data: project }, { status: 201 })
