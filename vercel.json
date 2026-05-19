@@ -6,5 +6,8 @@
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
       ]
     }
+  ],
+  "crons": [
+    { "path": "/api/cron/recurring-tasks", "schedule": "0 2 * * *" }
   ]
 }

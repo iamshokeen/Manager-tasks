@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import {
   X, ExternalLink, Calendar, ChevronDown, Plus, Sparkles,
-  User, Users, Building2, Layers, Trash2,
+  User, Users, Building2, Layers, Trash2, Repeat,
 } from 'lucide-react'
 import { cn, STATUS_LABELS, TASK_STATUSES, PRIORITIES, formatDate } from '@/lib/utils'
 import { SummarizeButton, SummaryCard } from '@/components/ui/summarize-button'
@@ -31,6 +31,18 @@ interface StakeholderLink {
   stakeholder: { id: string; name: string; title?: string | null }
 }
 
+interface RecurringSummary {
+  id: string
+  frequency: 'daily' | 'weekly' | 'monthly'
+  interval: number
+  daysOfWeek: number[]
+  dayOfMonth: number | null
+  startDate: string
+  endDate: string | null
+  isActive: boolean
+  nextRunAt: string | null
+}
+
 interface TaskDetail {
   id: string
   title: string
@@ -45,6 +57,20 @@ interface TaskDetail {
   project?: { id: string; title: string } | null
   createdAt?: string
   createdByUserId?: string | null
+  fromRecurring?: RecurringSummary | null
+}
+
+const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+function describeRecurrence(r: RecurringSummary): string {
+  if (r.frequency === 'daily') return r.interval === 1 ? 'Every day' : `Every ${r.interval} days`
+  if (r.frequency === 'weekly') {
+    const days = (r.daysOfWeek.length ? r.daysOfWeek : [new Date(r.startDate).getDay()])
+      .slice().sort().map(d => DOW_LABELS[d]).join(', ')
+    return r.interval === 1 ? `Every week on ${days}` : `Every ${r.interval} weeks on ${days}`
+  }
+  const day = r.dayOfMonth === -1 ? 'the last day' : `day ${r.dayOfMonth ?? new Date(r.startDate).getDate()}`
+  return r.interval === 1 ? `Every month on ${day}` : `Every ${r.interval} months on ${day}`
 }
 
 interface Activity {
@@ -434,6 +460,20 @@ export function TaskDetailPanel({ taskId, open, onClose, onTaskUpdated }: TaskDe
             >
               {task?.title ?? 'Loading…'}
             </h2>
+          )}
+
+          {/* Recurring badge */}
+          {task?.fromRecurring && (
+            <Link
+              href="/schedules"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full mb-4 text-[11px] font-semibold transition-all hover:opacity-80"
+              style={{ background: 'rgba(0,83,219,0.08)', color: 'var(--primary)', border: '1px solid rgba(0,83,219,0.18)' }}
+              title="Edit schedule"
+            >
+              <Repeat size={11} />
+              <span>Repeats: {describeRecurrence(task.fromRecurring)}</span>
+              <ExternalLink size={10} className="opacity-70" />
+            </Link>
           )}
 
           {/* Tabs */}

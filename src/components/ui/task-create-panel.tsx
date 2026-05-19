@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Plus } from 'lucide-react'
+import { X, Plus, Repeat } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,10 @@ import { useProjects } from '@/hooks/use-projects'
 
 const PRIORITIES = ['urgent', 'high', 'medium', 'low']
 
+type RepeatFrequency = 'none' | 'daily' | 'weekly' | 'monthly'
+
+const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
 interface TaskCreateForm {
   title: string
   department: string
@@ -29,6 +33,12 @@ interface TaskCreateForm {
   isSelfTask: boolean
   stakeholderIds: string[]
   projectId: string
+  repeat: RepeatFrequency
+  interval: number
+  daysOfWeek: number[]
+  dayOfMonth: string
+  dayOfMonthLast: boolean
+  endDate: string
 }
 
 function getTomorrow(): string {
@@ -47,6 +57,12 @@ const EMPTY_FORM: TaskCreateForm = {
   isSelfTask: false,
   stakeholderIds: [],
   projectId: '',
+  repeat: 'none',
+  interval: 1,
+  daysOfWeek: [new Date().getDay()],
+  dayOfMonth: String(new Date().getDate()),
+  dayOfMonthLast: false,
+  endDate: '',
 }
 
 interface TaskCreatePanelProps {
@@ -89,9 +105,58 @@ export function TaskCreatePanel({ open, onClose, onCreated }: TaskCreatePanelPro
       toast.error('Title is required')
       return
     }
+    if (form.repeat !== 'none' && !form.department) {
+      toast.error('Department is required for recurring tasks')
+      return
+    }
     setSubmitting(true)
     try {
       const isSelf = form.assigneeId === '__self__'
+
+      // ── Recurring branch: create RecurringTaskTemplate and spawn the first
+      // instance atomically via the recurring-tasks endpoint.
+      if (form.repeat !== 'none') {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
+        const body: Record<string, unknown> = {
+          title: form.title.trim(),
+          description: form.description || undefined,
+          priority: form.priority || 'medium',
+          department: form.department,
+          isSelfTask: isSelf ? true : form.isSelfTask,
+          assigneeId: !isSelf && form.assigneeId ? form.assigneeId : null,
+          projectId: form.projectId || null,
+          stakeholderId: form.stakeholderIds[0] ?? null,
+          frequency: form.repeat,
+          interval: Math.max(1, Number(form.interval) || 1),
+          daysOfWeek: form.repeat === 'weekly' ? form.daysOfWeek : [],
+          dayOfMonth: form.repeat === 'monthly'
+            ? (form.dayOfMonthLast ? -1 : Math.max(1, Math.min(31, Number(form.dayOfMonth) || today.getDate())))
+            : null,
+          dueOffsetDays: 0,
+          startDate: today.toISOString(),
+          endDate: form.endDate ? new Date(form.endDate).toISOString() : null,
+          spawnFirstNow: true,
+          firstTaskDueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null,
+          assignedByName: currentUser?.name ?? 'You',
+          stakeholderIds: form.stakeholderIds,
+        }
+
+        const res = await fetch('/api/recurring-tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+        if (!res.ok) throw new Error('Failed to create recurring task')
+        toast.success('Recurring task scheduled')
+        reset()
+        onCreated()
+        onClose()
+        return
+      }
+
+      // ── Standard one-off branch
       const body: Record<string, unknown> = {
         title: form.title.trim(),
         priority: form.priority || 'medium',
@@ -120,6 +185,13 @@ export function TaskCreatePanel({ open, onClose, onCreated }: TaskCreatePanelPro
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function toggleDayOfWeek(d: number) {
+    setForm(f => ({
+      ...f,
+      daysOfWeek: f.daysOfWeek.includes(d) ? f.daysOfWeek.filter(x => x !== d) : [...f.daysOfWeek, d].sort(),
+    }))
   }
 
   if (!open) return null
@@ -334,6 +406,121 @@ export function TaskCreatePanel({ open, onClose, onCreated }: TaskCreatePanelPro
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Repeat */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <Repeat size={11} /> Repeat
+              </label>
+              <Select
+                value={form.repeat}
+                onValueChange={(v: string | null) => setForm(f => ({ ...f, repeat: (v as RepeatFrequency) ?? 'none' }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Does not repeat</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {form.repeat !== 'none' && (
+                <div className="space-y-3 mt-2 px-3.5 py-3 rounded-xl bg-primary/5 border border-primary/15">
+                  {/* Interval */}
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">Every</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={365}
+                      value={form.interval}
+                      onChange={e => setForm(f => ({ ...f, interval: Number(e.target.value) || 1 }))}
+                      className="w-16 h-8 text-center"
+                    />
+                    <span className="text-muted-foreground">
+                      {form.repeat === 'daily' && (form.interval === 1 ? 'day' : 'days')}
+                      {form.repeat === 'weekly' && (form.interval === 1 ? 'week' : 'weeks')}
+                      {form.repeat === 'monthly' && (form.interval === 1 ? 'month' : 'months')}
+                    </span>
+                  </div>
+
+                  {/* Weekly: weekdays */}
+                  {form.repeat === 'weekly' && (
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">On</p>
+                      <div className="flex flex-wrap gap-1">
+                        {DOW_LABELS.map((label, idx) => {
+                          const active = form.daysOfWeek.includes(idx)
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => toggleDayOfWeek(idx)}
+                              className={cn(
+                                'w-9 h-8 rounded-md text-[11px] font-semibold transition-all',
+                                active
+                                  ? 'bg-primary text-[var(--on-primary)]'
+                                  : 'bg-[var(--surface-container-highest)] text-muted-foreground hover:text-foreground'
+                              )}
+                            >
+                              {label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Monthly: day-of-month */}
+                  {form.repeat === 'monthly' && (
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">On day</p>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={31}
+                          value={form.dayOfMonth}
+                          onChange={e => setForm(f => ({ ...f, dayOfMonth: e.target.value, dayOfMonthLast: false }))}
+                          disabled={form.dayOfMonthLast}
+                          className="w-16 h-8 text-center"
+                        />
+                        <span className="text-muted-foreground">of the month</span>
+                        <label className="flex items-center gap-1.5 ml-auto text-xs cursor-pointer">
+                          <Checkbox
+                            checked={form.dayOfMonthLast}
+                            onCheckedChange={(c: boolean) => setForm(f => ({ ...f, dayOfMonthLast: c }))}
+                          />
+                          <span className="text-muted-foreground">Last day</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* End date */}
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Ends</p>
+                    <Input
+                      type="date"
+                      value={form.endDate}
+                      onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
+                      className="h-8"
+                      placeholder="Never"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Leave blank to repeat indefinitely.</p>
+                  </div>
+
+                  {form.stakeholderIds.length > 1 && (
+                    <p className="text-[10px] text-amber-500">
+                      Only the first selected stakeholder is preserved on future instances.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Personal task toggle */}

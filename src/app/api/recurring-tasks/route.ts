@@ -7,7 +7,8 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { canRoleAsync, getVisibleUserIds } from '@/lib/rbac'
-import { initialNextRunAt, type Frequency } from '@/lib/services/recurring-tasks'
+import { computeNextRunAt, initialNextRunAt, type Frequency } from '@/lib/services/recurring-tasks'
+import { createTask } from '@/lib/services/tasks'
 
 function parseDate(v: unknown): Date | null {
   if (!v) return null
@@ -104,6 +105,48 @@ export async function POST(req: Request) {
         isActive: nextRunAt !== null,
       },
     })
+
+    // Optionally spawn the first Task instance immediately, then advance the
+    // template's nextRunAt to the *next* occurrence so the cron doesn't
+    // double-spawn it on its first run.
+    if (body.spawnFirstNow === true) {
+      const firstDue = parseDate(body.firstTaskDueDate)
+      const stakeholderIds: string[] | undefined = Array.isArray(body.stakeholderIds)
+        ? body.stakeholderIds.filter((s: unknown) => typeof s === 'string' && s.length > 0)
+        : undefined
+
+      await createTask({
+        title: template.title,
+        description: template.description ?? undefined,
+        priority: template.priority,
+        department: template.department,
+        status: 'todo',
+        isSelfTask: template.isSelfTask,
+        source: 'recurring',
+        assignedByName: body.assignedByName ?? null,
+        assignee: template.assigneeId ? { connect: { id: template.assigneeId } } : undefined,
+        project: template.projectId ? { connect: { id: template.projectId } } : undefined,
+        stakeholder: template.stakeholderId ? { connect: { id: template.stakeholderId } } : undefined,
+        createdByUser: { connect: { id: user.id } },
+        fromRecurring: { connect: { id: template.id } },
+        dueDate: firstDue ?? undefined,
+        ...(stakeholderIds && stakeholderIds.length > 0 ? { stakeholderIds } : {}),
+      } as Parameters<typeof createTask>[0])
+
+      const tomorrow = new Date()
+      tomorrow.setHours(0, 0, 0, 0)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const advanced = computeNextRunAt(recurrence, tomorrow)
+      await prisma.recurringTaskTemplate.update({
+        where: { id: template.id },
+        data: {
+          lastGeneratedAt: new Date(),
+          nextRunAt: advanced,
+          isActive: advanced !== null,
+        },
+      })
+    }
+
     return NextResponse.json({ data: template }, { status: 201 })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to create recurring task' }, { status: 500 })

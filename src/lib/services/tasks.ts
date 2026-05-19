@@ -205,6 +205,19 @@ export async function getTask(id: string) {
       stakeholders: { include: { stakeholder: { select: { id: true, name: true, title: true } } } },
       activities: { orderBy: { createdAt: 'desc' } },
       emailThreads: { include: { emailThread: true } },
+      fromRecurring: {
+        select: {
+          id: true,
+          frequency: true,
+          interval: true,
+          daysOfWeek: true,
+          dayOfMonth: true,
+          startDate: true,
+          endDate: true,
+          isActive: true,
+          nextRunAt: true,
+        },
+      },
     },
   })
 }
