@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Plus, Search, Calendar, ClipboardList, User, Archive, Sparkles, Users, X } from 'lucide-react'
+import { Plus, Search, Calendar, ClipboardList, User, Archive, Sparkles, Users, X, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCurrentUser } from '@/hooks/use-current-user'
 
@@ -110,9 +110,10 @@ interface TaskCardProps {
   task: TaskShape
   onClick: () => void
   isMyTask?: boolean
+  onMarkDone?: () => void
 }
 
-function TaskCard({ task, onClick, isMyTask }: TaskCardProps) {
+function TaskCard({ task, onClick, isMyTask, onMarkDone }: TaskCardProps) {
   const overdue = isOverdue(task.dueDate ?? null)
   const today = isDueToday(task.dueDate ?? null)
   const dueDateStyle = overdue
@@ -124,7 +125,7 @@ function TaskCard({ task, onClick, isMyTask }: TaskCardProps) {
   return (
     <div
       onClick={onClick}
-      className="rounded-xl p-4 cursor-pointer transition-all group"
+      className="relative rounded-xl p-4 cursor-pointer transition-all group"
       style={{
         background: isMyTask ? 'rgba(0,83,219,0.04)' : 'var(--surface-container-lowest)',
         boxShadow: '0 8px 30px rgb(42,52,57,0.04)',
@@ -133,6 +134,33 @@ function TaskCard({ task, onClick, isMyTask }: TaskCardProps) {
       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 30px rgb(42,52,57,0.08)' }}
       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 30px rgb(42,52,57,0.04)' }}
     >
+      {onMarkDone && (
+        <button
+          type="button"
+          title="Mark as done"
+          aria-label="Mark as done"
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => { e.stopPropagation(); onMarkDone() }}
+          className="absolute top-2 right-2 z-10 flex items-center justify-center h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{
+            background: 'var(--surface-container-highest)',
+            color: 'var(--on-surface-variant)',
+            border: '1px solid var(--border)',
+          }}
+          onMouseEnter={e => {
+            ;(e.currentTarget as HTMLButtonElement).style.background = '#10B981'
+            ;(e.currentTarget as HTMLButtonElement).style.color = 'white'
+            ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#10B981'
+          }}
+          onMouseLeave={e => {
+            ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-container-highest)'
+            ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--on-surface-variant)'
+            ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'
+          }}
+        >
+          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+        </button>
+      )}
       <div className="flex items-center justify-between mb-3">
         <PriorityBadge priority={task.priority} />
         {task.stakeholders && task.stakeholders.length > 0 && (
@@ -188,9 +216,10 @@ interface SortableTaskCardProps {
   task: TaskShape
   onClick: () => void
   isMyTask?: boolean
+  onMarkDone?: () => void
 }
 
-function SortableTaskCard({ task, onClick, isMyTask }: SortableTaskCardProps) {
+function SortableTaskCard({ task, onClick, isMyTask, onMarkDone }: SortableTaskCardProps) {
   const {
     attributes,
     listeners,
@@ -214,7 +243,7 @@ function SortableTaskCard({ task, onClick, isMyTask }: SortableTaskCardProps) {
       {...listeners}
       className="cursor-grab active:cursor-grabbing select-none"
     >
-      <TaskCard task={task} onClick={onClick} isMyTask={isMyTask} />
+      <TaskCard task={task} onClick={onClick} isMyTask={isMyTask} onMarkDone={onMarkDone} />
     </div>
   )
 }
@@ -353,6 +382,22 @@ export default function TasksPage() {
   }
 
   const doneTasks = columns.done
+
+  async function handleMarkDone(taskId: string) {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'done' }),
+      })
+      if (!res.ok) throw new Error('Failed to mark task done')
+      await mutate()
+      toast.success('Task completed')
+    } catch {
+      toast.error('Failed to mark task done')
+      await mutate()
+    }
+  }
 
   async function handleRestore(task: TaskShape) {
     try {
@@ -742,9 +787,10 @@ export default function TasksPage() {
             <>
               {/* Header row */}
               <div
-                className="grid grid-cols-[1fr_100px_90px_120px_90px_90px] gap-3 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg mb-1"
+                className="grid grid-cols-[28px_1fr_100px_90px_120px_90px_90px] gap-3 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-lg mb-1"
                 style={{ color: 'var(--on-surface-variant)', background: 'var(--surface-container)' }}
               >
+                <span></span>
                 <span>Task</span>
                 <span>Status</span>
                 <span>Priority</span>
@@ -760,7 +806,7 @@ export default function TasksPage() {
                   <div
                     key={task.id}
                     onClick={() => { setSelectedTaskId(task.id); setSheetOpen(true) }}
-                    className="grid grid-cols-[1fr_100px_90px_120px_90px_90px] gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all group items-center"
+                    className="grid grid-cols-[28px_1fr_100px_90px_120px_90px_90px] gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all group items-center"
                     style={{
                       background: isMyTask ? 'rgba(0,83,219,0.04)' : 'var(--surface-container-lowest)',
                       boxShadow: 'var(--shadow-card)',
@@ -769,6 +815,30 @@ export default function TasksPage() {
                     onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = isMyTask ? 'rgba(0,83,219,0.07)' : 'var(--surface-container-low)' }}
                     onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isMyTask ? 'rgba(0,83,219,0.04)' : 'var(--surface-container-lowest)' }}
                   >
+                    <button
+                      type="button"
+                      title="Mark as done"
+                      aria-label="Mark as done"
+                      onClick={e => { e.stopPropagation(); handleMarkDone(task.id) }}
+                      className="flex items-center justify-center h-5 w-5 rounded-full transition-all"
+                      style={{
+                        background: 'transparent',
+                        border: '1.5px solid var(--on-surface-variant)',
+                        color: 'transparent',
+                      }}
+                      onMouseEnter={e => {
+                        ;(e.currentTarget as HTMLButtonElement).style.background = '#10B981'
+                        ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#10B981'
+                        ;(e.currentTarget as HTMLButtonElement).style.color = 'white'
+                      }}
+                      onMouseLeave={e => {
+                        ;(e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+                        ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--on-surface-variant)'
+                        ;(e.currentTarget as HTMLButtonElement).style.color = 'transparent'
+                      }}
+                    >
+                      <Check className="h-3 w-3" strokeWidth={3} />
+                    </button>
                     <p className="text-sm font-semibold truncate transition-colors group-hover:text-[var(--primary)]" style={{ color: 'var(--on-surface)' }}>{task.title}</p>
                     <span className={cn(
                       'text-[10px] font-bold px-2 py-0.5 rounded-full w-fit uppercase tracking-wide',
@@ -863,6 +933,7 @@ export default function TasksPage() {
                           task={task}
                           onClick={() => { setSelectedTaskId(task.id); setSheetOpen(true) }}
                           isMyTask={(!!myTeamMemberId && task.assignee?.id === myTeamMemberId) || !!task.isSelfTask}
+                          onMarkDone={() => handleMarkDone(task.id)}
                         />
                       ))
                     )}
