@@ -18,6 +18,10 @@ export interface RecurrenceInput {
   endDate: Date | null
 }
 
+const DAY_MS = 86_400_000
+const DEFAULT_HORIZON_DAYS = 365
+const MAX_OCCURRENCES = 5000
+
 function startOfDay(d: Date): Date {
   const x = new Date(d)
   x.setHours(0, 0, 0, 0)
@@ -37,7 +41,6 @@ function addMonths(d: Date, n: number): Date {
 }
 
 function lastDayOfMonth(year: number, monthZeroBased: number): number {
-  // Day 0 of the next month equals the last day of the current month.
   return new Date(year, monthZeroBased + 1, 0).getDate()
 }
 
@@ -50,18 +53,13 @@ function lastDayOfMonth(year: number, monthZeroBased: number): number {
 export function computeNextRunAt(input: RecurrenceInput, fromDate: Date): Date | null {
   const { frequency, interval, daysOfWeek, dayOfMonth, startDate, endDate } = input
   const interv = Math.max(1, Math.floor(interval))
-  // We never schedule a run earlier than startDate, even if fromDate is older.
-  let cursor = fromDate.getTime() < startDate.getTime() ? startOfDay(startDate) : startOfDay(fromDate)
-
-  // Cap iteration so a misconfigured template can't cause an infinite loop.
+  const cursor = fromDate.getTime() < startDate.getTime() ? startOfDay(startDate) : startOfDay(fromDate)
   const HARD_CAP = 366 * 5
 
   if (frequency === 'daily') {
-    // First valid: startDate + k * interval >= cursor.
     const baseMs = startOfDay(startDate).getTime()
     const cursorMs = cursor.getTime()
-    const DAY = 86_400_000
-    const elapsedDays = Math.max(0, Math.round((cursorMs - baseMs) / DAY))
+    const elapsedDays = Math.max(0, Math.round((cursorMs - baseMs) / DAY_MS))
     const k = Math.ceil(elapsedDays / interv)
     const candidate = addDays(startOfDay(startDate), k * interv)
     if (endDate && candidate.getTime() > startOfDay(endDate).getTime()) return null
@@ -70,13 +68,10 @@ export function computeNextRunAt(input: RecurrenceInput, fromDate: Date): Date |
 
   if (frequency === 'weekly') {
     const allowed = daysOfWeek.length > 0 ? new Set(daysOfWeek) : new Set([startDate.getDay()])
-    // We anchor on the week of startDate, increment by `interval` weeks.
     const weekAnchor = startOfDay(startDate)
-    // Find ISO week-start (Sunday-based here) of weekAnchor and cursor.
-    const weekMs = 7 * 86_400_000
+    const weekMs = 7 * DAY_MS
     const anchorWeekStart = addDays(weekAnchor, -weekAnchor.getDay())
     let cursorWeekStart = addDays(startOfDay(cursor), -startOfDay(cursor).getDay())
-    // Snap cursor week to nearest allowed week (every `interval` weeks from anchor).
     const weeksApart = Math.round((cursorWeekStart.getTime() - anchorWeekStart.getTime()) / weekMs)
     const weeksAhead = weeksApart % interv === 0 ? 0 : interv - (weeksApart % interv)
     cursorWeekStart = addDays(cursorWeekStart, weeksAhead)
@@ -98,7 +93,6 @@ export function computeNextRunAt(input: RecurrenceInput, fromDate: Date): Date |
   const dom = dayOfMonth ?? startDate.getDate()
   const anchorMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
   let probe = new Date(cursor.getFullYear(), cursor.getMonth(), 1)
-  // Snap probe month to anchor + k * interval.
   const monthsApart = (probe.getFullYear() - anchorMonth.getFullYear()) * 12 + (probe.getMonth() - anchorMonth.getMonth())
   const monthsAhead = monthsApart % interv === 0 ? 0 : interv - (monthsApart % interv)
   probe = addMonths(probe, monthsAhead)
@@ -116,69 +110,213 @@ export function computeNextRunAt(input: RecurrenceInput, fromDate: Date): Date |
 }
 
 /**
+ * Enumerate every occurrence in [startDate, horizon]. If endDate is set and
+ * earlier than horizon, that wins. Caps at MAX_OCCURRENCES as a safety belt.
+ */
+export function computeOccurrences(input: RecurrenceInput, horizon: Date): Date[] {
+  const stop = input.endDate && input.endDate.getTime() < horizon.getTime()
+    ? startOfDay(input.endDate)
+    : startOfDay(horizon)
+
+  const out: Date[] = []
+  let cursor = startOfDay(input.startDate)
+  for (let i = 0; i < MAX_OCCURRENCES; i++) {
+    const next = computeNextRunAt(input, cursor)
+    if (!next) break
+    if (next.getTime() > stop.getTime()) break
+    out.push(next)
+    cursor = addDays(next, 1)
+  }
+  return out
+}
+
+/**
  * Generate one Task row per due template and roll the template forward.
- * Returns the IDs of generated tasks.
+ * Kept for backwards compatibility. New code should call syncTemplateTasks.
  */
 export async function generateDueTasks(now: Date = new Date()): Promise<string[]> {
-  const due = await prisma.recurringTaskTemplate.findMany({
+  const templates = await prisma.recurringTaskTemplate.findMany({
     where: {
       isActive: true,
-      nextRunAt: { lte: now },
       OR: [{ endDate: null }, { endDate: { gte: now } }],
     },
+    select: { id: true },
   })
 
   const generated: string[] = []
-  for (const t of due) {
-    const runDate = t.nextRunAt ?? new Date()
-    const dueDate = addDays(runDate, t.dueOffsetDays ?? 0)
-    const task = await prisma.task.create({
-      data: {
-        title: t.title,
-        description: t.description ?? undefined,
-        priority: t.priority,
-        department: t.department,
-        status: 'todo',
-        isSelfTask: t.isSelfTask,
-        assigneeId: t.assigneeId ?? undefined,
-        projectId: t.projectId ?? undefined,
-        stakeholderId: t.stakeholderId ?? undefined,
-        createdByUserId: t.createdByUserId ?? undefined,
-        fromRecurringId: t.id,
-        dueDate,
-        source: 'recurring',
-      },
-    })
-    generated.push(task.id)
-
-    const next = computeNextRunAt(
-      {
-        frequency: t.frequency as Frequency,
-        interval: t.interval,
-        daysOfWeek: t.daysOfWeek,
-        dayOfMonth: t.dayOfMonth,
-        startDate: t.startDate,
-        endDate: t.endDate,
-      },
-      addDays(runDate, 1),
-    )
-
-    await prisma.recurringTaskTemplate.update({
-      where: { id: t.id },
-      data: {
-        lastGeneratedAt: runDate,
-        nextRunAt: next,
-        isActive: next !== null,
-      },
-    })
+  for (const { id } of templates) {
+    const result = await syncTemplateTasks(id, now)
+    generated.push(...result.created)
   }
   return generated
 }
 
 /**
  * On creation / patch, recompute the initial nextRunAt so the cron picks the
- * template up at the right time.
+ * template up at the right time. Kept for backwards compatibility.
  */
 export function initialNextRunAt(input: RecurrenceInput): Date | null {
   return computeNextRunAt(input, input.startDate)
+}
+
+interface SyncResult {
+  created: string[]
+  updated: string[]
+  deleted: string[]
+}
+
+/**
+ * Materialize and sync all Task rows for a template within the horizon.
+ *
+ * Horizon = endDate (if set) OR now + DEFAULT_HORIZON_DAYS.
+ *
+ * Managed tasks (fromRecurringId=template.id, status=todo, dueDate>now) are
+ * upserted to match the computed occurrence set. Touched tasks (status≠todo
+ * or past) are left alone — they're "user-owned" now.
+ */
+export async function syncTemplateTasks(templateId: string, now: Date = new Date()): Promise<SyncResult> {
+  const template = await prisma.recurringTaskTemplate.findUnique({ where: { id: templateId } })
+  if (!template) return { created: [], updated: [], deleted: [] }
+
+  const horizon = template.endDate ?? addDays(now, DEFAULT_HORIZON_DAYS)
+
+  const occurrences = template.isActive
+    ? computeOccurrences(
+        {
+          frequency: template.frequency as Frequency,
+          interval: template.interval,
+          daysOfWeek: template.daysOfWeek,
+          dayOfMonth: template.dayOfMonth,
+          startDate: template.startDate,
+          endDate: template.endDate,
+        },
+        horizon,
+      )
+    : []
+
+  // Managed task set: still actionable, scheduled in the future (relative to today).
+  const existing = await prisma.task.findMany({
+    where: {
+      fromRecurringId: template.id,
+      status: 'todo',
+      dueDate: { gte: startOfDay(now) },
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      priority: true,
+      department: true,
+      assigneeId: true,
+      isSelfTask: true,
+      projectId: true,
+      stakeholderId: true,
+      dueDate: true,
+    },
+  })
+
+  const offset = template.dueOffsetDays ?? 0
+  const wantedDueDates = occurrences.map((d) => startOfDay(addDays(d, offset)))
+  const wantedKeyed = new Map<number, Date>()
+  for (const d of wantedDueDates) wantedKeyed.set(d.getTime(), d)
+
+  const created: string[] = []
+  const updated: string[] = []
+  const deleted: string[] = []
+
+  // 1. Update or delete existing managed tasks.
+  for (const t of existing) {
+    if (!t.dueDate) {
+      // Managed task without a dueDate is anomalous; leave alone.
+      continue
+    }
+    const key = startOfDay(t.dueDate).getTime()
+    if (wantedKeyed.has(key)) {
+      // Keep — but bring fields in line with the template if they drifted.
+      const drift =
+        t.title !== template.title ||
+        (t.description ?? null) !== (template.description ?? null) ||
+        t.priority !== template.priority ||
+        t.department !== template.department ||
+        (t.assigneeId ?? null) !== (template.assigneeId ?? null) ||
+        t.isSelfTask !== template.isSelfTask ||
+        (t.projectId ?? null) !== (template.projectId ?? null) ||
+        (t.stakeholderId ?? null) !== (template.stakeholderId ?? null)
+      if (drift) {
+        await prisma.task.update({
+          where: { id: t.id },
+          data: {
+            title: template.title,
+            description: template.description,
+            priority: template.priority,
+            department: template.department,
+            assigneeId: template.assigneeId,
+            isSelfTask: template.isSelfTask,
+            projectId: template.projectId,
+            stakeholderId: template.stakeholderId,
+          },
+        })
+        updated.push(t.id)
+      }
+      wantedKeyed.delete(key)
+    } else {
+      // Managed task whose dueDate no longer matches an occurrence — sync away.
+      await prisma.task.delete({ where: { id: t.id } })
+      deleted.push(t.id)
+    }
+  }
+
+  // 2. Create tasks for any wanted dueDates not yet covered.
+  for (const due of wantedKeyed.values()) {
+    const task = await prisma.task.create({
+      data: {
+        title: template.title,
+        description: template.description ?? undefined,
+        priority: template.priority,
+        department: template.department,
+        status: 'todo',
+        isSelfTask: template.isSelfTask,
+        assigneeId: template.assigneeId ?? undefined,
+        projectId: template.projectId ?? undefined,
+        stakeholderId: template.stakeholderId ?? undefined,
+        createdByUserId: template.createdByUserId ?? undefined,
+        fromRecurringId: template.id,
+        dueDate: due,
+        source: 'recurring',
+      },
+    })
+    created.push(task.id)
+  }
+
+  // 3. Roll template forward.
+  const todayMs = startOfDay(now).getTime()
+  const firstFuture = occurrences.find((d) => d.getTime() >= todayMs) ?? null
+  const mostRecentPast = [...occurrences].reverse().find((d) => d.getTime() < todayMs) ?? null
+  const hasAnyOccurrence = occurrences.length > 0
+  await prisma.recurringTaskTemplate.update({
+    where: { id: template.id },
+    data: {
+      lastGeneratedAt: mostRecentPast ?? template.lastGeneratedAt,
+      nextRunAt: firstFuture,
+      isActive: template.isActive && hasAnyOccurrence,
+    },
+  })
+
+  return { created, updated, deleted }
+}
+
+/**
+ * Delete all managed (future, still-todo) Task rows for a template. Called
+ * before deleting the template itself; user-owned tasks survive (their
+ * fromRecurringId becomes null via Prisma onDelete: SetNull).
+ */
+export async function deleteManagedTasks(templateId: string, now: Date = new Date()): Promise<number> {
+  const res = await prisma.task.deleteMany({
+    where: {
+      fromRecurringId: templateId,
+      status: 'todo',
+      dueDate: { gte: startOfDay(now) },
+    },
+  })
+  return res.count
 }

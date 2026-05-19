@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { canManageUser, getVisibleUserIds, userIdFromTeamMember } from '@/lib/rbac'
-import { initialNextRunAt, type Frequency } from '@/lib/services/recurring-tasks'
+import { initialNextRunAt, syncTemplateTasks, deleteManagedTasks, type Frequency } from '@/lib/services/recurring-tasks'
 
 function parseDate(v: unknown): Date | null | undefined {
   if (v === undefined) return undefined
@@ -101,7 +101,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         isActive: body.isActive === undefined ? next !== null : !!body.isActive,
       },
     })
-    return NextResponse.json({ data: template })
+
+    // Sync future Task rows to match the updated template.
+    const sync = await syncTemplateTasks(template.id)
+
+    return NextResponse.json({ data: template, sync })
   } catch {
     return NextResponse.json({ error: 'Failed to update recurring task' }, { status: 500 })
   }
@@ -115,6 +119,10 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   const existing = await prisma.recurringTaskTemplate.findUnique({ where: { id } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (!(await canEditTemplate(user, existing))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  // Drop managed (future, still-todo) tasks first. Past/touched tasks survive
+  // — their fromRecurringId becomes null via Prisma's onDelete: SetNull.
+  const deletedCount = await deleteManagedTasks(id)
   await prisma.recurringTaskTemplate.delete({ where: { id } })
-  return NextResponse.json({ message: 'Deleted' })
+  return NextResponse.json({ message: 'Deleted', deletedTasks: deletedCount })
 }
