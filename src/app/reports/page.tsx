@@ -80,6 +80,15 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json()).then((r) => r.
 const PRIORITY_HEX: Record<string, string> = {
   urgent: '#9f403d', critical: '#9f403d', high: '#865400', medium: '#f8a010', low: '#a9b4b9',
 }
+// Match the Calendar's Stage palette so the same task reads the same in
+// both surfaces. Used for calendar snapshot chips below.
+const STAGE_HEX: Record<string, string> = {
+  todo: '#a9b4b9',
+  in_progress: '#0053db',
+  review: '#7c3aed',
+  blocked: '#c62828',
+  done: '#2e7d32',
+}
 const DAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 
 function fmtDate(iso: string): string {
@@ -264,9 +273,9 @@ export default function ReportsPage() {
                 <StatTile label="In Progress" value={brief.counts.inProgress} accent="#f8a010" />
                 <StatTile label="Overdue" value={brief.counts.overdue} accent={brief.counts.overdue > 0 ? '#ef4444' : 'var(--on-surface-variant)'} />
                 <StatTile label="Done Today" value={brief.counts.completedToday} accent="#2e7d32" />
+                <StatTile label="Blocked / Review" value={brief.counts.blocked} accent="#c62828" />
                 <StatTile label="Follow-ups" value={brief.counts.followUpsActionedToday} accent="#7c3aed" />
                 <StatTile label="New Today" value={brief.counts.tasksCreatedToday} accent="var(--primary)" />
-                <StatTile label="Blocked" value={brief.counts.blocked} accent="#c62828" />
               </div>
 
               {/* 1. In Progress (point-in-time snapshot) */}
@@ -327,7 +336,28 @@ export default function ReportsPage() {
                 )}
               </BriefSection>
 
-              {/* 4. Follow-ups actioned today */}
+              {/* 4. Blocked / In Review (in_review bucketed here per user request) */}
+              <BriefSection title={`Blocked / In Review (${brief.blocked.length})`} accent="#c62828">
+                {brief.blocked.length === 0 ? (
+                  <EmptyLine text="Nothing blocked or in review." />
+                ) : (
+                  <ul className="space-y-1">
+                    {brief.blocked.map(t => (
+                      <li key={t.id} className="flex items-center gap-3 px-2.5 py-2 rounded"
+                        style={{ background: 'rgba(198,40,40,0.06)', boxShadow: 'inset 3px 0 0 #c62828' }}>
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                          style={{ background: PRIORITY_HEX[t.priority] ?? '#a9b4b9' }} />
+                        <span className="flex-1 text-sm" style={{ color: 'var(--on-surface)' }}>{t.title}</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest" style={{ color: t.status === 'review' ? '#7c3aed' : '#c62828' }}>
+                          {t.status === 'review' ? 'in review' : 'blocked'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </BriefSection>
+
+              {/* 5. Follow-ups actioned today */}
               <BriefSection title={`Follow-ups Actioned Today (${brief.followUpsActionedToday.length})`} accent="#7c3aed">
                 {brief.followUpsActionedToday.length === 0 ? (
                   <EmptyLine text="No follow-ups touched today." />
@@ -497,18 +527,21 @@ function MonthSnapshot({ brief }: { brief: MemberBrief }) {
                   </span>
                 )}
               </div>
-              {items.map(t => (
-                <div key={`${k}-${t.id}`}
-                  className="text-[10px] leading-tight px-1.5 py-1 rounded"
-                  style={{
-                    background: `${PRIORITY_HEX[t.priority] ?? PRIORITY_HEX.low}20`,
-                    borderLeft: `2px solid ${PRIORITY_HEX[t.priority] ?? PRIORITY_HEX.low}`,
-                    color: 'var(--on-surface)',
-                    wordBreak: 'break-word',
-                  }}
-                  title={t.title}
-                >{t.title}</div>
-              ))}
+              {items.map(t => {
+                const color = STAGE_HEX[t.status] ?? STAGE_HEX.todo
+                return (
+                  <div key={`${k}-${t.id}`}
+                    className="text-[10px] leading-tight px-1.5 py-1 rounded"
+                    style={{
+                      background: `${color}20`,
+                      borderLeft: `2px solid ${color}`,
+                      color: 'var(--on-surface)',
+                      wordBreak: 'break-word',
+                    }}
+                    title={`${t.title} · ${t.status.replace('_', ' ')}`}
+                  >{t.title}</div>
+                )
+              })}
             </div>
           )
         })}

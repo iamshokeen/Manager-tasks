@@ -159,14 +159,24 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
   })
 
   // 2) Completed today.
+  // Backward-compat: legacy 'done' tasks have completedAt = null because we
+  // only started writing it on 2026-05-25. Fall back to updatedAt for those
+  // so a task marked done before the fix still appears in today's brief.
   const completedToday = await prisma.task.findMany({
     where: {
-      OR: orClauses,
-      status: 'done',
-      completedAt: { gte: dayStart, lte: dayEnd },
+      AND: [
+        { OR: orClauses },
+        { status: 'done' },
+        {
+          OR: [
+            { completedAt: { gte: dayStart, lte: dayEnd } },
+            { AND: [{ completedAt: null }, { updatedAt: { gte: dayStart, lte: dayEnd } }] },
+          ],
+        },
+      ],
     },
     include: { project: { select: { title: true } } },
-    orderBy: { completedAt: 'desc' },
+    orderBy: [{ completedAt: 'desc' }, { updatedAt: 'desc' }],
   })
 
   // 3) Active in-progress tasks (snapshot, not date-bounded).
@@ -176,11 +186,13 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
     orderBy: { dueDate: 'asc' },
   })
 
-  // 4) Blocked tasks.
+  // 4) Blocked / In Review tasks — anything waiting on someone else.
+  // 'review' is bucketed with 'blocked' in the brief so the manager sees a
+  // single "needs attention from another party" pile.
   const blocked = await prisma.task.findMany({
-    where: { OR: orClauses, status: 'blocked' },
+    where: { OR: orClauses, status: { in: ['blocked', 'review'] } },
     include: { project: { select: { title: true } } },
-    orderBy: { dueDate: 'asc' },
+    orderBy: [{ status: 'asc' }, { dueDate: 'asc' }],
   })
 
   // 5) Overdue tasks (open tasks with end/due before today).

@@ -264,7 +264,7 @@ interface TaskCalendarViewProps {
 export function TaskCalendarView({ tasks, onTaskClick, mutate, myTeamMemberId }: TaskCalendarViewProps) {
   const [scale, setScale] = useState<Scale>('week')
   const [anchor, setAnchor] = useState<Date>(() => startOfDay(new Date()))
-  const [colorBy, setColorBy] = useState<ColorBy>('priority')
+  const [colorBy, setColorBy] = useState<ColorBy>('stage')
   const [syncingId, setSyncingId] = useState<string | null>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))

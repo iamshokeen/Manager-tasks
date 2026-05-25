@@ -18,6 +18,15 @@ const PRIORITY_HEX: Record<string, string> = {
   urgent: '#9f403d', critical: '#9f403d',
   high: '#865400', medium: '#f8a010', low: '#a9b4b9',
 }
+// Calendar snapshot color language — must match the live Calendar's
+// Stage palette so a single task reads the same in either surface.
+const STAGE_HEX: Record<string, string> = {
+  todo: '#a9b4b9',
+  in_progress: '#0053db',
+  review: '#7c3aed',
+  blocked: '#c62828',
+  done: '#2e7d32',
+}
 
 const STATUS_LABEL: Record<string, string> = {
   todo: 'To Do',
@@ -137,9 +146,9 @@ export default async function MemberReportPrintPage({
         <StatTile label="In Progress" value={report.counts.inProgress} accent="#865400" />
         <StatTile label="Overdue" value={report.counts.overdue} accent={report.counts.overdue > 0 ? '#c62828' : '#a9b4b9'} />
         <StatTile label="Done Today" value={report.counts.completedToday} accent="#2e7d32" />
+        <StatTile label="Blocked / Review" value={report.counts.blocked} accent="#c62828" />
         <StatTile label="Follow-ups" value={report.counts.followUpsActionedToday} accent="#7c3aed" />
         <StatTile label="New Today" value={report.counts.tasksCreatedToday} accent="#0053db" />
-        <StatTile label="Blocked" value={report.counts.blocked} accent="#c62828" />
       </div>
 
       {/* 1. In Progress */}
@@ -179,7 +188,16 @@ export default async function MemberReportPrintPage({
         )}
       </Section>
 
-      {/* 4. Follow-ups actioned today */}
+      {/* 4. Blocked / In Review */}
+      <Section title={`Blocked / In Review (${report.blocked.length})`} accent="#c62828">
+        {report.blocked.length === 0 ? (
+          <EmptyLine text="Nothing blocked or in review." />
+        ) : (
+          <TaskTable rows={report.blocked} />
+        )}
+      </Section>
+
+      {/* 5. Follow-ups actioned today */}
       <Section title={`Follow-ups Actioned Today (${report.followUpsActionedToday.length})`} accent="#7c3aed">
         {report.followUpsActionedToday.length === 0 ? (
           <EmptyLine text="No follow-ups touched today." />
@@ -278,7 +296,7 @@ export default async function MemberReportPrintPage({
                     )}
                   </div>
                   {items.map(t => {
-                    const color = PRIORITY_HEX[t.priority] ?? PRIORITY_HEX.low
+                    const color = STAGE_HEX[t.status] ?? STAGE_HEX.todo
                     return (
                       <div key={`${k}-${t.id}`} style={{
                         fontSize: 9, lineHeight: 1.3,
@@ -288,7 +306,7 @@ export default async function MemberReportPrintPage({
                         color: '#111', fontWeight: 600,
                         wordBreak: 'break-word',
                       }}
-                      title={`${t.title} · ${daysInclusive(t.startKey, t.endKey)}d`}
+                      title={`${t.title} · ${t.status.replace('_', ' ')} · ${daysInclusive(t.startKey, t.endKey)}d`}
                       >{t.title}</div>
                     )
                   })}
