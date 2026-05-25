@@ -44,9 +44,6 @@ function fmtShortDate(iso: string): string {
 }
 
 function dayKey(iso: string): string { return iso.split('T')[0] }
-function addDaysISO(iso: string, n: number): string {
-  const d = new Date(iso); d.setDate(d.getDate() + n); return d.toISOString()
-}
 function daysInclusive(startKey: string, endKey: string): number {
   const a = new Date(startKey).getTime(); const b = new Date(endKey).getTime()
   return Math.max(1, Math.round((b - a) / 86_400_000) + 1)
@@ -78,26 +75,31 @@ export default async function MemberReportPrintPage({
   const report = await getMemberReport(userId, anchor)
   if (!report) redirect('/reports')
 
-  // 7-day grid keys
-  const weekDayKeys: string[] = []
-  for (let i = 0; i < 7; i++) weekDayKeys.push(dayKey(addDaysISO(report.weekStart, i)))
+  // Month calendar grid: anchor's calendar month, padded to whole weeks
+  // starting Sunday. Each cell lists the full title of every task whose
+  // [start..end] range overlaps that day (no truncation).
+  const monthStart = new Date(report.monthStart)
+  const monthEnd = new Date(report.monthEnd)
+  const gridStart = new Date(monthStart); gridStart.setDate(gridStart.getDate() - gridStart.getDay())
+  const monthCells: Date[] = []
+  for (let i = 0; i < 42; i++) { const d = new Date(gridStart); d.setDate(gridStart.getDate() + i); monthCells.push(d) }
+  while (monthCells.length >= 35 && monthCells[monthCells.length - 7].getTime() > monthEnd.getTime()) monthCells.splice(monthCells.length - 7, 7)
+  const monthRowCount = Math.ceil(monthCells.length / 7)
+  const monthLabel = monthStart.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
 
-  // Lane-pack week-snapshot bars (same algorithm as calendar, simplified).
-  type Laid = { task: MemberReportWeekTask; lane: number; startIdx: number; endIdx: number }
-  const sortedSnap = [...report.weekSnapshot].sort((a, b) =>
-    a.startKey.localeCompare(b.startKey) || a.endKey.localeCompare(b.endKey))
-  const lanes: number[] = []
-  const laid: Laid[] = []
-  for (const t of sortedSnap) {
-    const startIdx = Math.max(0, weekDayKeys.indexOf(t.startKey))
-    const endRaw = weekDayKeys.indexOf(t.endKey)
-    const endIdx = endRaw === -1 ? 6 : Math.min(6, endRaw)
-    let lane = lanes.findIndex(next => next <= startIdx)
-    if (lane === -1) { lane = lanes.length; lanes.push(0) }
-    lanes[lane] = endIdx + 1
-    laid.push({ task: t, startIdx, endIdx, lane })
+  const monthPerDay = new Map<string, MemberReportWeekTask[]>()
+  for (const t of report.monthSnapshot) {
+    const s = new Date(t.startKey).getTime()
+    const e = new Date(t.endKey).getTime()
+    for (const d of monthCells) {
+      const k = dayKey(d.toISOString())
+      const dt = d.getTime()
+      if (dt >= s && dt <= e) {
+        if (!monthPerDay.has(k)) monthPerDay.set(k, [])
+        monthPerDay.get(k)!.push(t)
+      }
+    }
   }
-  const laneCount = Math.max(1, lanes.length)
 
   const auto = sp.auto !== '0' // default = trigger print on load
 
@@ -150,6 +152,13 @@ export default async function MemberReportPrintPage({
         <StatTile label="Completed Today" value={report.counts.completedToday} accent="#2e7d32" />
         <StatTile label="Overdue" value={report.counts.overdue} accent={report.counts.overdue > 0 ? '#c62828' : '#a9b4b9'} />
       </div>
+
+      {/* Overdue — surfaced first so it can't be missed */}
+      {report.overdue.length > 0 && (
+        <Section title={`Overdue (${report.overdue.length})`} accent="#c62828">
+          <TaskTable rows={report.overdue} highlightOverdue anchorDate={report.date} />
+        </Section>
+      )}
 
       {/* Today's tasks table */}
       <Section title="Today's Tasks">
@@ -218,63 +227,69 @@ export default async function MemberReportPrintPage({
         )}
       </Section>
 
-      {/* Week calendar snapshot */}
-      <Section title="This Week's Calendar Snapshot">
+      {/* Month calendar snapshot — full task names per day */}
+      <Section title={`Calendar Snapshot — ${monthLabel}`}>
         <div style={{ border: '1px solid #e0e0e0', borderRadius: 4, overflow: 'hidden' }}>
           {/* Day header */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: '#f5f6f8' }}>
-            {weekDayKeys.map(k => {
-              const d = new Date(k)
+            {DAY_NAMES.map(n => (
+              <div key={n} style={{ padding: '6px 4px', textAlign: 'center', borderRight: '1px solid #e0e0e0', fontSize: 9, fontWeight: 800, letterSpacing: '0.12em', color: '#666' }}>{n}</div>
+            ))}
+          </div>
+          {/* Body — month grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+            gridTemplateRows: `repeat(${monthRowCount}, minmax(72px, auto))`,
+          }}>
+            {monthCells.map(d => {
+              const k = dayKey(d.toISOString())
               const today = dayKey(report.date) === k
+              const inMonth = d.getMonth() === monthStart.getMonth()
+              const items = monthPerDay.get(k) ?? []
               return (
-                <div key={k} style={{ padding: '6px 4px', textAlign: 'center', borderRight: '1px solid #e0e0e0' }}>
-                  <div style={{
-                    fontSize: 9, fontWeight: 800, letterSpacing: '0.12em',
-                    color: today ? '#0053db' : '#666',
-                  }}>{DAY_NAMES[d.getDay()]}</div>
-                  <div style={{
-                    fontSize: 14, fontWeight: 800, fontFamily: 'ui-monospace, monospace',
-                    color: today ? '#0053db' : '#111',
-                  }}>{d.getDate()}</div>
+                <div key={k} style={{
+                  borderLeft: '1px solid #f0f0f0',
+                  borderTop: '1px solid #f0f0f0',
+                  padding: 4,
+                  background: today ? '#eaf3ff' : '#fff',
+                  opacity: inMonth ? 1 : 0.4,
+                  display: 'flex', flexDirection: 'column', gap: 3,
+                  breakInside: 'avoid',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                    <span style={{
+                      fontSize: 10, fontWeight: 800, fontFamily: 'ui-monospace, monospace',
+                      color: today ? '#0053db' : '#111',
+                    }}>{d.getDate()}</span>
+                    {items.length > 0 && (
+                      <span style={{ fontSize: 8, fontFamily: 'ui-monospace, monospace', color: '#777', background: '#f0f0f0', borderRadius: 2, padding: '0 3px' }}>{items.length}</span>
+                    )}
+                  </div>
+                  {items.map(t => {
+                    const color = PRIORITY_HEX[t.priority] ?? PRIORITY_HEX.low
+                    return (
+                      <div key={`${k}-${t.id}`} style={{
+                        fontSize: 9, lineHeight: 1.3,
+                        background: `${color}18`,
+                        borderLeft: `2px solid ${color}`,
+                        padding: '2px 4px', borderRadius: 2,
+                        color: '#111', fontWeight: 600,
+                        wordBreak: 'break-word',
+                      }}
+                      title={`${t.title} · ${daysInclusive(t.startKey, t.endKey)}d`}
+                      >{t.title}</div>
+                    )
+                  })}
                 </div>
               )
             })}
           </div>
-          {/* Body with bars */}
-          <div style={{ position: 'relative', minHeight: Math.max(60, laneCount * 22 + 16) }}>
-            {/* Column dividers */}
-            <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', pointerEvents: 'none' }}>
-              {weekDayKeys.map(k => <div key={k} style={{ borderRight: '1px solid #f0f0f0' }} />)}
+          {report.monthSnapshot.length === 0 && (
+            <div style={{ padding: '18px 12px', fontSize: 11, color: '#888', fontStyle: 'italic', textAlign: 'center' }}>
+              Nothing scheduled this month.
             </div>
-            {laid.length === 0 && (
-              <div style={{ padding: '18px 12px', fontSize: 11, color: '#888', fontStyle: 'italic', textAlign: 'center' }}>
-                Nothing scheduled this week.
-              </div>
-            )}
-            {laid.map(({ task, startIdx, endIdx, lane }) => {
-              const span = endIdx - startIdx + 1
-              const color = PRIORITY_HEX[task.priority] ?? PRIORITY_HEX.low
-              return (
-                <div
-                  key={task.id}
-                  style={{
-                    position: 'absolute',
-                    top: lane * 22 + 6, height: 18,
-                    left: `calc(${(startIdx / 7) * 100}% + 4px)`,
-                    width: `calc(${(span / 7) * 100}% - 8px)`,
-                    background: `${color}20`,
-                    borderLeft: `3px solid ${color}`,
-                    borderRadius: 2,
-                    paddingLeft: 6, paddingRight: 4,
-                    display: 'flex', alignItems: 'center',
-                    fontSize: 10, fontWeight: 600, color: '#111',
-                    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
-                  }}
-                  title={`${task.title} · ${daysInclusive(task.startKey, task.endKey)}d`}
-                >{task.title}</div>
-              )
-            })}
-          </div>
+          )}
         </div>
       </Section>
 
@@ -310,12 +325,13 @@ function StatTile({ label, value, accent }: { label: string; value: number; acce
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, accent }: { title: string; children: React.ReactNode; accent?: string }) {
   return (
     <section style={{ marginBottom: 22 }}>
       <h2 style={{
-        fontSize: 11, fontWeight: 800, color: '#111', letterSpacing: '0.12em',
-        textTransform: 'uppercase', margin: '0 0 8px 0', paddingBottom: 4, borderBottom: '1px solid #111',
+        fontSize: 11, fontWeight: 800, color: accent ?? '#111', letterSpacing: '0.12em',
+        textTransform: 'uppercase', margin: '0 0 8px 0', paddingBottom: 4,
+        borderBottom: `1px solid ${accent ?? '#111'}`,
       }}>{title}</h2>
       {children}
     </section>
@@ -326,45 +342,59 @@ function EmptyLine({ text }: { text: string }) {
   return <p style={{ fontSize: 11, color: '#888', fontStyle: 'italic', margin: '4px 0' }}>{text}</p>
 }
 
-function TaskTable({ rows }: { rows: MemberReportTask[] }) {
+function TaskTable({ rows, highlightOverdue, anchorDate }: {
+  rows: MemberReportTask[]
+  highlightOverdue?: boolean
+  anchorDate?: string
+}) {
+  const anchorMs = anchorDate ? new Date(anchorDate).getTime() : Date.now()
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
       <thead>
-        <tr style={{ background: '#f5f6f8', textAlign: 'left' }}>
+        <tr style={{ background: highlightOverdue ? '#fdecec' : '#f5f6f8', textAlign: 'left' }}>
           <Th>Task</Th>
           <Th width={90}>Stage</Th>
           <Th width={70}>Priority</Th>
-          <Th width={140}>Schedule</Th>
+          <Th width={highlightOverdue ? 170 : 140}>{highlightOverdue ? 'Was Due' : 'Schedule'}</Th>
         </tr>
       </thead>
       <tbody>
-        {rows.map(t => (
-          <tr key={t.id} style={{ borderBottom: '1px solid #eee' }}>
-            <Td>
-              <div style={{ fontWeight: 600, color: '#111' }}>{t.title}</div>
-              {t.projectTitle && <div style={{ fontSize: 10, color: '#777' }}>{t.projectTitle}</div>}
-            </Td>
-            <Td>
-              <span style={{
-                fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
-                padding: '2px 6px', borderRadius: 2,
-                background: `${STATUS_HEX[t.status] ?? '#a9b4b9'}20`,
-                color: STATUS_HEX[t.status] ?? '#555',
-              }}>{STATUS_LABEL[t.status] ?? t.status}</span>
-            </Td>
-            <Td>
-              <span style={{
-                fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
-                color: PRIORITY_HEX[t.priority] ?? '#555',
-              }}>● {t.priority}</span>
-            </Td>
-            <Td>
-              <span style={{ fontSize: 10, fontFamily: 'ui-monospace, monospace', color: '#444' }}>
-                {fmtScheduleString(t)}
-              </span>
-            </Td>
-          </tr>
-        ))}
+        {rows.map(t => {
+          const endIso = t.endDate ?? t.dueDate
+          const daysLate = highlightOverdue && endIso
+            ? Math.max(1, Math.round((anchorMs - new Date(endIso).getTime()) / 86_400_000))
+            : 0
+          return (
+            <tr key={t.id} style={{ borderBottom: '1px solid #eee', background: highlightOverdue ? '#fff7f7' : 'transparent' }}>
+              <Td>
+                <div style={{ fontWeight: 600, color: '#111' }}>{t.title}</div>
+                {t.projectTitle && <div style={{ fontSize: 10, color: '#777' }}>{t.projectTitle}</div>}
+              </Td>
+              <Td>
+                <span style={{
+                  fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
+                  padding: '2px 6px', borderRadius: 2,
+                  background: `${STATUS_HEX[t.status] ?? '#a9b4b9'}20`,
+                  color: STATUS_HEX[t.status] ?? '#555',
+                }}>{STATUS_LABEL[t.status] ?? t.status}</span>
+              </Td>
+              <Td>
+                <span style={{
+                  fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
+                  color: PRIORITY_HEX[t.priority] ?? '#555',
+                }}>● {t.priority}</span>
+              </Td>
+              <Td>
+                <span style={{ fontSize: 10, fontFamily: 'ui-monospace, monospace', color: highlightOverdue ? '#c62828' : '#444' }}>
+                  {fmtScheduleString(t)}
+                  {highlightOverdue && daysLate > 0 && (
+                    <span style={{ marginLeft: 6, fontWeight: 800 }}>· {daysLate}d late</span>
+                  )}
+                </span>
+              </Td>
+            </tr>
+          )
+        })}
       </tbody>
     </table>
   )

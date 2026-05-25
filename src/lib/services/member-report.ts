@@ -59,6 +59,8 @@ export interface MemberReport {
   date: string                  // ISO of anchor day
   weekStart: string             // ISO of week start (Sun)
   weekEnd: string               // ISO of week end (Sat)
+  monthStart: string            // ISO of first day of anchor's month
+  monthEnd: string              // ISO of last day of anchor's month
   counts: {
     scheduledToday: number
     inProgress: number
@@ -70,8 +72,11 @@ export interface MemberReport {
   completedToday: MemberReportTask[]
   inProgress: MemberReportTask[]
   blocked: MemberReportTask[]
+  overdue: MemberReportTask[]
   recentComments: MemberReportComment[]
   weekSnapshot: MemberReportWeekTask[]
+  /** Tasks intersecting the calendar month containing the anchor date. */
+  monthSnapshot: MemberReportWeekTask[]
 }
 
 function startOfDay(d: Date): Date { const x = new Date(d); x.setHours(0, 0, 0, 0); return x }
@@ -110,6 +115,8 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
   const dayEnd = endOfDay(anchor)
   const weekStart = startOfWeek(anchor)
   const weekEnd = endOfDay(addDays(weekStart, 6))
+  const monthStart = startOfDay(new Date(anchor.getFullYear(), anchor.getMonth(), 1))
+  const monthEnd = endOfDay(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0))
 
   // Resolve "their tasks" = tasks they created OR are assigned to (via TeamMember).
   const teamMemberId = user.teamMemberId
@@ -159,8 +166,8 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
     orderBy: { dueDate: 'asc' },
   })
 
-  // 5) Overdue count (open tasks with end/due before today).
-  const overdueCount = await prisma.task.count({
+  // 5) Overdue tasks (open tasks with end/due before today).
+  const overdue = await prisma.task.findMany({
     where: {
       AND: [
         { OR: orClauses },
@@ -173,6 +180,9 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
         },
       ],
     },
+    include: { project: { select: { title: true } } },
+    // Most overdue first (oldest end/due bubbles up).
+    orderBy: [{ endDate: 'asc' }, { dueDate: 'asc' }],
   })
 
   // 6) Recent comments on their tasks (last 7 days, max 10).
@@ -219,6 +229,33 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
     }
   })
 
+  // 8) Month snapshot tasks (anything intersecting the calendar month).
+  const monthTasks = await prisma.task.findMany({
+    where: {
+      OR: orClauses,
+      AND: [{
+        OR: [
+          { AND: [{ startDate: { lte: monthEnd } }, { endDate: { gte: monthStart } }] },
+          { AND: [{ startDate: null }, { endDate: null }, { dueDate: { gte: monthStart, lte: monthEnd } }] },
+        ],
+      }],
+    },
+    select: { id: true, title: true, priority: true, status: true, startDate: true, endDate: true, dueDate: true },
+  })
+
+  const monthSnapshot: MemberReportWeekTask[] = monthTasks.map(t => {
+    const s = t.startDate ?? t.endDate ?? t.dueDate
+    const e = t.endDate ?? t.dueDate ?? t.startDate
+    return {
+      id: t.id,
+      title: t.title,
+      priority: t.priority,
+      status: t.status,
+      startKey: s ? toKey(s) : toKey(monthStart),
+      endKey: e ? toKey(e) : toKey(monthStart),
+    }
+  })
+
   return {
     member: {
       id: user.id,
@@ -233,17 +270,20 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
     date: dayStart.toISOString(),
     weekStart: weekStart.toISOString(),
     weekEnd: weekEnd.toISOString(),
+    monthStart: monthStart.toISOString(),
+    monthEnd: monthEnd.toISOString(),
     counts: {
       scheduledToday: todaysTasks.length,
       inProgress: inProgress.length,
       blocked: blocked.length,
       completedToday: completedToday.length,
-      overdue: overdueCount,
+      overdue: overdue.length,
     },
     todaysTasks: todaysTasks.map(pick),
     completedToday: completedToday.map(pick),
     inProgress: inProgress.map(pick),
     blocked: blocked.map(pick),
+    overdue: overdue.map(pick),
     recentComments: comments.map(c => ({
       id: c.id,
       taskId: c.taskId,
@@ -253,5 +293,6 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
       createdAt: c.createdAt.toISOString(),
     })),
     weekSnapshot,
+    monthSnapshot,
   }
 }

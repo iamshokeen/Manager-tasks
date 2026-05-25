@@ -43,18 +43,25 @@ interface RosterPayload {
   rows: ReportRow[]
 }
 
+interface CalendarTask {
+  id: string; title: string; priority: string; status: string; startKey: string; endKey: string
+}
 interface MemberBrief {
   member: { id: string; name: string; email: string; role: string; avatarUrl: string | null; teamMemberId: string | null; department: string | null; title: string | null }
   date: string
   weekStart: string
   weekEnd: string
+  monthStart: string
+  monthEnd: string
   counts: { scheduledToday: number; inProgress: number; blocked: number; completedToday: number; overdue: number }
   todaysTasks: Array<{ id: string; title: string; status: string; priority: string; startDate: string | null; endDate: string | null; dueDate: string | null }>
   completedToday: Array<{ id: string; title: string; completedAt: string | null }>
   inProgress: Array<{ id: string; title: string; status: string; priority: string }>
   blocked: Array<{ id: string; title: string; priority: string }>
+  overdue: Array<{ id: string; title: string; status: string; priority: string; startDate: string | null; endDate: string | null; dueDate: string | null }>
   recentComments: Array<{ id: string; taskTitle: string; note: string; authorName: string | null; createdAt: string }>
-  weekSnapshot: Array<{ id: string; title: string; priority: string; status: string; startKey: string; endKey: string }>
+  weekSnapshot: CalendarTask[]
+  monthSnapshot: CalendarTask[]
 }
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json()).then((r) => r.data)
@@ -71,7 +78,6 @@ function fmtShortDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 }
 function dayKey(iso: string): string { return iso.split('T')[0] }
-function addDaysISO(iso: string, n: number): string { const d = new Date(iso); d.setDate(d.getDate() + n); return d.toISOString() }
 
 export default function ReportsPage() {
   const [anchor, setAnchor] = useState<Date>(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d })
@@ -254,6 +260,31 @@ export default function ReportsPage() {
                 <StatTile label="Overdue" value={brief.counts.overdue} accent={brief.counts.overdue > 0 ? '#ef4444' : 'var(--on-surface-variant)'} />
               </div>
 
+              {/* Overdue — surfaced first */}
+              {brief.overdue.length > 0 && (
+                <BriefSection title={`Overdue (${brief.overdue.length})`} accent="#ef4444">
+                  <ul className="space-y-1">
+                    {brief.overdue.map(t => {
+                      const endIso = t.endDate ?? t.dueDate
+                      const daysLate = endIso
+                        ? Math.max(1, Math.round((new Date(brief.date).getTime() - new Date(endIso).getTime()) / 86_400_000))
+                        : 0
+                      return (
+                        <li key={t.id} className="flex items-center gap-3 px-2.5 py-2 rounded"
+                          style={{ background: 'rgba(239,68,68,0.06)', boxShadow: 'inset 3px 0 0 #ef4444' }}>
+                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                            style={{ background: PRIORITY_HEX[t.priority] ?? '#a9b4b9' }} />
+                          <span className="flex-1 text-sm" style={{ color: 'var(--on-surface)' }}>{t.title}</span>
+                          <span className="text-[10px] font-mono uppercase tracking-widest" style={{ color: '#ef4444' }}>
+                            {daysLate}d late
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </BriefSection>
+              )}
+
               {/* Today's Tasks */}
               <BriefSection title={`Today's Tasks (${brief.todaysTasks.length})`}>
                 {brief.todaysTasks.length === 0 ? (
@@ -265,7 +296,7 @@ export default function ReportsPage() {
                         style={{ background: 'var(--surface-container-low)' }}>
                         <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                           style={{ background: PRIORITY_HEX[t.priority] ?? '#a9b4b9' }} />
-                        <span className="flex-1 text-sm truncate" style={{ color: 'var(--on-surface)' }}>{t.title}</span>
+                        <span className="flex-1 text-sm" style={{ color: 'var(--on-surface)' }}>{t.title}</span>
                         <span className="text-[10px] font-mono uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>
                           {t.status.replace('_', ' ')}
                         </span>
@@ -316,9 +347,9 @@ export default function ReportsPage() {
                 )}
               </BriefSection>
 
-              {/* Week calendar snapshot */}
-              <BriefSection title="This Week's Calendar">
-                <WeekSnapshot brief={brief} />
+              {/* Monthly calendar snapshot */}
+              <BriefSection title={`This Month's Calendar — ${new Date(brief.monthStart).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}`}>
+                <MonthSnapshot brief={brief} />
               </BriefSection>
             </>
           )}
@@ -337,11 +368,11 @@ function StatTile({ label, value, accent }: { label: string; value: number; acce
   )
 }
 
-function BriefSection({ title, children }: { title: string; children: React.ReactNode }) {
+function BriefSection({ title, children, accent }: { title: string; children: React.ReactNode; accent?: string }) {
   return (
     <section>
       <h3 className="text-[10px] font-bold uppercase tracking-widest mb-2 pb-1"
-        style={{ color: 'var(--on-surface)', borderBottom: '1px solid var(--surface-container-high)' }}>{title}</h3>
+        style={{ color: accent ?? 'var(--on-surface)', borderBottom: `1px solid ${accent ?? 'var(--surface-container-high)'}` }}>{title}</h3>
       {children}
     </section>
   )
@@ -351,78 +382,92 @@ function EmptyLine({ text }: { text: string }) {
   return <p className="text-xs italic" style={{ color: 'var(--on-surface-variant)' }}>{text}</p>
 }
 
-function WeekSnapshot({ brief }: { brief: MemberBrief }) {
-  const weekKeys: string[] = []
-  for (let i = 0; i < 7; i++) weekKeys.push(dayKey(addDaysISO(brief.weekStart, i)))
+// Month-view calendar snapshot. Each day cell shows the full title of every
+// task whose [start..end] range overlaps that day — no truncation, wraps as
+// needed. Multi-day tasks repeat in each spanned cell so nothing gets hidden.
+function MonthSnapshot({ brief }: { brief: MemberBrief }) {
+  const monthStart = new Date(brief.monthStart)
+  const monthEnd = new Date(brief.monthEnd)
+  // Calendar grid starts on the Sunday on/before the 1st.
+  const gridStart = new Date(monthStart); gridStart.setDate(gridStart.getDate() - gridStart.getDay())
+  // 6 weeks × 7 = 42 cells to safely cover every month layout.
+  const cells: Date[] = []
+  for (let i = 0; i < 42; i++) { const d = new Date(gridStart); d.setDate(gridStart.getDate() + i); cells.push(d) }
+  // Trim trailing whole weeks that fall fully outside the month for compactness.
+  while (cells.length >= 35 && cells[cells.length - 7].getTime() > monthEnd.getTime()) cells.splice(cells.length - 7, 7)
+  const rowCount = Math.ceil(cells.length / 7)
 
-  type Laid = { task: typeof brief.weekSnapshot[number]; startIdx: number; endIdx: number; lane: number }
-  const sorted = [...brief.weekSnapshot].sort((a, b) => a.startKey.localeCompare(b.startKey))
-  const lanes: number[] = []
-  const laid: Laid[] = []
-  for (const t of sorted) {
-    const startIdx = Math.max(0, weekKeys.indexOf(t.startKey))
-    const endRaw = weekKeys.indexOf(t.endKey)
-    const endIdx = endRaw === -1 ? 6 : Math.min(6, endRaw)
-    let lane = lanes.findIndex(n => n <= startIdx)
-    if (lane === -1) { lane = lanes.length; lanes.push(0) }
-    lanes[lane] = endIdx + 1
-    laid.push({ task: t, startIdx, endIdx, lane })
+  // Bucket tasks per day key.
+  const perDay = new Map<string, CalendarTask[]>()
+  for (const t of brief.monthSnapshot) {
+    const s = new Date(t.startKey).getTime()
+    const e = new Date(t.endKey).getTime()
+    for (const d of cells) {
+      const k = dayKey(d.toISOString())
+      const dt = d.getTime()
+      if (dt >= s && dt <= e) {
+        if (!perDay.has(k)) perDay.set(k, [])
+        perDay.get(k)!.push(t)
+      }
+    }
   }
-  const laneCount = Math.max(1, lanes.length)
+
   const todayKey = dayKey(brief.date)
 
   return (
     <div className="rounded overflow-hidden" style={{ background: 'var(--surface-container-low)' }}>
+      {/* Weekday header */}
       <div className="grid" style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}>
-        {weekKeys.map(k => {
-          const d = new Date(k)
+        {DAY_NAMES.map(n => (
+          <div key={n} className="px-2 py-1.5 text-center text-[9px] font-bold uppercase tracking-widest"
+            style={{ color: 'var(--on-surface-variant)' }}>{n}</div>
+        ))}
+      </div>
+      {/* Grid */}
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gridTemplateRows: `repeat(${rowCount}, minmax(96px, auto))` }}>
+        {cells.map(d => {
+          const k = dayKey(d.toISOString())
+          const inMonth = d.getMonth() === monthStart.getMonth()
           const today = k === todayKey
+          const items = perDay.get(k) ?? []
           return (
-            <div key={k} className="px-2 py-1.5 text-center" style={{ background: today ? 'var(--surface-container)' : 'transparent' }}>
-              <div className="text-[9px] font-bold uppercase tracking-widest" style={{ color: today ? 'var(--primary)' : 'var(--on-surface-variant)' }}>
-                {DAY_NAMES[d.getDay()]}
+            <div key={k} className="border-l border-t p-1.5 flex flex-col gap-1 overflow-hidden"
+              style={{
+                borderColor: 'var(--surface-container)',
+                background: today ? 'var(--surface-container)' : 'var(--surface)',
+                opacity: inMonth ? 1 : 0.45,
+              }}>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold tabular-nums"
+                  style={{ color: today ? 'var(--primary)' : 'var(--on-surface)' }}>{d.getDate()}</span>
+                {items.length > 0 && (
+                  <span className="text-[8px] font-mono px-1 py-0.5 rounded"
+                    style={{ background: 'var(--surface-container-high)', color: 'var(--on-surface-variant)' }}>
+                    {items.length}
+                  </span>
+                )}
               </div>
-              <div className="text-sm font-mono font-bold tabular-nums" style={{ color: today ? 'var(--primary)' : 'var(--on-surface)' }}>
-                {d.getDate()}
-              </div>
+              {items.map(t => (
+                <div key={`${k}-${t.id}`}
+                  className="text-[10px] leading-tight px-1.5 py-1 rounded"
+                  style={{
+                    background: `${PRIORITY_HEX[t.priority] ?? PRIORITY_HEX.low}20`,
+                    borderLeft: `2px solid ${PRIORITY_HEX[t.priority] ?? PRIORITY_HEX.low}`,
+                    color: 'var(--on-surface)',
+                    wordBreak: 'break-word',
+                  }}
+                  title={t.title}
+                >{t.title}</div>
+              ))}
             </div>
           )
         })}
       </div>
-      <div className="relative" style={{ minHeight: laneCount * 22 + 14 }}>
-        <div className="absolute inset-0 grid" style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}>
-          {weekKeys.map(k => <div key={k} style={{ borderLeft: '1px solid var(--surface-container)' }} />)}
-        </div>
-        {laid.length === 0 && (
-          <p className="text-center text-xs italic py-3" style={{ color: 'var(--on-surface-variant)' }}>
-            Nothing on the calendar this week.
-          </p>
-        )}
-        {laid.map(({ task, startIdx, endIdx, lane }) => {
-          const span = endIdx - startIdx + 1
-          const color = PRIORITY_HEX[task.priority] ?? PRIORITY_HEX.low
-          return (
-            <div
-              key={task.id}
-              style={{
-                position: 'absolute',
-                top: lane * 22 + 4, height: 18,
-                left: `calc(${(startIdx / 7) * 100}% + 3px)`,
-                width: `calc(${(span / 7) * 100}% - 6px)`,
-                background: `${color}25`,
-                borderLeft: `3px solid ${color}`,
-                borderRadius: 2,
-                padding: '0 6px',
-                display: 'flex', alignItems: 'center',
-                fontSize: 10, fontWeight: 600,
-                color: 'var(--on-surface)',
-                overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
-              }}
-              title={task.title}
-            >{task.title}</div>
-          )
-        })}
-      </div>
+      {brief.monthSnapshot.length === 0 && (
+        <p className="text-center text-xs italic py-3" style={{ color: 'var(--on-surface-variant)' }}>
+          Nothing on the calendar this month.
+        </p>
+      )}
     </div>
   )
 }
