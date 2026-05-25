@@ -223,11 +223,19 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
     orderBy: { createdAt: 'desc' },
   })
 
-  // 6a) Tasks created on the anchor day, owned by this user.
+  // 6a) Tasks created on the anchor day, owned by this user. Excludes
+  // recurring-spawned rows (source='recurring' / fromRecurringId set):
+  // the cron materializes hundreds of future occurrences with
+  // createdAt=now, which would otherwise drown out the handful of tasks
+  // a human actually drafted today.
   const tasksCreatedToday = await prisma.task.findMany({
     where: {
-      OR: orClauses,
-      createdAt: { gte: dayStart, lte: dayEnd },
+      AND: [
+        { OR: orClauses },
+        { createdAt: { gte: dayStart, lte: dayEnd } },
+        { source: { not: 'recurring' } },
+        { fromRecurringId: null },
+      ],
     },
     include: { project: { select: { title: true } } },
     orderBy: { createdAt: 'desc' },
