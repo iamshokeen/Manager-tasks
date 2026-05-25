@@ -328,7 +328,7 @@ export default async function MemberReportPrintPage({
           </div>
           {report.monthSnapshot.length === 0 && (
             <div style={{ padding: '18px 12px', fontSize: 11, color: '#888', fontStyle: 'italic', textAlign: 'center' }}>
-              Nothing scheduled this month.
+              Nothing on the calendar this month.
             </div>
           )}
         </div>
@@ -444,7 +444,7 @@ function TaskTable({ rows, highlightOverdue, anchorDate }: {
 function fmtScheduleString(t: MemberReportTask): string {
   const start = t.startDate ?? t.endDate ?? t.dueDate
   const end = t.endDate ?? t.dueDate ?? t.startDate
-  if (!start && !end) return 'Unscheduled'
+  if (!start && !end) return 'No dates'
   if (!start || !end || start === end) return fmtShortDate(end ?? start!)
   return `${fmtShortDate(start)} → ${fmtShortDate(end)}`
 }
