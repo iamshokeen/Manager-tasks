@@ -36,6 +36,14 @@ export interface MemberReportComment {
   createdAt: string
 }
 
+export interface MemberReportFollowUp {
+  id: string
+  title: string
+  contactName: string
+  status: string
+  lastActivityAt: string
+}
+
 export interface MemberReportWeekTask {
   id: string
   title: string
@@ -67,12 +75,21 @@ export interface MemberReport {
     blocked: number
     completedToday: number
     overdue: number
+    followUpsActionedToday: number
+    tasksCreatedToday: number
   }
   todaysTasks: MemberReportTask[]
   completedToday: MemberReportTask[]
   inProgress: MemberReportTask[]
   blocked: MemberReportTask[]
   overdue: MemberReportTask[]
+  /** Tasks created on the anchor day. */
+  tasksCreatedToday: MemberReportTask[]
+  /** Follow-ups whose lastActivityAt falls on the anchor day. */
+  followUpsActionedToday: MemberReportFollowUp[]
+  /** Task-activity comments authored on the anchor day. */
+  commentsToday: MemberReportComment[]
+  /** @deprecated kept for backward-compat with prior payload consumers. */
   recentComments: MemberReportComment[]
   weekSnapshot: MemberReportWeekTask[]
   /** Tasks intersecting the calendar month containing the anchor date. */
@@ -185,8 +202,7 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
     orderBy: [{ endDate: 'asc' }, { dueDate: 'asc' }],
   })
 
-  // 6) Recent comments on their tasks (last 7 days, max 10).
-  const sevenAgo = addDays(dayStart, -7)
+  // 6) Comments on their tasks — scoped strictly to the anchor day.
   const myTaskIds = await prisma.task.findMany({
     where: { OR: orClauses },
     select: { id: true, title: true },
@@ -196,10 +212,36 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
     where: {
       taskId: { in: myTaskIds.map(t => t.id) },
       type: 'comment',
-      createdAt: { gte: sevenAgo, lte: dayEnd },
+      createdAt: { gte: dayStart, lte: dayEnd },
     },
     orderBy: { createdAt: 'desc' },
-    take: 10,
+  })
+
+  // 6a) Tasks created on the anchor day, owned by this user.
+  const tasksCreatedToday = await prisma.task.findMany({
+    where: {
+      OR: orClauses,
+      createdAt: { gte: dayStart, lte: dayEnd },
+    },
+    include: { project: { select: { title: true } } },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  // 6b) Follow-ups touched on the anchor day. Owner = creator OR linked
+  // teamMember matches this user's TeamMember row.
+  const followUpOr: import('@prisma/client').Prisma.FollowUpWhereInput[] = [
+    { createdByUserId: userId },
+  ]
+  if (teamMemberId) followUpOr.push({ teamMemberId })
+  const followUpsActioned = await prisma.followUp.findMany({
+    where: {
+      AND: [
+        { OR: followUpOr },
+        { lastActivityAt: { gte: dayStart, lte: dayEnd } },
+      ],
+    },
+    select: { id: true, title: true, contactName: true, status: true, lastActivityAt: true },
+    orderBy: { lastActivityAt: 'desc' },
   })
 
   // 7) Week snapshot tasks (anything intersecting the week).
@@ -278,12 +320,31 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
       blocked: blocked.length,
       completedToday: completedToday.length,
       overdue: overdue.length,
+      followUpsActionedToday: followUpsActioned.length,
+      tasksCreatedToday: tasksCreatedToday.length,
     },
     todaysTasks: todaysTasks.map(pick),
     completedToday: completedToday.map(pick),
     inProgress: inProgress.map(pick),
     blocked: blocked.map(pick),
     overdue: overdue.map(pick),
+    tasksCreatedToday: tasksCreatedToday.map(pick),
+    followUpsActionedToday: followUpsActioned.map(f => ({
+      id: f.id,
+      title: f.title,
+      contactName: f.contactName,
+      status: f.status,
+      lastActivityAt: f.lastActivityAt.toISOString(),
+    })),
+    commentsToday: comments.map(c => ({
+      id: c.id,
+      taskId: c.taskId,
+      taskTitle: idToTitle.get(c.taskId) ?? 'Task',
+      note: c.note ?? '',
+      authorName: c.authorName,
+      createdAt: c.createdAt.toISOString(),
+    })),
+    // Back-compat alias — same payload as commentsToday for older consumers.
     recentComments: comments.map(c => ({
       id: c.id,
       taskId: c.taskId,

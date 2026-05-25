@@ -254,6 +254,13 @@ export async function updateTask(
     _note?: string
   }
 
+  // Maintain completedAt as the canonical "marked done" timestamp. The
+  // reports feed (Done Today / activity) depends on this column.
+  if ('status' in taskData && taskData.status !== existing.status) {
+    if (taskData.status === 'done') taskData.completedAt = new Date()
+    else if (existing.status === 'done') taskData.completedAt = null
+  }
+
   const task = await prisma.task.update({ where: { id }, data: taskData as Prisma.TaskUpdateInput })
 
   // Sync stakeholders if provided

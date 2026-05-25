@@ -133,51 +133,93 @@ export default async function MemberReportPrintPage({
       </div>
 
       {/* Counts row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 22 }}>
-        <StatTile label="Scheduled" value={report.counts.scheduledToday} accent="#0053db" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 22 }}>
         <StatTile label="In Progress" value={report.counts.inProgress} accent="#865400" />
-        <StatTile label="Blocked" value={report.counts.blocked} accent="#c62828" />
-        <StatTile label="Completed Today" value={report.counts.completedToday} accent="#2e7d32" />
         <StatTile label="Overdue" value={report.counts.overdue} accent={report.counts.overdue > 0 ? '#c62828' : '#a9b4b9'} />
+        <StatTile label="Done Today" value={report.counts.completedToday} accent="#2e7d32" />
+        <StatTile label="Follow-ups" value={report.counts.followUpsActionedToday} accent="#7c3aed" />
+        <StatTile label="New Today" value={report.counts.tasksCreatedToday} accent="#0053db" />
+        <StatTile label="Blocked" value={report.counts.blocked} accent="#c62828" />
       </div>
 
-      {/* Overdue — surfaced first so it can't be missed */}
-      {report.overdue.length > 0 && (
-        <Section title={`Overdue (${report.overdue.length})`} accent="#c62828">
-          <TaskTable rows={report.overdue} highlightOverdue anchorDate={report.date} />
-        </Section>
-      )}
-
-      {/* Today's tasks table */}
-      <Section title="Today's Tasks">
-        {report.todaysTasks.length === 0 ? (
-          <EmptyLine text="No tasks scheduled for today." />
+      {/* 1. In Progress */}
+      <Section title={`In Progress (${report.inProgress.length})`} accent="#865400">
+        {report.inProgress.length === 0 ? (
+          <EmptyLine text="Nothing actively in progress." />
         ) : (
-          <TaskTable rows={report.todaysTasks} />
+          <TaskTable rows={report.inProgress} />
         )}
       </Section>
 
-      {/* In progress */}
-      {report.inProgress.length > 0 && (
-        <Section title={`In Progress (${report.inProgress.length})`}>
-          <TaskTable rows={report.inProgress} />
-        </Section>
-      )}
+      {/* 2. Overdue */}
+      <Section title={`Overdue (${report.overdue.length})`} accent="#c62828">
+        {report.overdue.length === 0 ? (
+          <EmptyLine text="Nothing overdue." />
+        ) : (
+          <TaskTable rows={report.overdue} highlightOverdue anchorDate={report.date} />
+        )}
+      </Section>
 
-      {/* Blocked */}
-      {report.blocked.length > 0 && (
-        <Section title={`Blocked (${report.blocked.length})`}>
-          <TaskTable rows={report.blocked} />
-        </Section>
-      )}
+      {/* 3. Done Today */}
+      <Section title={`Done Today (${report.completedToday.length})`} accent="#2e7d32">
+        {report.completedToday.length === 0 ? (
+          <EmptyLine text="No tasks marked done today." />
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {report.completedToday.map(t => (
+              <li key={t.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '4px 0', borderBottom: '1px solid #eee' }}>
+                <span style={{ color: '#2e7d32', fontWeight: 700 }}>✓</span>
+                <span style={{ flex: 1, fontSize: 12, color: '#333', textDecoration: 'line-through' }}>{t.title}</span>
+                {t.completedAt && (
+                  <span style={{ fontSize: 10, color: '#777', fontFamily: 'ui-monospace, monospace' }}>{fmtTime(t.completedAt)}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
 
-      {/* Recent comments / progress notes */}
-      <Section title={`Progress Notes from Comments (${report.recentComments.length})`}>
-        {report.recentComments.length === 0 ? (
-          <EmptyLine text="No comments in the last 7 days." />
+      {/* 4. Follow-ups actioned today */}
+      <Section title={`Follow-ups Actioned Today (${report.followUpsActionedToday.length})`} accent="#7c3aed">
+        {report.followUpsActionedToday.length === 0 ? (
+          <EmptyLine text="No follow-ups touched today." />
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {report.followUpsActionedToday.map(f => (
+              <li key={f.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '4px 0', borderBottom: '1px solid #eee' }}>
+                <span style={{ flex: 1, fontSize: 12, color: '#222' }}>
+                  <strong>{f.title}</strong>
+                  <span style={{ color: '#777' }}> · {f.contactName}</span>
+                </span>
+                <span style={{
+                  fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
+                  color: '#7c3aed',
+                }}>{f.status}</span>
+                <span style={{ fontSize: 10, color: '#777', fontFamily: 'ui-monospace, monospace' }}>
+                  {fmtTime(f.lastActivityAt)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      {/* 5. New tasks created today */}
+      <Section title={`New Tasks Today (${report.tasksCreatedToday.length})`} accent="#0053db">
+        {report.tasksCreatedToday.length === 0 ? (
+          <EmptyLine text="No tasks created today." />
+        ) : (
+          <TaskTable rows={report.tasksCreatedToday} />
+        )}
+      </Section>
+
+      {/* 6. Comments updated today */}
+      <Section title={`Comments Updated Today (${report.commentsToday.length})`}>
+        {report.commentsToday.length === 0 ? (
+          <EmptyLine text="No comments posted today." />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {report.recentComments.map(c => (
+            {report.commentsToday.map(c => (
               <div key={c.id} style={{
                 borderLeft: '3px solid #0053db',
                 paddingLeft: 12, paddingTop: 4, paddingBottom: 4,
@@ -193,25 +235,6 @@ export default async function MemberReportPrintPage({
               </div>
             ))}
           </div>
-        )}
-      </Section>
-
-      {/* Completed today */}
-      <Section title={`Completed Today (${report.completedToday.length})`}>
-        {report.completedToday.length === 0 ? (
-          <EmptyLine text="No tasks marked done today." />
-        ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {report.completedToday.map(t => (
-              <li key={t.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '4px 0', borderBottom: '1px solid #eee' }}>
-                <span style={{ color: '#2e7d32', fontWeight: 700 }}>✓</span>
-                <span style={{ flex: 1, fontSize: 12, color: '#333', textDecoration: 'line-through' }}>{t.title}</span>
-                {t.completedAt && (
-                  <span style={{ fontSize: 10, color: '#777', fontFamily: 'ui-monospace, monospace' }}>{fmtTime(t.completedAt)}</span>
-                )}
-              </li>
-            ))}
-          </ul>
         )}
       </Section>
 

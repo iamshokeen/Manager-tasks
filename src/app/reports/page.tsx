@@ -46,6 +46,11 @@ interface RosterPayload {
 interface CalendarTask {
   id: string; title: string; priority: string; status: string; startKey: string; endKey: string
 }
+interface BriefTask {
+  id: string; title: string; status: string; priority: string
+  startDate: string | null; endDate: string | null; dueDate: string | null
+  completedAt: string | null
+}
 interface MemberBrief {
   member: { id: string; name: string; email: string; role: string; avatarUrl: string | null; teamMemberId: string | null; department: string | null; title: string | null }
   date: string
@@ -53,13 +58,19 @@ interface MemberBrief {
   weekEnd: string
   monthStart: string
   monthEnd: string
-  counts: { scheduledToday: number; inProgress: number; blocked: number; completedToday: number; overdue: number }
-  todaysTasks: Array<{ id: string; title: string; status: string; priority: string; startDate: string | null; endDate: string | null; dueDate: string | null }>
-  completedToday: Array<{ id: string; title: string; completedAt: string | null }>
-  inProgress: Array<{ id: string; title: string; status: string; priority: string }>
-  blocked: Array<{ id: string; title: string; priority: string }>
-  overdue: Array<{ id: string; title: string; status: string; priority: string; startDate: string | null; endDate: string | null; dueDate: string | null }>
-  recentComments: Array<{ id: string; taskTitle: string; note: string; authorName: string | null; createdAt: string }>
+  counts: {
+    scheduledToday: number; inProgress: number; blocked: number
+    completedToday: number; overdue: number
+    followUpsActionedToday: number; tasksCreatedToday: number
+  }
+  todaysTasks: BriefTask[]
+  completedToday: BriefTask[]
+  inProgress: BriefTask[]
+  blocked: BriefTask[]
+  overdue: BriefTask[]
+  tasksCreatedToday: BriefTask[]
+  followUpsActionedToday: Array<{ id: string; title: string; contactName: string; status: string; lastActivityAt: string }>
+  commentsToday: Array<{ id: string; taskTitle: string; note: string; authorName: string | null; createdAt: string }>
   weekSnapshot: CalendarTask[]
   monthSnapshot: CalendarTask[]
 }
@@ -73,9 +84,6 @@ const DAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-function fmtShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 }
 function dayKey(iso: string): string { return iso.split('T')[0] }
 
@@ -251,18 +259,30 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* Stat tiles */}
-              <div className="grid grid-cols-5 gap-2">
-                <StatTile label="Scheduled" value={brief.counts.scheduledToday} accent="var(--primary)" />
+              {/* Stat tiles — order mirrors the section order below */}
+              <div className="grid grid-cols-6 gap-2">
                 <StatTile label="In Progress" value={brief.counts.inProgress} accent="#f8a010" />
-                <StatTile label="Blocked" value={brief.counts.blocked} accent="#c62828" />
-                <StatTile label="Done" value={brief.counts.completedToday} accent="#2e7d32" />
                 <StatTile label="Overdue" value={brief.counts.overdue} accent={brief.counts.overdue > 0 ? '#ef4444' : 'var(--on-surface-variant)'} />
+                <StatTile label="Done Today" value={brief.counts.completedToday} accent="#2e7d32" />
+                <StatTile label="Follow-ups" value={brief.counts.followUpsActionedToday} accent="#7c3aed" />
+                <StatTile label="New Today" value={brief.counts.tasksCreatedToday} accent="var(--primary)" />
+                <StatTile label="Blocked" value={brief.counts.blocked} accent="#c62828" />
               </div>
 
-              {/* Overdue — surfaced first */}
-              {brief.overdue.length > 0 && (
-                <BriefSection title={`Overdue (${brief.overdue.length})`} accent="#ef4444">
+              {/* 1. In Progress (point-in-time snapshot) */}
+              <BriefSection title={`In Progress (${brief.inProgress.length})`} accent="#f8a010">
+                {brief.inProgress.length === 0 ? (
+                  <EmptyLine text="Nothing actively in progress." />
+                ) : (
+                  <TaskList items={brief.inProgress} statusTone="#f8a010" />
+                )}
+              </BriefSection>
+
+              {/* 2. Overdue */}
+              <BriefSection title={`Overdue (${brief.overdue.length})`} accent="#ef4444">
+                {brief.overdue.length === 0 ? (
+                  <EmptyLine text="Nothing overdue. 👌" />
+                ) : (
                   <ul className="space-y-1">
                     {brief.overdue.map(t => {
                       const endIso = t.endDate ?? t.dueDate
@@ -282,23 +302,46 @@ export default function ReportsPage() {
                       )
                     })}
                   </ul>
-                </BriefSection>
-              )}
+                )}
+              </BriefSection>
 
-              {/* Today's Tasks */}
-              <BriefSection title={`Today's Tasks (${brief.todaysTasks.length})`}>
-                {brief.todaysTasks.length === 0 ? (
-                  <EmptyLine text="No tasks scheduled for today." />
+              {/* 3. Done Today */}
+              <BriefSection title={`Done Today (${brief.completedToday.length})`} accent="#2e7d32">
+                {brief.completedToday.length === 0 ? (
+                  <EmptyLine text="No tasks marked done today." />
                 ) : (
                   <ul className="space-y-1">
-                    {brief.todaysTasks.map(t => (
-                      <li key={t.id} className="flex items-center gap-3 px-2.5 py-2 rounded"
+                    {brief.completedToday.map(t => (
+                      <li key={t.id} className="flex items-center gap-2 px-2.5 py-2 rounded"
+                        style={{ background: 'rgba(46,125,50,0.06)', boxShadow: 'inset 3px 0 0 #2e7d32' }}>
+                        <span style={{ color: '#2e7d32' }}>✓</span>
+                        <span className="flex-1 text-sm line-through" style={{ color: 'var(--on-surface-variant)' }}>{t.title}</span>
+                        {t.completedAt && (
+                          <span className="text-[10px] font-mono" style={{ color: 'var(--on-surface-variant)' }}>
+                            {new Date(t.completedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </BriefSection>
+
+              {/* 4. Follow-ups actioned today */}
+              <BriefSection title={`Follow-ups Actioned Today (${brief.followUpsActionedToday.length})`} accent="#7c3aed">
+                {brief.followUpsActionedToday.length === 0 ? (
+                  <EmptyLine text="No follow-ups touched today." />
+                ) : (
+                  <ul className="space-y-1">
+                    {brief.followUpsActionedToday.map(f => (
+                      <li key={f.id} className="flex items-center gap-3 px-2.5 py-2 rounded"
                         style={{ background: 'var(--surface-container-low)' }}>
-                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                          style={{ background: PRIORITY_HEX[t.priority] ?? '#a9b4b9' }} />
-                        <span className="flex-1 text-sm" style={{ color: 'var(--on-surface)' }}>{t.title}</span>
-                        <span className="text-[10px] font-mono uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>
-                          {t.status.replace('_', ' ')}
+                        <span className="text-sm flex-1" style={{ color: 'var(--on-surface)' }}>
+                          {f.title}
+                          <span style={{ color: 'var(--on-surface-variant)' }}> · {f.contactName}</span>
+                        </span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest" style={{ color: '#7c3aed' }}>
+                          {f.status}
                         </span>
                       </li>
                     ))}
@@ -306,44 +349,32 @@ export default function ReportsPage() {
                 )}
               </BriefSection>
 
-              {/* Recent comments */}
-              <BriefSection title={`Progress Notes (${brief.recentComments.length})`}>
-                {brief.recentComments.length === 0 ? (
-                  <EmptyLine text="No comments in the last 7 days." />
+              {/* 5. Tasks created today */}
+              <BriefSection title={`New Tasks Today (${brief.tasksCreatedToday.length})`} accent="var(--primary)">
+                {brief.tasksCreatedToday.length === 0 ? (
+                  <EmptyLine text="No tasks created today." />
                 ) : (
-                  <div className="space-y-2">
-                    {brief.recentComments.slice(0, 4).map(c => (
-                      <div key={c.id} className="pl-3 py-1.5" style={{ borderLeft: '2px solid var(--primary)' }}>
-                        <div className="text-[11px] font-bold" style={{ color: 'var(--on-surface)' }}>{c.taskTitle}</div>
-                        <div className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--on-surface-variant)' }}
-                          dangerouslySetInnerHTML={{ __html: c.note }} />
-                        <div className="text-[10px] font-mono mt-0.5" style={{ color: 'var(--on-surface-variant)', opacity: 0.7 }}>
-                          {c.authorName ?? 'System'} · {fmtShortDate(c.createdAt)}
-                        </div>
-                      </div>
-                    ))}
-                    {brief.recentComments.length > 4 && (
-                      <p className="text-[10px] font-mono uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>
-                        + {brief.recentComments.length - 4} more in PDF
-                      </p>
-                    )}
-                  </div>
+                  <TaskList items={brief.tasksCreatedToday} />
                 )}
               </BriefSection>
 
-              {/* Completed today */}
-              <BriefSection title={`Completed Today (${brief.completedToday.length})`}>
-                {brief.completedToday.length === 0 ? (
-                  <EmptyLine text="No tasks marked done today." />
+              {/* 6. Comments updated today */}
+              <BriefSection title={`Comments Updated Today (${brief.commentsToday.length})`}>
+                {brief.commentsToday.length === 0 ? (
+                  <EmptyLine text="No comments posted today." />
                 ) : (
-                  <ul className="space-y-1">
-                    {brief.completedToday.map(t => (
-                      <li key={t.id} className="flex items-center gap-2 text-sm">
-                        <span style={{ color: '#2e7d32' }}>✓</span>
-                        <span className="line-through" style={{ color: 'var(--on-surface-variant)' }}>{t.title}</span>
-                      </li>
+                  <div className="space-y-2">
+                    {brief.commentsToday.map(c => (
+                      <div key={c.id} className="pl-3 py-1.5" style={{ borderLeft: '2px solid var(--primary)' }}>
+                        <div className="text-[11px] font-bold" style={{ color: 'var(--on-surface)' }}>{c.taskTitle}</div>
+                        <div className="text-xs mt-0.5" style={{ color: 'var(--on-surface-variant)' }}
+                          dangerouslySetInnerHTML={{ __html: c.note }} />
+                        <div className="text-[10px] font-mono mt-0.5" style={{ color: 'var(--on-surface-variant)', opacity: 0.7 }}>
+                          {c.authorName ?? 'System'} · {new Date(c.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 )}
               </BriefSection>
 
@@ -380,6 +411,25 @@ function BriefSection({ title, children, accent }: { title: string; children: Re
 
 function EmptyLine({ text }: { text: string }) {
   return <p className="text-xs italic" style={{ color: 'var(--on-surface-variant)' }}>{text}</p>
+}
+
+// Reusable task row list — used for In Progress + New Tasks Today.
+function TaskList({ items, statusTone }: { items: BriefTask[]; statusTone?: string }) {
+  return (
+    <ul className="space-y-1">
+      {items.map(t => (
+        <li key={t.id} className="flex items-center gap-3 px-2.5 py-2 rounded"
+          style={{ background: 'var(--surface-container-low)' }}>
+          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+            style={{ background: PRIORITY_HEX[t.priority] ?? '#a9b4b9' }} />
+          <span className="flex-1 text-sm" style={{ color: 'var(--on-surface)' }}>{t.title}</span>
+          <span className="text-[10px] font-mono uppercase tracking-widest" style={{ color: statusTone ?? 'var(--on-surface-variant)' }}>
+            {t.status.replace('_', ' ')}
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 // Month-view calendar snapshot. Each day cell shows the full title of every
