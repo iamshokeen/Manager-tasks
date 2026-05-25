@@ -129,11 +129,15 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
   const { start: weekStart, end: weekEnd } = istWeekBounds(anchor)
   const { start: monthStart, end: monthEnd } = istMonthBounds(anchor)
 
-  // Resolve "their tasks" = tasks they created OR are assigned to (via TeamMember).
+  // Ownership for the brief = "the person doing the work", which is the
+  // assignee. A task you drafted and delegated to Shashank belongs in
+  // Shashank's brief, not yours. The only exception is tasks you drafted
+  // that have no assignee yet — those are your personal drafts so they
+  // stay on your report until you delegate them.
   const teamMemberId = user.teamMemberId
 
   const orClauses: import('@prisma/client').Prisma.TaskWhereInput[] = [
-    { createdByUserId: userId },
+    { AND: [{ createdByUserId: userId }, { assigneeId: null }] },
   ]
   if (teamMemberId) orClauses.push({ assigneeId: teamMemberId })
 
