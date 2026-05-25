@@ -8,8 +8,13 @@ export async function ConditionalShell({ children }: { children: React.ReactNode
   const headersList = await headers()
   const pathname = headersList.get('x-pathname') ?? ''
 
-  // Auth pages and legacy login bypass the shell
-  if (pathname.startsWith('/auth') || pathname === '/login') {
+  // Auth pages and legacy login bypass the shell. The /reports/print
+  // route is also chrome-free so PDFs render cleanly.
+  if (
+    pathname.startsWith('/auth') ||
+    pathname === '/login' ||
+    pathname.startsWith('/reports/print')
+  ) {
     return <>{children}</>
   }
 

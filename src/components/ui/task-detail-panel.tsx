@@ -49,6 +49,8 @@ interface TaskDetail {
   status: string
   priority: string
   description?: string | null
+  startDate?: string | null
+  endDate?: string | null
   dueDate?: string | null
   assignee?: { id: string; name: string } | null
   assignedByName?: string | null
@@ -771,14 +773,50 @@ export function TaskDetailPanel({ taskId, open, onClose, onTaskUpdated }: TaskDe
 
             <div className="h-px bg-border" />
 
-            {/* Due Date */}
-            <div className="space-y-1.5">
+            {/* Date Range */}
+            <div className="space-y-2">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                <Calendar size={10} /> Due Date
+                <Calendar size={10} /> Schedule
               </p>
-              <span className="text-xs text-foreground">
-                {task?.dueDate ? formatDate(task.dueDate) : <span className="text-muted-foreground">Not set</span>}
-              </span>
+              <div className="space-y-1.5">
+                <label className="block">
+                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground">Starts</span>
+                  <Input
+                    type="date"
+                    className="h-7 text-[11px] mt-0.5"
+                    value={task?.startDate ? task.startDate.slice(0, 10) : ''}
+                    max={task?.endDate ? task.endDate.slice(0, 10) : undefined}
+                    onChange={async e => {
+                      const v = e.target.value
+                      await patchTask({ startDate: v ? new Date(v + 'T12:00:00').toISOString() : null })
+                      toast.success('Start date updated')
+                    }}
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground">Ends / Due</span>
+                  <Input
+                    type="date"
+                    className="h-7 text-[11px] mt-0.5"
+                    value={task?.endDate ? task.endDate.slice(0, 10) : (task?.dueDate ? task.dueDate.slice(0, 10) : '')}
+                    min={task?.startDate ? task.startDate.slice(0, 10) : undefined}
+                    onChange={async e => {
+                      const v = e.target.value
+                      const iso = v ? new Date(v + 'T12:00:00').toISOString() : null
+                      await patchTask({ endDate: iso, dueDate: iso })
+                      toast.success('End date updated')
+                    }}
+                  />
+                </label>
+                {task?.startDate && task?.endDate && (
+                  <p className="text-[10px] font-mono text-primary">
+                    {Math.max(1, Math.round((new Date(task.endDate).getTime() - new Date(task.startDate).getTime()) / 86400000) + 1)}d span
+                  </p>
+                )}
+                {!task?.startDate && !task?.endDate && !task?.dueDate && (
+                  <p className="text-[10px] text-muted-foreground italic">Not scheduled</p>
+                )}
+              </div>
             </div>
 
             {/* Department */}

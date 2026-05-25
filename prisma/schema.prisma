@@ -213,6 +213,8 @@ model Task {
   department     String
   priority       String          @default("medium")
   status         String          @default("todo")
+  startDate      DateTime?
+  endDate        DateTime?
   dueDate        DateTime?
   completedAt    DateTime?
   stakeholderId  String?
@@ -232,6 +234,8 @@ model Task {
   followUps      FollowUp[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+
+  @@index([startDate, endDate])
 }
 
 model TaskActivity {

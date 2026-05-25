@@ -281,6 +281,10 @@ export async function syncTemplateTasks(templateId: string, now: Date = new Date
         stakeholderId: template.stakeholderId ?? undefined,
         createdByUserId: template.createdByUserId ?? undefined,
         fromRecurringId: template.id,
+        // Spawned recurring tasks are single-day blocks on the calendar
+        // (start == end == due) until a user manually widens the range.
+        startDate: due,
+        endDate: due,
         dueDate: due,
         source: 'recurring',
       },

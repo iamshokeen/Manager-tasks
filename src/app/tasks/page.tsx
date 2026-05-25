@@ -78,6 +78,8 @@ interface TaskShape {
   priority: string
   status?: string
   department?: string
+  startDate?: string | null
+  endDate?: string | null
   dueDate?: string | null
   assignee?: { id: string; name: string } | null
   assignedByName?: string | null

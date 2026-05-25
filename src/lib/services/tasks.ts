@@ -292,12 +292,15 @@ export async function updateTask(
     }
   }
 
-  // Log dueDate change
-  if ('dueDate' in taskData && taskData.dueDate !== undefined) {
-    const newDate = taskData.dueDate ? new Date(taskData.dueDate as string).toISOString() : null
-    const oldDate = existing.dueDate ? existing.dueDate.toISOString() : null
-    if (newDate !== oldDate) {
-      await logActivity(id, 'edit', 'dueDate', newDate ?? 'cleared')
+  // Log dueDate / startDate / endDate changes
+  for (const key of ['dueDate', 'startDate', 'endDate'] as const) {
+    if (key in taskData && taskData[key] !== undefined) {
+      const newDate = taskData[key] ? new Date(taskData[key] as string).toISOString() : null
+      const existingVal = existing[key as keyof typeof existing] as Date | null
+      const oldDate = existingVal ? existingVal.toISOString() : null
+      if (newDate !== oldDate) {
+        await logActivity(id, 'edit', key, newDate ?? 'cleared')
+      }
     }
   }
 

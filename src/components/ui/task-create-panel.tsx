@@ -28,6 +28,7 @@ interface TaskCreateForm {
   department: string
   priority: string
   assigneeId: string
+  startDate: string
   dueDate: string
   description: string
   isSelfTask: boolean
@@ -52,6 +53,7 @@ const EMPTY_FORM: TaskCreateForm = {
   department: '',
   priority: 'medium',
   assigneeId: '',
+  startDate: '',
   dueDate: '',
   description: '',
   isSelfTask: false,
@@ -165,7 +167,16 @@ export function TaskCreatePanel({ open, onClose, onCreated }: TaskCreatePanelPro
       }
       if (form.department) body.department = form.department
       if (!isSelf && form.assigneeId) body.assigneeId = form.assigneeId
-      if (form.dueDate) body.dueDate = new Date(form.dueDate).toISOString()
+      // Date-range semantics: if only one of start/due is given, both
+      // collapse to a single-day block. If both are given, range spans
+      // [startDate, endDate] in calendar rendering.
+      const startIso = form.startDate ? new Date(form.startDate).toISOString() : null
+      const dueIso = form.dueDate ? new Date(form.dueDate).toISOString() : null
+      const effectiveStart = startIso ?? dueIso
+      const effectiveEnd = dueIso ?? startIso
+      if (effectiveStart) body.startDate = effectiveStart
+      if (effectiveEnd) body.endDate = effectiveEnd
+      if (dueIso) body.dueDate = dueIso
       if (form.description) body.description = form.description
       if (form.stakeholderIds.length > 0) body.stakeholderIds = form.stakeholderIds
       if (form.projectId) body.projectId = form.projectId
@@ -272,32 +283,54 @@ export function TaskCreatePanel({ open, onClose, onCreated }: TaskCreatePanelPro
               />
             </div>
 
-            {/* Assign To + Due Date */}
+            {/* Assign To */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Assign To</label>
+              <Select
+                value={form.assigneeId}
+                onValueChange={v => setForm(f => ({ ...f, assigneeId: v ?? '' }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__self__">— Me —</SelectItem>
+                  {(members as Array<{ id: string; name: string }>).map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Start + Due Date range */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Assign To</label>
-                <Select
-                  value={form.assigneeId}
-                  onValueChange={v => setForm(f => ({ ...f, assigneeId: v ?? '' }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Unassigned" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__self__">— Me —</SelectItem>
-                    {(members as Array<{ id: string; name: string }>).map(m => (
-                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  Starts
+                </label>
+                <Input
+                  type="date"
+                  value={form.startDate}
+                  max={form.dueDate || undefined}
+                  onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
+                />
+                <p className="text-[10px] text-muted-foreground">Optional. Defaults to due date.</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Due Date</label>
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  Due Date <span className="text-muted-foreground/60 normal-case">(ends)</span>
+                </label>
                 <Input
                   type="date"
                   value={form.dueDate}
+                  min={form.startDate || undefined}
                   onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
                 />
+                {form.startDate && form.dueDate && (
+                  <p className="text-[10px] font-mono text-primary">
+                    Spans {Math.max(1, Math.round((new Date(form.dueDate).getTime() - new Date(form.startDate).getTime()) / 86400000) + 1)} day(s)
+                  </p>
+                )}
               </div>
             </div>
 
