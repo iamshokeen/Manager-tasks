@@ -12,7 +12,7 @@ import useSWR from 'swr'
 import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { toast } from 'sonner'
 import {
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, Download, Users as UsersIcon,
@@ -104,11 +104,6 @@ export default function ReportsPage() {
     setAnchor(a => { const d = new Date(a); d.setDate(d.getDate() + direction); return d })
   }
   function goToday() { const d = new Date(); d.setHours(0, 0, 0, 0); setAnchor(d) }
-
-  function downloadPdf(userId: string) {
-    const url = `/reports/print/${userId}?date=${dateStr}`
-    window.open(url, '_blank', 'noopener,noreferrer')
-  }
 
   return (
     <div className="flex flex-col h-full">
@@ -239,9 +234,14 @@ export default function ReportsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={() => downloadPdf(brief.member.id)} className="gap-1.5">
+                  <a
+                    href={`/reports/print/${brief.member.id}?date=${dateStr}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={buttonVariants({ size: 'sm' }) + ' gap-1.5'}
+                  >
                     <Download className="h-3.5 w-3.5" /> Download PDF
-                  </Button>
+                  </a>
                   <Button size="sm" variant="outline" onClick={() => toast.info('Email dispatch coming soon')} className="gap-1.5" title="Coming soon">
                     <Mail className="h-3.5 w-3.5" /> Email
                   </Button>

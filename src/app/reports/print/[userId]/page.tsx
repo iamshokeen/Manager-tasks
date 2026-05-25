@@ -12,6 +12,7 @@ import { getSession } from '@/lib/auth'
 import { getVisibleUserIds } from '@/lib/rbac'
 import { getMemberReport, type MemberReportTask, type MemberReportWeekTask } from '@/lib/services/member-report'
 import { PrintAutoTrigger } from '@/components/ui/print-auto-trigger'
+import { PrintActions } from '@/components/ui/print-actions'
 
 const PRIORITY_HEX: Record<string, string> = {
   urgent: '#9f403d', critical: '#9f403d',
@@ -111,20 +112,7 @@ export default async function MemberReportPrintPage({
     }}>
       {auto && <PrintAutoTrigger />}
 
-      {/* No-print toolbar */}
-      <div className="no-print" style={{
-        display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end',
-        marginBottom: 16,
-      }}>
-        <button
-          onClick={() => { if (typeof window !== 'undefined') window.print() }}
-          style={{
-            padding: '8px 14px', borderRadius: 4, border: 'none',
-            background: '#0053db', color: '#fff', fontSize: 12, fontWeight: 700,
-            letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer',
-          }}
-        >Download PDF</button>
-      </div>
+      <PrintActions />
 
       {/* Header band */}
       <div style={{ borderBottom: '2px solid #111', paddingBottom: 14, marginBottom: 20 }}>
