@@ -92,15 +92,26 @@ const STAGE_HEX: Record<string, string> = {
 const DAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })
 }
-function dayKey(iso: string): string { return iso.split('T')[0] }
+function dayKey(iso: string): string {
+  // Server emits IST calendar-day keys; mirror that on the client so
+  // calendar cells line up with the snapshot's startKey/endKey buckets.
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(iso))
+}
+
+// IST calendar date "YYYY-MM-DD" for the given UTC instant. The API
+// interprets the date param as an IST calendar day, so sending UTC date
+// (toISOString().slice(0,10)) skews everything by 5.5 hours.
+function istDateString(d: Date): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d)
+}
 
 export default function ReportsPage() {
-  const [anchor, setAnchor] = useState<Date>(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d })
+  const [anchor, setAnchor] = useState<Date>(() => new Date())
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
-  const dateStr = anchor.toISOString().slice(0, 10)
+  const dateStr = istDateString(anchor)
 
   const { data: roster, isLoading: rosterLoading, mutate: refreshRoster } =
     useSWR<RosterPayload>(`/api/reports?period=daily&date=${dateStr}`, fetcher)
@@ -120,7 +131,7 @@ export default function ReportsPage() {
   function shiftDay(direction: -1 | 1) {
     setAnchor(a => { const d = new Date(a); d.setDate(d.getDate() + direction); return d })
   }
-  function goToday() { const d = new Date(); d.setHours(0, 0, 0, 0); setAnchor(d) }
+  function goToday() { setAnchor(new Date()) }
 
   return (
     <div className="flex flex-col h-full">

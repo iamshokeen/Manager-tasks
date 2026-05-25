@@ -13,6 +13,7 @@ import { getVisibleUserIds } from '@/lib/rbac'
 import { getMemberReport, type MemberReportTask, type MemberReportWeekTask } from '@/lib/services/member-report'
 import { PrintAutoTrigger } from '@/components/ui/print-auto-trigger'
 import { PrintActions } from '@/components/ui/print-actions'
+import { istParts, istMidnight, addIstDays, istDayKey } from '@/lib/ist-dates'
 
 const PRIORITY_HEX: Record<string, string> = {
   urgent: '#9f403d', critical: '#9f403d',
@@ -44,16 +45,20 @@ const STATUS_HEX: Record<string, string> = {
 }
 
 function fmtTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })
 }
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })
 }
 function fmtShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })
 }
 
-function dayKey(iso: string): string { return iso.split('T')[0] }
+function dayKey(iso: string): string {
+  // IST calendar-day key — must match the server's istDayKey() so the
+  // month-grid cells bucket against the same dates the snapshot uses.
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(iso))
+}
 function daysInclusive(startKey: string, endKey: string): number {
   const a = new Date(startKey).getTime(); const b = new Date(endKey).getTime()
   return Math.max(1, Math.round((b - a) / 86_400_000) + 1)
@@ -85,26 +90,31 @@ export default async function MemberReportPrintPage({
   const report = await getMemberReport(userId, anchor)
   if (!report) redirect('/reports')
 
-  // Month calendar grid: anchor's calendar month, padded to whole weeks
-  // starting Sunday. Each cell lists the full title of every task whose
-  // [start..end] range overlaps that day (no truncation).
-  const monthStart = new Date(report.monthStart)
+  // Month calendar grid in IST. Building from UTC Date math here would put
+  // cells on the wrong day for India users; we anchor every cell to IST
+  // midnight and key it by the IST calendar date.
+  const monthStart = new Date(report.monthStart)  // = IST midnight day 1 (UTC instant)
   const monthEnd = new Date(report.monthEnd)
-  const gridStart = new Date(monthStart); gridStart.setDate(gridStart.getDate() - gridStart.getDay())
+  // Walk back to the previous Sunday (in IST) so the grid starts on a Sun.
+  const startParts = istParts(monthStart)
+  const gridStart = istMidnight(startParts.y, startParts.m, startParts.d - startParts.dow)
   const monthCells: Date[] = []
-  for (let i = 0; i < 42; i++) { const d = new Date(gridStart); d.setDate(gridStart.getDate() + i); monthCells.push(d) }
-  while (monthCells.length >= 35 && monthCells[monthCells.length - 7].getTime() > monthEnd.getTime()) monthCells.splice(monthCells.length - 7, 7)
+  for (let i = 0; i < 42; i++) monthCells.push(addIstDays(gridStart, i))
+  // Trim trailing whole weeks falling entirely after month-end (in IST).
+  while (
+    monthCells.length >= 35 &&
+    monthCells[monthCells.length - 7].getTime() > monthEnd.getTime()
+  ) monthCells.splice(monthCells.length - 7, 7)
   const monthRowCount = Math.ceil(monthCells.length / 7)
-  const monthLabel = monthStart.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+  const monthLabel = monthStart.toLocaleDateString('en-IN', {
+    month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata',
+  })
 
   const monthPerDay = new Map<string, MemberReportWeekTask[]>()
   for (const t of report.monthSnapshot) {
-    const s = new Date(t.startKey).getTime()
-    const e = new Date(t.endKey).getTime()
     for (const d of monthCells) {
-      const k = dayKey(d.toISOString())
-      const dt = d.getTime()
-      if (dt >= s && dt <= e) {
+      const k = istDayKey(d)
+      if (k >= t.startKey && k <= t.endKey) {
         if (!monthPerDay.has(k)) monthPerDay.set(k, [])
         monthPerDay.get(k)!.push(t)
       }
@@ -272,9 +282,11 @@ export default async function MemberReportPrintPage({
             gridTemplateRows: `repeat(${monthRowCount}, minmax(72px, auto))`,
           }}>
             {monthCells.map(d => {
-              const k = dayKey(d.toISOString())
-              const today = dayKey(report.date) === k
-              const inMonth = d.getMonth() === monthStart.getMonth()
+              const parts = istParts(d)
+              const monthParts = istParts(monthStart)
+              const k = istDayKey(d)
+              const today = istDayKey(new Date(report.date)) === k
+              const inMonth = parts.m === monthParts.m && parts.y === monthParts.y
               const items = monthPerDay.get(k) ?? []
               return (
                 <div key={k} style={{
@@ -290,7 +302,7 @@ export default async function MemberReportPrintPage({
                     <span style={{
                       fontSize: 10, fontWeight: 800, fontFamily: 'ui-monospace, monospace',
                       color: today ? '#0053db' : '#111',
-                    }}>{d.getDate()}</span>
+                    }}>{parts.d}</span>
                     {items.length > 0 && (
                       <span style={{ fontSize: 8, fontFamily: 'ui-monospace, monospace', color: '#777', background: '#f0f0f0', borderRadius: 2, padding: '0 3px' }}>{items.length}</span>
                     )}

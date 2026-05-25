@@ -96,11 +96,8 @@ export interface MemberReport {
   monthSnapshot: MemberReportWeekTask[]
 }
 
-function startOfDay(d: Date): Date { const x = new Date(d); x.setHours(0, 0, 0, 0); return x }
-function endOfDay(d: Date): Date { const x = new Date(d); x.setHours(23, 59, 59, 999); return x }
-function addDays(d: Date, n: number): Date { const x = new Date(d); x.setDate(x.getDate() + n); return x }
-function startOfWeek(d: Date): Date { const x = startOfDay(d); return addDays(x, -x.getDay()) }
-function toKey(d: Date): string { return new Date(d).toISOString().split('T')[0] }
+// Shared IST helpers — see src/lib/ist-dates.ts for the rationale.
+import { istDayBounds, istWeekBounds, istMonthBounds, istDayKey } from '@/lib/ist-dates'
 
 function pick(t: {
   id: string; title: string; status: string; priority: string; department: string;
@@ -128,12 +125,9 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
   })
   if (!user) return null
 
-  const dayStart = startOfDay(anchor)
-  const dayEnd = endOfDay(anchor)
-  const weekStart = startOfWeek(anchor)
-  const weekEnd = endOfDay(addDays(weekStart, 6))
-  const monthStart = startOfDay(new Date(anchor.getFullYear(), anchor.getMonth(), 1))
-  const monthEnd = endOfDay(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0))
+  const { start: dayStart, end: dayEnd } = istDayBounds(anchor)
+  const { start: weekStart, end: weekEnd } = istWeekBounds(anchor)
+  const { start: monthStart, end: monthEnd } = istMonthBounds(anchor)
 
   // Resolve "their tasks" = tasks they created OR are assigned to (via TeamMember).
   const teamMemberId = user.teamMemberId
@@ -278,8 +272,8 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
       title: t.title,
       priority: t.priority,
       status: t.status,
-      startKey: s ? toKey(s) : toKey(weekStart),
-      endKey: e ? toKey(e) : toKey(weekStart),
+      startKey: s ? istDayKey(s) : istDayKey(weekStart),
+      endKey: e ? istDayKey(e) : istDayKey(weekStart),
     }
   })
 
@@ -305,8 +299,8 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
       title: t.title,
       priority: t.priority,
       status: t.status,
-      startKey: s ? toKey(s) : toKey(monthStart),
-      endKey: e ? toKey(e) : toKey(monthStart),
+      startKey: s ? istDayKey(s) : istDayKey(monthStart),
+      endKey: e ? istDayKey(e) : istDayKey(monthStart),
     }
   })
 
