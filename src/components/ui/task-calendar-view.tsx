@@ -32,11 +32,18 @@ interface TaskShape {
 }
 
 type Scale = 'week' | 'month' | 'year'
-type ColorBy = 'priority' | 'dept' | 'assignee'
+type ColorBy = 'priority' | 'stage' | 'dept' | 'assignee'
 
 const PRIORITY_COLORS: Record<string, string> = {
   urgent: '#9f403d', critical: '#9f403d',
   high: '#865400', medium: '#f8a010', low: '#a9b4b9',
+}
+const STAGE_COLORS: Record<string, string> = {
+  todo: '#a9b4b9',
+  in_progress: '#0053db',
+  review: '#7c3aed',
+  blocked: '#c62828',
+  done: '#2e7d32',
 }
 const COLOR_PALETTE = ['#0053db', '#865400', '#2e7d32', '#6a1b9a', '#00695c', '#c62828', '#0277bd', '#558b2f']
 const DAY_MS = 86_400_000
@@ -49,6 +56,7 @@ function hashColor(s: string): string {
 
 function getCardColor(task: TaskShape, mode: ColorBy): string {
   if (mode === 'priority') return PRIORITY_COLORS[task.priority] ?? PRIORITY_COLORS.low
+  if (mode === 'stage') return STAGE_COLORS[task.status ?? 'todo'] ?? STAGE_COLORS.todo
   if (mode === 'dept') return hashColor(task.department ?? 'none')
   return hashColor(task.assignee?.name ?? 'unassigned')
 }
@@ -374,12 +382,12 @@ export function TaskCalendarView({ tasks, onTaskClick, mutate, myTeamMemberId }:
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>Color:</span>
                 <div className="flex rounded-md p-0.5 gap-0.5" style={{ background: 'var(--surface-container)' }}>
-                  {(['priority', 'dept', 'assignee'] as const).map(mode => (
+                  {(['priority', 'stage', 'dept', 'assignee'] as const).map(mode => (
                     <button key={mode} onClick={() => setColorBy(mode)}
                       className={cn('px-2.5 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer',
                         colorBy === mode ? 'text-[var(--primary)]' : 'text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]')}
                       style={colorBy === mode ? { background: 'var(--surface-container-highest)' } : undefined}
-                    >{mode === 'priority' ? 'Priority' : mode === 'dept' ? 'Dept' : 'Assignee'}</button>
+                    >{mode === 'priority' ? 'Priority' : mode === 'stage' ? 'Stage' : mode === 'dept' ? 'Dept' : 'Assignee'}</button>
                   ))}
                 </div>
               </div>
@@ -508,7 +516,60 @@ function WeekView({
   )
 }
 
+// ─── MONTH day-cell chip ─────────────────────────────────────────────────────
+
+function MonthDayChip({
+  task, colorBy, isMyTask, syncing, continuesLeft, continuesRight, onClick,
+}: {
+  task: TaskShape; colorBy: ColorBy; isMyTask: boolean; syncing: boolean
+  continuesLeft: boolean; continuesRight: boolean; onClick: () => void
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id })
+  const color = getCardColor(task, colorBy)
+  const overdue = isOverdue(task.endDate ?? task.dueDate ?? null) && task.status !== 'done'
+
+  if (syncing) {
+    return (
+      <div className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-1 rounded animate-pulse"
+        style={{ color: 'var(--primary)', background: 'rgba(71,234,237,0.06)' }}>Syncing…</div>
+    )
+  }
+
+  return (
+    <div
+      ref={setNodeRef} {...attributes} {...listeners}
+      onClick={(e) => { e.stopPropagation(); if (!isDragging) onClick() }}
+      title={task.title}
+      className="cursor-grab active:cursor-grabbing select-none transition-all hover:brightness-125"
+      style={{
+        opacity: isDragging ? 0.35 : 1,
+        background: `${color}25`,
+        // Edge stripes that double as continuation indicators
+        borderLeft: continuesLeft ? `2px dashed ${color}` : `3px solid ${color}`,
+        borderRight: continuesRight ? `2px dashed ${color}` : 'none',
+        borderRadius: 3,
+        padding: '3px 6px',
+        boxShadow: isMyTask ? `inset 0 0 0 1px ${color}90` : undefined,
+        fontSize: 11, lineHeight: 1.3,
+        color: 'var(--on-surface)',
+        wordBreak: 'break-word',
+        display: 'flex', alignItems: 'flex-start', gap: 4,
+      }}
+    >
+      {continuesLeft && <span style={{ color, fontSize: 10, lineHeight: '14px', flexShrink: 0 }}>←</span>}
+      {overdue && !continuesLeft && <AlertCircle size={10} style={{ color: '#ef4444', flexShrink: 0, marginTop: 2 }} />}
+      <span className="font-semibold flex-1 min-w-0">{task.title}</span>
+      {continuesRight && <span style={{ color, fontSize: 10, lineHeight: '14px', flexShrink: 0 }}>→</span>}
+    </div>
+  )
+}
+
 // ─── MONTH view ──────────────────────────────────────────────────────────────
+//
+// Per-day stacking: every cell lists the full title of every task whose
+// [start..end] range covers that day. Multi-day tasks repeat in each spanned
+// cell with ← / → arrows showing continuation. No "+N" overflow chips —
+// nothing is hidden. Cells auto-grow vertically to fit their content.
 
 function MonthView({
   anchor, tasks, colorBy, onTaskClick, syncingId, myTeamMemberId,
@@ -518,108 +579,111 @@ function MonthView({
   myTeamMemberId?: string | null
 }) {
   const grid = useMemo(() => getMonthGridDates(anchor), [anchor])
-  // Build 6 row groups (7-day weeks).
-  const rows: Date[][] = useMemo(() => Array.from({ length: 6 }, (_, r) => grid.slice(r * 7, r * 7 + 7)), [grid])
-  const MAX_LANES_PER_ROW = 4 // beyond this, collapse to "+N more"
-  const ROW_HEIGHT_PX = 116
+
+  // Pre-resolve ranges once, dropping unscheduled and items outside the grid.
+  const ranged = useMemo(() => tasks
+    .map(t => ({ task: t, range: getRange(t) }))
+    .filter((r): r is { task: TaskShape; range: { start: Date; end: Date } } => r.range !== null)
+    .sort((a, b) =>
+      a.range.start.getTime() - b.range.start.getTime() ||
+      (b.range.end.getTime() - b.range.start.getTime()) - (a.range.end.getTime() - a.range.start.getTime())
+    ),
+    [tasks])
+
+  // Trim trailing empty week rows for compactness.
+  const allDates = useMemo(() => {
+    const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0)
+    const cells = [...grid]
+    while (cells.length >= 35 && cells[cells.length - 7].getTime() > monthEnd.getTime()) {
+      cells.splice(cells.length - 7, 7)
+    }
+    return cells
+  }, [grid, anchor])
+
+  // Bucket tasks per day key.
+  const perDay = useMemo(() => {
+    const map = new Map<string, Array<{ task: TaskShape; continuesLeft: boolean; continuesRight: boolean }>>()
+    for (const d of allDates) map.set(toKey(d), [])
+    for (const { task, range } of ranged) {
+      const sMs = range.start.getTime(), eMs = range.end.getTime()
+      for (const d of allDates) {
+        const dMs = d.getTime()
+        if (dMs < sMs || dMs > eMs) continue
+        const k = toKey(d)
+        map.get(k)!.push({
+          task,
+          continuesLeft: dMs > sMs,   // task started before this cell
+          continuesRight: dMs < eMs,  // task continues past this cell
+        })
+      }
+    }
+    return map
+  }, [ranged, allDates])
 
   return (
     <div className="rounded-lg overflow-hidden" style={{ background: 'var(--surface-container-low)' }}>
       {/* Day-name header */}
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+      <div className="grid sticky top-0 z-10" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', background: 'var(--surface-container-low)' }}>
         {DAY_NAMES_SHORT.map((name) => (
           <div key={name} className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-center"
             style={{ color: 'var(--on-surface-variant)' }}>{name}</div>
         ))}
       </div>
 
-      <div className="flex flex-col">
-        {rows.map((weekDates, rowIdx) => {
-          const laid = layoutTasksAcrossGrid(tasks, weekDates)
-          // Group bars by lane to render row-aligned pills.
-          const visibleLanes = Math.min(MAX_LANES_PER_ROW, laid.reduce((m, l) => Math.max(m, l.lane + 1), 0))
-          const overflowByCell: number[] = new Array(7).fill(0)
-          for (const l of laid) {
-            if (l.lane >= visibleLanes) {
-              for (let c = l.startIdx; c <= l.endIdx; c++) overflowByCell[c]++
-            }
-          }
+      {/* Month grid — auto-row-height so cells grow with content */}
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gridAutoRows: 'minmax(120px, auto)' }}>
+        {allDates.map((d) => {
+          const k = toKey(d)
+          const inMonth = isSameMonth(d, anchor)
+          const today = isToday(d)
+          const items = perDay.get(k) ?? []
           return (
-            <div key={rowIdx} className="relative" style={{ minHeight: ROW_HEIGHT_PX }}>
-              {/* Cell background + numbers */}
-              <div className="grid h-full" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', minHeight: ROW_HEIGHT_PX }}>
-                {weekDates.map((d, i) => {
-                  const inMonth = isSameMonth(d, anchor)
-                  const today = isToday(d)
-                  return (
-                    <DroppableCell
-                      key={toKey(d)}
-                      id={toKey(d)}
-                      className="border-l border-t first:border-l-0 transition-colors"
-                      style={{
-                        borderColor: 'var(--surface-container)',
-                        background: today ? 'var(--surface-container)' : 'var(--surface)',
-                      }}
-                    >
-                      <div className="p-1.5 flex items-center justify-between">
-                        <span
-                          className={cn(
-                            'text-[11px] font-bold tabular-nums px-1.5 py-0.5 rounded',
-                            today && 'text-[var(--on-primary)]',
-                          )}
-                          style={{
-                            color: today ? 'var(--on-primary)' : (inMonth ? 'var(--on-surface)' : 'var(--on-surface-variant)'),
-                            background: today ? 'var(--primary)' : 'transparent',
-                            opacity: inMonth ? 1 : 0.45,
-                          }}
-                        >{d.getDate()}</span>
-                        {overflowByCell[i] > 0 && (
-                          <span className="text-[9px] font-bold uppercase tracking-widest px-1 py-0.5 rounded"
-                            style={{ color: 'var(--primary)', background: 'var(--surface-container-high)' }}>
-                            +{overflowByCell[i]}
-                          </span>
-                        )}
-                      </div>
-                    </DroppableCell>
-                  )
-                })}
-              </div>
+            <DroppableCell
+              key={k}
+              id={k}
+              className="border-l border-t transition-colors"
+              style={{
+                borderColor: 'var(--surface-container)',
+                background: today ? 'var(--surface-container)' : 'var(--surface)',
+                opacity: inMonth ? 1 : 0.55,
+              }}
+            >
+              <div className="p-1.5 flex flex-col gap-1 min-h-[120px]">
+                {/* Header: date + count badge */}
+                <div className="flex items-center justify-between">
+                  <span
+                    className="text-[11px] font-bold tabular-nums px-1.5 py-0.5 rounded"
+                    style={{
+                      color: today ? 'var(--on-primary)' : (inMonth ? 'var(--on-surface)' : 'var(--on-surface-variant)'),
+                      background: today ? 'var(--primary)' : 'transparent',
+                    }}
+                  >{d.getDate()}</span>
+                  {items.length > 0 && (
+                    <span className="text-[9px] font-mono tabular-nums px-1 py-0.5 rounded"
+                      style={{ color: 'var(--on-surface-variant)', background: 'var(--surface-container-high)' }}>
+                      {items.length}
+                    </span>
+                  )}
+                </div>
 
-              {/* Lane-packed pills overlay */}
-              <div className="absolute inset-x-0" style={{ top: 28, bottom: 4 }}>
-                {laid.filter(l => l.lane < visibleLanes).map(({ task, startIdx, endIdx, lane }) => {
-                  const span = endIdx - startIdx + 1
-                  const leftPct = (startIdx / 7) * 100
-                  const widthPct = (span / 7) * 100
-                  const top = lane * 22
+                {/* Task chips — full title, wraps if long */}
+                {items.map(({ task, continuesLeft, continuesRight }) => {
                   const isMine = (!!myTeamMemberId && task.assignee?.id === myTeamMemberId) || !!task.isSelfTask
-                  // True-start-of-task pill rounding (was the actual first day of the task or just the row start?)
-                  const range = getRange(task)!
-                  const startsAtRowStart = !!range && daysBetween(weekDates[0], range.start) >= 0 && range.start.getTime() === weekDates[startIdx].getTime()
-                  const endsAtRowEnd = !!range && range.end.getTime() === weekDates[endIdx].getTime()
                   return (
-                    <div
-                      key={task.id}
-                      style={{
-                        position: 'absolute',
-                        top, height: 18,
-                        left: `calc(${leftPct}% + 3px)`,
-                        width: `calc(${widthPct}% - 6px)`,
-                      }}
-                    >
-                      <TaskBar
-                        task={task} colorBy={colorBy} onClick={() => onTaskClick(task.id)}
-                        isMyTask={isMine} syncing={syncingId === task.id}
-                        span={span} draggable
-                        startsAtRowStart={startsAtRowStart}
-                        endsAtRowEnd={endsAtRowEnd}
-                        variant="pill"
-                      />
-                    </div>
+                    <MonthDayChip
+                      key={`${k}-${task.id}`}
+                      task={task}
+                      colorBy={colorBy}
+                      isMyTask={isMine}
+                      syncing={syncingId === task.id}
+                      continuesLeft={continuesLeft}
+                      continuesRight={continuesRight}
+                      onClick={() => onTaskClick(task.id)}
+                    />
                   )
                 })}
               </div>
-            </div>
+            </DroppableCell>
           )
         })}
       </div>
