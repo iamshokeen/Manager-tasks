@@ -2,7 +2,11 @@ import type { NextConfig } from 'next'
 import withPWA from '@ducanh2912/next-pwa'
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // @react-pdf/renderer bundles native-ish deps (yoga-layout WASM, pdfkit
+  // streams) that Next's serverless bundler trips over. Marking it
+  // external means Vercel installs it as a normal node_modules dep at
+  // runtime instead of trying to bundle it into the function.
+  serverExternalPackages: ['@react-pdf/renderer'],
 }
 
 export default withPWA({
