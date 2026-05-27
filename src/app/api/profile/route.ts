@@ -15,6 +15,7 @@ export async function GET() {
         id: true,
         name: true,
         email: true,
+        phone: true,
         role: true,
         avatarUrl: true,
         approvalStatus: true,
@@ -75,6 +76,7 @@ export async function GET() {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
         avatarUrl: user.avatarUrl,
         approvalStatus: user.approvalStatus,
@@ -109,9 +111,9 @@ export async function PATCH(req: NextRequest) {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const body = await req.json() as { name?: string; avatarUrl?: string | null }
+    const body = await req.json() as { name?: string; avatarUrl?: string | null; phone?: string | null }
 
-    if (body.name === undefined && body.avatarUrl === undefined) {
+    if (body.name === undefined && body.avatarUrl === undefined && body.phone === undefined) {
       return NextResponse.json({ error: 'At least one field required' }, { status: 400 })
     }
     if (body.name !== undefined && !body.name.trim()) {
@@ -125,14 +127,31 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: 'avatarUrl must use https' }, { status: 400 })
       }
     }
+    let phonePayload: string | null | undefined = undefined
+    if (body.phone !== undefined) {
+      if (body.phone === null || body.phone === '') {
+        phonePayload = null
+      } else {
+        // Accept anything containing 8+ digits; store digits-only with the
+        // leading '+' if the user typed one. Light validation — leaves
+        // formatting to the source of truth (wa.me strips non-digits).
+        const trimmed = body.phone.trim()
+        const digits = trimmed.replace(/\D/g, '')
+        if (digits.length < 8 || digits.length > 15) {
+          return NextResponse.json({ error: 'phone must be 8–15 digits (E.164)' }, { status: 400 })
+        }
+        phonePayload = trimmed.startsWith('+') ? `+${digits}` : digits
+      }
+    }
 
     const updated = await prisma.user.update({
       where: { id: session.user.id },
       data: {
         ...(body.name ? { name: body.name.trim() } : {}),
         ...(body.avatarUrl !== undefined ? { avatarUrl: body.avatarUrl } : {}),
+        ...(phonePayload !== undefined ? { phone: phonePayload } : {}),
       },
-      select: { id: true, name: true, email: true, avatarUrl: true },
+      select: { id: true, name: true, email: true, avatarUrl: true, phone: true },
     })
 
     return NextResponse.json({ data: updated })

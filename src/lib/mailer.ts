@@ -15,15 +15,18 @@ export async function sendEmail({
   to,
   subject,
   html,
+  text,
 }: {
   to: string
   subject: string
   html: string
+  text?: string
 }) {
   await transporter.sendMail({
     from: `Kairos <${process.env.SMTP_USER}>`,
     to,
     subject,
     html,
+    text,
   })
 }

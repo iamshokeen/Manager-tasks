@@ -22,6 +22,7 @@ type ProfileData = {
   id: string
   name: string
   email: string
+  phone: string | null
   role: string
   avatarUrl: string | null
   approvalStatus: string
@@ -100,14 +101,34 @@ function useAnimatedCounter(target: number, duration = 1500) {
 function HeroCard({
   data,
   onNameUpdate,
+  onPhoneUpdate,
 }: {
   data: ProfileData
   onNameUpdate: (name: string) => Promise<void>
+  onPhoneUpdate: (phone: string | null) => Promise<void>
 }) {
   const [editing, setEditing] = useState(false)
   const [nameInput, setNameInput] = useState(data.name)
   const [saving, setSaving] = useState(false)
   const [barWidth, setBarWidth] = useState(0)
+  const [phoneEditing, setPhoneEditing] = useState(false)
+  const [phoneInput, setPhoneInput] = useState(data.phone ?? '')
+  const [phoneSaving, setPhoneSaving] = useState(false)
+
+  useEffect(() => { setPhoneInput(data.phone ?? '') }, [data.phone])
+
+  async function handlePhoneSave() {
+    setPhoneSaving(true)
+    try {
+      const v = phoneInput.trim()
+      await onPhoneUpdate(v === '' ? null : v)
+      setPhoneEditing(false)
+    } catch {
+      // toast already surfaced by caller
+    } finally {
+      setPhoneSaving(false)
+    }
+  }
 
   const taskCount = useAnimatedCounter(data.tasksCompleted)
   const projectCount = useAnimatedCounter(data.activeProjects)
@@ -213,6 +234,55 @@ function HeroCard({
           <span className="text-muted-foreground text-xs">
             Since {format(new Date(data.createdAt), 'MMM yyyy')}
           </span>
+        </div>
+
+        {/* Phone (for WhatsApp briefs) */}
+        <div className="flex items-center gap-2 mb-3 text-sm">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Phone</span>
+          {phoneEditing ? (
+            <>
+              <input
+                type="tel"
+                value={phoneInput}
+                onChange={e => setPhoneInput(e.target.value)}
+                placeholder="+919876543210"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handlePhoneSave()
+                  if (e.key === 'Escape') { setPhoneEditing(false); setPhoneInput(data.phone ?? '') }
+                }}
+                className="text-sm text-foreground bg-transparent border-b border-primary outline-none flex-1 max-w-xs"
+                autoFocus
+              />
+              <button
+                onClick={handlePhoneSave}
+                disabled={phoneSaving}
+                className="w-6 h-6 flex items-center justify-center rounded-full bg-primary text-white hover:bg-primary/90 disabled:opacity-40 transition-colors"
+                title="Save"
+              >
+                <Check className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => { setPhoneEditing(false); setPhoneInput(data.phone ?? '') }}
+                className="w-6 h-6 flex items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+                title="Cancel"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </>
+          ) : (
+            <>
+              <span className={data.phone ? 'text-foreground font-mono' : 'text-muted-foreground italic'}>
+                {data.phone ?? 'Not set — add to receive WhatsApp briefs'}
+              </span>
+              <button
+                onClick={() => { setPhoneEditing(true); setPhoneInput(data.phone ?? '') }}
+                className="text-muted-foreground hover:text-primary transition-colors"
+                title="Edit phone"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
         </div>
 
         {/* Manager line */}
@@ -622,6 +692,27 @@ export default function ProfilePage() {
     }
   }
 
+  async function handlePhoneUpdate(phone: string | null): Promise<void> {
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(body?.error ?? 'Failed to update phone')
+        throw new Error('update failed')
+      }
+      await mutateProfile()
+      toast.success(phone ? 'Phone updated' : 'Phone cleared')
+    } catch (e) {
+      if (e instanceof Error && e.message === 'update failed') throw e
+      toast.error('Failed to update phone')
+      throw new Error('update failed')
+    }
+  }
+
   if (isLoading) return <ProfileSkeleton />
 
   if (error || !data) {
@@ -634,7 +725,7 @@ export default function ProfilePage() {
 
   return (
     <div className="p-6 space-y-5 max-w-6xl">
-      <HeroCard data={data} onNameUpdate={handleNameUpdate} />
+      <HeroCard data={data} onNameUpdate={handleNameUpdate} onPhoneUpdate={handlePhoneUpdate} />
       <div className="flex gap-5">
         <AccountDetails data={data} />
         <ProfileHealth data={data} />

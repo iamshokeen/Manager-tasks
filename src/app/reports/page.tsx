@@ -133,6 +133,42 @@ export default function ReportsPage() {
   }
   function goToday() { setAnchor(new Date()) }
 
+  const [sendingChannel, setSendingChannel] = useState<'email' | 'whatsapp' | null>(null)
+
+  async function sendBrief(channel: 'email' | 'whatsapp') {
+    if (!brief) return
+    setSendingChannel(channel)
+    try {
+      const res = await fetch(`/api/reports/member/${brief.member.id}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel, date: dateStr }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(body?.error ?? 'Failed to send')
+        return
+      }
+      if (channel === 'email') {
+        toast.success(`Brief sent to ${body.data?.to}`)
+      } else {
+        if (body.data?.link) {
+          // wa.me deeplink — open in new tab. The user taps Send in WhatsApp.
+          window.open(body.data.link, '_blank', 'noopener,noreferrer')
+          if (!body.data.hasPhone) {
+            toast.info('No phone on file — WhatsApp will let you pick a contact.')
+          } else {
+            toast.success('WhatsApp opened with the brief pre-filled.')
+          }
+        }
+      }
+    } catch {
+      toast.error('Network error sending brief')
+    } finally {
+      setSendingChannel(null)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -270,11 +306,25 @@ export default function ReportsPage() {
                   >
                     <Download className="h-3.5 w-3.5" /> Download PDF
                   </a>
-                  <Button size="sm" variant="outline" onClick={() => toast.info('Email dispatch coming soon')} className="gap-1.5" title="Coming soon">
-                    <Mail className="h-3.5 w-3.5" /> Email
+                  <Button
+                    size="sm" variant="outline"
+                    onClick={() => sendBrief('email')}
+                    disabled={sendingChannel !== null}
+                    className="gap-1.5"
+                    title={`Send to ${brief.member.email}`}
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    {sendingChannel === 'email' ? 'Sending…' : 'Email'}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => toast.info('WhatsApp dispatch coming soon')} className="gap-1.5" title="Coming soon">
-                    <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
+                  <Button
+                    size="sm" variant="outline"
+                    onClick={() => sendBrief('whatsapp')}
+                    disabled={sendingChannel !== null}
+                    className="gap-1.5"
+                    title="Open WhatsApp with the brief pre-filled"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    {sendingChannel === 'whatsapp' ? 'Opening…' : 'WhatsApp'}
                   </Button>
                 </div>
               </div>
