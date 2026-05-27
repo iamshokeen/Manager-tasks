@@ -24,25 +24,19 @@ function normalizePhoneDigits(raw: string): string | null {
   return digits.length >= 8 ? digits : null
 }
 
-// Returns true when the recipient's configured fire-time is between
-// 0 and 60 minutes before `now` (in IST). Vercel free-tier cron arrives
-// hourly, so the whole hour after the user's chosen HH:MM counts as
-// "fire window".
-const IST_OFFSET_MS = 5.5 * 3600_000
-function shouldFireNow(
+// Vercel Hobby plan only allows one cron run per day, so we fire this
+// route once at 08:00 IST and dispatch every brief that's due today.
+// The per-user HH:MM picker stays in Settings for a future Pro upgrade
+// (Vercel Pro supports per-minute crons) but is ignored at runtime.
+function shouldFireToday(
   now: Date,
   schedule: string,
-  hour: number,
-  minute: number,
   weekday: number,
 ): boolean {
   if (schedule === 'off') return false
-  const p = istParts(now)
-  if (schedule === 'weekly' && p.dow !== weekday) return false
-  const istMidnightUtcMs = Date.UTC(p.y, p.m, p.d) - IST_OFFSET_MS
-  const fireAtMs = istMidnightUtcMs + hour * 3600_000 + minute * 60_000
-  const diffMin = (now.getTime() - fireAtMs) / 60_000
-  return diffMin >= 0 && diffMin < 60
+  if (schedule === 'daily') return true
+  if (schedule === 'weekly') return istParts(now).dow === weekday
+  return false
 }
 
 interface DispatchResult {
@@ -77,7 +71,7 @@ export async function GET(req: Request) {
   const dispatched: DispatchResult[] = []
 
   for (const u of candidates) {
-    if (!shouldFireNow(now, u.reportSchedule, u.reportHourIst, u.reportMinuteIst, u.reportWeekday)) continue
+    if (!shouldFireToday(now, u.reportSchedule, u.reportWeekday)) continue
 
     let report
     try {

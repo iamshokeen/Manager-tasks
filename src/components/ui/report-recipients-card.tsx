@@ -234,8 +234,9 @@ export function ReportRecipientsCard() {
       </div>
 
       <p className="text-[10px]" style={{ color: 'var(--on-surface-variant)' }}>
-        Auto-send runs at the chosen IST time on the schedule&apos;s day. Hourly cron has a ±30 min tolerance so set
-        any HH:MM and it&apos;ll fire in the matching hour.
+        Auto-send currently fires once a day at 23:30 IST (Vercel Hobby plan limit). HH:MM and weekday are stored
+        so per-minute precision works automatically when the workspace is upgraded to Pro — for now, weekly briefs
+        go on the chosen weekday at 23:30 IST and daily briefs go every night at 23:30 IST.
       </p>
     </div>
   )
