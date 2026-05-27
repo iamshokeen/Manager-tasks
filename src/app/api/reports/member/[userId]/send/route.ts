@@ -18,7 +18,7 @@ import { getMemberReport } from '@/lib/services/member-report'
 import { renderMemberReportEmail, renderWhatsAppSummary } from '@/lib/services/member-report-email'
 import { renderMemberReportPdf } from '@/lib/services/member-report-pdf'
 import { sendEmail } from '@/lib/mailer'
-import { signPdfDownloadToken } from '@/app/api/reports/member/[userId]/pdf/route'
+import { mintBriefShortlink } from '@/lib/services/brief-shortlink'
 
 function appUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? 'https://kairos-ai-hq.vercel.app'
@@ -92,13 +92,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
     return NextResponse.json({ data: { channel: 'email', to } })
   }
 
-  // WhatsApp: mint a signed PDF link valid for 7 days, attach it to a
-  // compact summary, hand back a wa.me deeplink for the manager to open.
+  // WhatsApp: mint a *short* /r/<slug> link valid for 7 days, attach it
+  // to a compact summary, and hand back a wa.me deeplink the manager
+  // opens to forward it. Short slug (~46-char total URL) survives
+  // wa.me's silent truncation of long JWT URLs.
   const phoneRaw = target.reportPhone ?? target.phone
   const phoneDigits = phoneRaw ? normalizePhoneDigits(phoneRaw) : null
-  const token = await signPdfDownloadToken(userId, dateStr)
-  const pdfUrl = `${appUrl()}/api/reports/member/${userId}/pdf?token=${token}`
-  const message = `${renderWhatsAppSummary(report, undefined)}\n\n📎 Full PDF: ${pdfUrl}`
+  const slug = await mintBriefShortlink(userId, dateStr)
+  const pdfUrl = `${appUrl()}/r/${slug}`
+  const message = `${renderWhatsAppSummary(report, undefined)}\n\nFull PDF: ${pdfUrl}`
   const base = phoneDigits ? `https://wa.me/${phoneDigits}` : 'https://wa.me/'
   const link = `${base}?text=${encodeURIComponent(message)}`
   return NextResponse.json({

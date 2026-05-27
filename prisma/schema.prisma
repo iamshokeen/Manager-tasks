@@ -511,6 +511,22 @@ model FollowUpNote {
   createdAt  DateTime @default(now())
 }
 
+// Short, one-shot URL slugs that resolve to a PDF brief. Used inside
+// WhatsApp messages where a full JWT-signed URL is too long for the
+// pre-filled `wa.me/?text=` payload — WhatsApp Web silently truncates
+// very long URLs. Each slug is single-purpose: userId + dateStr fixed
+// at mint time, valid until expiresAt.
+model BriefShortlink {
+  slug      String   @id
+  userId    String
+  dateStr   String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 model KpiAccessRequest {
   id        String   @id @default(cuid())
   userId    String   @unique

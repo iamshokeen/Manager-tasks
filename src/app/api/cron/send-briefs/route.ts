@@ -12,7 +12,7 @@ import { getMemberReport } from '@/lib/services/member-report'
 import { renderMemberReportEmail, renderWhatsAppSummary } from '@/lib/services/member-report-email'
 import { renderMemberReportPdf } from '@/lib/services/member-report-pdf'
 import { sendEmail } from '@/lib/mailer'
-import { signPdfDownloadToken } from '@/app/api/reports/member/[userId]/pdf/route'
+import { mintBriefShortlink } from '@/lib/services/brief-shortlink'
 import { istParts } from '@/lib/ist-dates'
 
 function appUrl(): string {
@@ -124,14 +124,13 @@ export async function GET(req: Request) {
       if (!phoneDigits) {
         result.whatsapp = { ok: false, error: 'no recipient phone' }
       } else {
-        const token = await signPdfDownloadToken(u.id, dateStr)
-        const pdfLink = `${appUrl()}/api/reports/member/${u.id}/pdf?token=${token}`
-        const message = `${renderWhatsAppSummary(report, undefined)}\n\n📎 Full PDF: ${pdfLink}`
+        const slug = await mintBriefShortlink(u.id, dateStr)
+        const pdfLink = `${appUrl()}/r/${slug}`
+        const message = `${renderWhatsAppSummary(report, undefined)}\n\nFull PDF: ${pdfLink}`
         const link = `https://wa.me/${phoneDigits}?text=${encodeURIComponent(message)}`
         // Note: this is the open-link, not an actual send. Without a paid
         // WhatsApp Business API we cannot push messages from the server,
-        // so we log + persist the link for the manager to pick up. For now
-        // we just log; a future hook can email the manager the link.
+        // so we log + persist the link for the manager to pick up.
         console.log(`[cron/send-briefs] whatsapp link for ${u.name}: ${link}`)
         result.whatsapp = { ok: true, to: phoneDigits, link }
       }
