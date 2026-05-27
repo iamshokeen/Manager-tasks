@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ReportRecipientsCard } from '@/components/ui/report-recipients-card'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -695,6 +696,11 @@ export default function SettingsPage() {
         {/* Team Access */}
         <SettingsSection title="Team Access" icon="group">
           <TeamAccessCard />
+        </SettingsSection>
+
+        {/* Report Recipients */}
+        <SettingsSection title="Report Recipients" icon="forward_to_inbox">
+          <ReportRecipientsCard />
         </SettingsSection>
 
         {/* Revenue Targets Upload */}

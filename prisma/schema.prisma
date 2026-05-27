@@ -45,6 +45,20 @@ model User {
   name                 String
   /** E.164 phone, e.g. +919876543210 — used for WhatsApp deeplinks. */
   phone                String?
+  /** Override recipient for daily brief email. Falls back to `email`. */
+  reportEmail          String?
+  /** Override recipient for daily brief WhatsApp. Falls back to `phone`. */
+  reportPhone          String?
+  /** Auto-send cadence — 'off' | 'daily' | 'weekly'. */
+  reportSchedule       String            @default("off")
+  /** Hour 0–23 (IST) for auto-send. */
+  reportHourIst        Int               @default(8)
+  /** Minute 0–59 (IST) for auto-send. */
+  reportMinuteIst      Int               @default(0)
+  /** 0=Sun..6=Sat — only used when reportSchedule='weekly'. */
+  reportWeekday        Int               @default(1)
+  /** Which channels the auto-send fires — 'email' | 'whatsapp' | 'both' | 'none'. */
+  reportChannels       String            @default("email")
   avatarUrl            String?
   role                 Role              @default(DIRECT_REPORT)
   isActive             Boolean           @default(true)

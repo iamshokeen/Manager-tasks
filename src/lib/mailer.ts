@@ -16,11 +16,13 @@ export async function sendEmail({
   subject,
   html,
   text,
+  attachments,
 }: {
   to: string
   subject: string
   html: string
   text?: string
+  attachments?: Array<{ filename: string; content: Buffer; contentType?: string }>
 }) {
   await transporter.sendMail({
     from: `Kairos <${process.env.SMTP_USER}>`,
@@ -28,5 +30,6 @@ export async function sendEmail({
     subject,
     html,
     text,
+    attachments,
   })
 }

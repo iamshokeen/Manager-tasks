@@ -1,13 +1,14 @@
 // src/app/api/reports/member/[userId]/send/route.ts
 //
-// Dispatch a daily brief to its owner.
-//   POST { channel: 'email' }                     → sends via SMTP
-//   POST { channel: 'whatsapp' }                  → returns a wa.me deeplink
-//                                                    (no API keys to send for
-//                                                    real; caller opens the
-//                                                    URL and taps Send)
-//
-// Visibility: SA always, others must have the target user in their chain.
+// Dispatch a daily brief as a PDF:
+//   POST { channel: 'email' }    → renders the PDF, attaches it to an
+//                                   inline-styled HTML cover email,
+//                                   sends to user.reportEmail ?? user.email.
+//   POST { channel: 'whatsapp' } → renders the PDF, mints a 7-day signed
+//                                   download URL for it, and returns a
+//                                   wa.me deeplink with the URL pre-filled.
+//                                   Destination phone is
+//                                   user.reportPhone ?? user.phone.
 //
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -15,15 +16,19 @@ import { getSession } from '@/lib/auth'
 import { getVisibleUserIds } from '@/lib/rbac'
 import { getMemberReport } from '@/lib/services/member-report'
 import { renderMemberReportEmail, renderWhatsAppSummary } from '@/lib/services/member-report-email'
+import { renderMemberReportPdf } from '@/lib/services/member-report-pdf'
 import { sendEmail } from '@/lib/mailer'
+import { signPdfDownloadToken } from '@/app/api/reports/member/[userId]/pdf/route'
 
 function appUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? 'https://kairos-ai-hq.vercel.app'
 }
 
-// Strip everything except digits so wa.me accepts the number; the field
-// stores E.164 so we just drop the leading '+'.
-function normalizePhone(raw: string): string | null {
+function istDateStr(d: Date): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d)
+}
+
+function normalizePhoneDigits(raw: string): string | null {
   const digits = raw.replace(/\D/g, '')
   return digits.length >= 8 ? digits : null
 }
@@ -42,30 +47,44 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
   }
 
   let body: { channel?: 'email' | 'whatsapp'; date?: string; to?: string } = {}
-  try { body = await req.json() } catch { /* empty body is fine for GET-style */ }
+  try { body = await req.json() } catch { /* empty body is fine */ }
   const channel = body.channel
   if (channel !== 'email' && channel !== 'whatsapp') {
     return NextResponse.json({ error: 'channel must be email or whatsapp' }, { status: 400 })
   }
 
-  const anchor = body.date ? new Date(body.date) : new Date()
+  const anchor = body.date ? new Date(`${body.date}T12:00:00+05:30`) : new Date()
   if (Number.isNaN(anchor.getTime())) return NextResponse.json({ error: 'invalid date' }, { status: 400 })
 
   const report = await getMemberReport(userId, anchor)
   if (!report) return NextResponse.json({ error: 'No report data' }, { status: 404 })
 
-  const dateParam = body.date ?? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(anchor)
-  const briefUrl = `${appUrl()}/reports/print/${userId}?date=${dateParam}&auto=0`
+  const target = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, phone: true, reportEmail: true, reportPhone: true },
+  })
+  if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  const dateStr = body.date ?? istDateStr(anchor)
+  const briefUrl = `${appUrl()}/reports/print/${userId}?date=${dateStr}&auto=0`
+  const filename = `kairos-brief-${report.member.name.replace(/\s+/g, '-').toLowerCase()}-${dateStr}.pdf`
 
   if (channel === 'email') {
-    // Pull the freshest email — body.to wins for one-off overrides.
-    const target = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
-    const to = body.to ?? target?.email
+    const to = body.to ?? target.reportEmail ?? target.email
     if (!to) return NextResponse.json({ error: 'No email address on file' }, { status: 400 })
-
+    let pdf: Buffer
+    try {
+      pdf = await renderMemberReportPdf(report)
+    } catch (e) {
+      console.error('[reports/send/email] pdf render failed', e)
+      return NextResponse.json({ error: 'Failed to render PDF' }, { status: 500 })
+    }
     const { subject, html, text } = renderMemberReportEmail(report, { briefUrl })
     try {
-      await sendEmail({ to, subject, html, text })
+      await sendEmail({
+        to, subject, html, text,
+        attachments: [{ filename, content: pdf, contentType: 'application/pdf' }],
+      })
     } catch (e) {
       console.error('[reports/send/email]', e)
       return NextResponse.json({ error: 'Failed to send email' }, { status: 502 })
@@ -73,20 +92,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
     return NextResponse.json({ data: { channel: 'email', to } })
   }
 
-  // WhatsApp deeplink — no paid API required. Caller opens the URL in a
-  // new tab; WhatsApp Web / mobile pre-fills the message and the user
-  // taps Send. If the user has no phone on file, fall back to a generic
-  // wa.me link so the manager can paste a number manually.
-  const target = await prisma.user.findUnique({ where: { id: userId }, select: { phone: true } })
-  const phoneDigits = target?.phone ? normalizePhone(target.phone) : null
-  const message = renderWhatsAppSummary(report, briefUrl)
+  // WhatsApp: mint a signed PDF link valid for 7 days, attach it to a
+  // compact summary, hand back a wa.me deeplink for the manager to open.
+  const phoneRaw = target.reportPhone ?? target.phone
+  const phoneDigits = phoneRaw ? normalizePhoneDigits(phoneRaw) : null
+  const token = await signPdfDownloadToken(userId, dateStr)
+  const pdfUrl = `${appUrl()}/api/reports/member/${userId}/pdf?token=${token}`
+  const message = `${renderWhatsAppSummary(report, undefined)}\n\n📎 Full PDF: ${pdfUrl}`
   const base = phoneDigits ? `https://wa.me/${phoneDigits}` : 'https://wa.me/'
   const link = `${base}?text=${encodeURIComponent(message)}`
   return NextResponse.json({
-    data: {
-      channel: 'whatsapp',
-      link,
-      hasPhone: !!phoneDigits,
-    },
+    data: { channel: 'whatsapp', link, hasPhone: !!phoneDigits, pdfUrl },
   })
 }
