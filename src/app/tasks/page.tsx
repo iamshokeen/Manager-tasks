@@ -890,7 +890,7 @@ export default function TasksPage() {
         collisionDetection={closestCorners}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-3 gap-5 flex-1 min-h-0">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 flex-1 min-h-0">
           {ACTIVE_COLUMNS.map(col => {
             const colTasks = columns[col.key]
             return (

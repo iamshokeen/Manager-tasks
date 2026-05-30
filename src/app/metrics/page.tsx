@@ -346,7 +346,7 @@ export default function MetricsDashboard() {
         <SectionHeader title="Funnel Health" sub="Leads → Prospects → Bookings — YTD" />
 
         {/* Funnel visual */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { stage: 'Leads',      count: leads,     conv: null },
             { stage: 'Prospects',  count: prospects, conv: `L2P: ${pct(l2pPct)}` },
@@ -461,7 +461,7 @@ export default function MetricsDashboard() {
       <section className="space-y-5">
         <SectionHeader title="Leading Indicators" sub="Month-over-month trends" />
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { label: 'MoM Lead Volume',  value: liLeadVol },
             { label: 'MoM L2P% Trend',   value: liL2p },

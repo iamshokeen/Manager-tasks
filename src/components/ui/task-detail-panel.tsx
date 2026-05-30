@@ -498,9 +498,9 @@ export function TaskDetailPanel({ taskId, open, onClose, onTaskUpdated }: TaskDe
         </div>
 
         {/* Body */}
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden">
           {/* Main content (left) */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 sm:overflow-y-auto p-4 sm:p-6">
             {!task ? (
               <div className="flex items-center justify-center h-32">
                 <span className="text-sm text-muted-foreground">Loading…</span>
@@ -638,7 +638,7 @@ export function TaskDetailPanel({ taskId, open, onClose, onTaskUpdated }: TaskDe
           </div>
 
           {/* Metadata sidebar (right) */}
-          <div className="w-[188px] flex-shrink-0 border-l border-border overflow-y-auto p-4 space-y-5">
+          <div className="w-full sm:w-[188px] flex-shrink-0 border-t sm:border-t-0 sm:border-l border-border sm:overflow-y-auto p-4 space-y-5">
 
             {/* Assigned To */}
             <div className="space-y-1.5" ref={assigneeRef}>

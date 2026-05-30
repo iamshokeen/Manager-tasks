@@ -332,7 +332,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Stat tiles — order mirrors the section order below */}
-              <div className="grid grid-cols-6 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                 <StatTile label="In Progress" value={brief.counts.inProgress} accent="#f8a010" />
                 <StatTile label="Overdue" value={brief.counts.overdue} accent={brief.counts.overdue > 0 ? '#ef4444' : 'var(--on-surface-variant)'} />
                 <StatTile label="Done Today" value={brief.counts.completedToday} accent="#2e7d32" />
