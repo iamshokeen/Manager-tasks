@@ -295,7 +295,7 @@ export default function ProjectsPage() {
       <PageHeader title="Projects" description="Lifecycle board across all stages" />
 
       {/* 3-column kanban board */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 flex-1 min-h-0">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:flex-1 sm:min-h-0">
         {STAGES.filter(col => col.key !== 'closed').map(col => {
           const colProjects = projectsByStage[col.key]
           return (

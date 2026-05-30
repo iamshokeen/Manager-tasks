@@ -70,10 +70,10 @@ export function Topbar() {
     <header
       className="fixed top-0 left-0 lg:left-64 right-0 h-14 z-30 flex items-center justify-between px-5 lg:px-8 print:hidden"
       style={{
-        background: 'rgba(247,249,251,0.92)',
+        background: 'color-mix(in srgb, var(--surface) 92%, transparent)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(169,180,185,0.2)',
+        borderBottom: '1px solid var(--outline-variant)',
       }}
     >
       {/* Left: hamburger + brand on mobile, breadcrumb on desktop */}
