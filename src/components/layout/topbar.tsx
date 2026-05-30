@@ -76,13 +76,21 @@ export function Topbar() {
         borderBottom: '1px solid rgba(169,180,185,0.2)',
       }}
     >
-      {/* Left: mobile brand + breadcrumb on desktop */}
-      <div className="flex items-center gap-3">
+      {/* Left: hamburger + brand on mobile, breadcrumb on desktop */}
+      <div className="flex items-center gap-2 min-w-0">
+        <button
+          onClick={() => window.dispatchEvent(new Event('kairos:open-mobile-nav'))}
+          className="lg:hidden -ml-1 w-11 h-11 flex items-center justify-center rounded-lg active:scale-95 cursor-pointer"
+          style={{ color: 'var(--on-surface)' }}
+          aria-label="Open menu"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>menu</span>
+        </button>
         <span
-          className="font-headline text-base font-black tracking-tight lg:hidden"
+          className="font-headline text-base font-black tracking-tight lg:hidden truncate"
           style={{ color: 'var(--on-surface)' }}
         >
-          Kairos
+          {title}
         </span>
         <nav className="hidden lg:flex items-center gap-1.5" style={{ color: 'var(--on-surface-variant)' }}>
           {breadcrumb.map((crumb, i) => (
@@ -104,7 +112,7 @@ export function Topbar() {
       </div>
 
       {/* Right: date + badge + actions */}
-      <div className="flex items-center gap-2 lg:gap-3">
+      <div className="flex items-center gap-1 lg:gap-3 flex-shrink-0">
         <span
           className="hidden lg:block text-xs font-medium"
           style={{ color: 'var(--on-surface-variant)' }}
@@ -123,7 +131,7 @@ export function Topbar() {
 
         <button
           onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
-          className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 cursor-pointer"
+          className="w-10 h-10 lg:w-8 lg:h-8 flex items-center justify-center rounded-lg transition-all duration-200 cursor-pointer"
           style={{ color: 'var(--outline)' }}
           title="Search (⌘K)"
           onMouseEnter={e => {
@@ -139,7 +147,7 @@ export function Topbar() {
         </button>
 
         <button
-          className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 cursor-pointer"
+          className="hidden sm:flex w-10 h-10 lg:w-8 lg:h-8 items-center justify-center rounded-lg transition-all duration-200 cursor-pointer"
           style={{ color: 'var(--outline)' }}
           onMouseEnter={e => {
             (e.currentTarget as HTMLElement).style.color = 'var(--primary)'
@@ -178,7 +186,7 @@ export function Topbar() {
           onClick={handleLogout}
           disabled={loggingOut}
           title="Log out"
-          className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 cursor-pointer"
+          className="hidden lg:flex w-8 h-8 items-center justify-center rounded-lg transition-all duration-200 disabled:opacity-40 cursor-pointer"
           style={{ color: 'var(--outline)' }}
           onMouseEnter={e => {
             (e.currentTarget as HTMLElement).style.color = 'var(--error)'
