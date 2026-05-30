@@ -184,7 +184,7 @@ export default function StakeholderDetailPage() {
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
       >
         <ArrowLeft className="h-4 w-4" />
-        The Table
+        Back to The Table
       </Link>
 
       {/* 2-column layout */}

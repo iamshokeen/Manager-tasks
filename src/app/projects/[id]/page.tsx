@@ -221,7 +221,7 @@ export default function ProjectDetailPage() {
               className="flex items-center gap-1 hover:text-primary transition-colors"
             >
               <ArrowLeft className="h-3 w-3" />
-              Projects
+              Back to Projects
             </Link>
             <span>/</span>
             <span

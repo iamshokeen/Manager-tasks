@@ -6,7 +6,40 @@ import { Select as SelectPrimitive } from "@base-ui/react/select"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
-const Select = SelectPrimitive.Root
+// Walks the children tree to collect {value: label} pairs from every SelectItem,
+// so Base UI's <Select.Value> can render the label instead of the raw value.
+// Without this, dropdowns whose value is a CUID/UUID render the raw string in
+// the trigger after a selection ("clw1xyz..."), instead of the human label.
+function collectItemLabels(
+  node: React.ReactNode,
+  out: Record<string, React.ReactNode>,
+): void {
+  React.Children.forEach(node, (child) => {
+    if (!React.isValidElement(child)) return
+    const props = child.props as { value?: unknown; children?: React.ReactNode }
+    if (child.type === SelectItem && props.value != null) {
+      out[String(props.value)] = props.children
+    }
+    if (props.children) collectItemLabels(props.children, out)
+  })
+}
+
+function Select<Value, Multiple extends boolean | undefined = false>(
+  props: SelectPrimitive.Root.Props<Value, Multiple>,
+) {
+  const derivedItems = React.useMemo(() => {
+    const map: Record<string, React.ReactNode> = {}
+    collectItemLabels(props.children, map)
+    return Object.keys(map).length ? map : undefined
+  }, [props.children])
+
+  return (
+    <SelectPrimitive.Root
+      {...props}
+      items={props.items ?? derivedItems}
+    />
+  )
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
