@@ -373,6 +373,10 @@ export function MemberReportDoc({ report }: { report: MemberReport }) {
           <TaskTable rows={report.tasksCreatedToday} />
         </Section>
 
+        <Section title={`Upcoming This Month (${report.upcomingThisMonth.length})`} color="#0277bd">
+          <TaskTable rows={report.upcomingThisMonth} />
+        </Section>
+
         <Section title={`Comments Updated Today (${report.commentsToday.length})`}>
           <CommentsList items={report.commentsToday} />
         </Section>

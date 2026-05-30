@@ -62,6 +62,7 @@ interface MemberBrief {
     scheduledToday: number; inProgress: number; blocked: number
     completedToday: number; overdue: number
     followUpsActionedToday: number; tasksCreatedToday: number
+    upcomingThisMonth: number
   }
   todaysTasks: BriefTask[]
   completedToday: BriefTask[]
@@ -69,6 +70,7 @@ interface MemberBrief {
   blocked: BriefTask[]
   overdue: BriefTask[]
   tasksCreatedToday: BriefTask[]
+  upcomingThisMonth: BriefTask[]
   followUpsActionedToday: Array<{ id: string; title: string; contactName: string; status: string; lastActivityAt: string }>
   commentsToday: Array<{ id: string; taskTitle: string; note: string; authorName: string | null; createdAt: string }>
   weekSnapshot: CalendarTask[]
@@ -446,6 +448,32 @@ export default function ReportsPage() {
                   <EmptyLine text="No tasks created today." />
                 ) : (
                   <TaskList items={brief.tasksCreatedToday} />
+                )}
+              </BriefSection>
+
+              {/* Upcoming this month — todo tasks whose start date is still ahead */}
+              <BriefSection title={`Upcoming This Month (${brief.upcomingThisMonth.length})`} accent="#0277bd">
+                {brief.upcomingThisMonth.length === 0 ? (
+                  <EmptyLine text="Nothing on the runway for this month." />
+                ) : (
+                  <ul className="space-y-1">
+                    {brief.upcomingThisMonth.map(t => {
+                      const startIso = t.startDate
+                      return (
+                        <li key={t.id} className="flex items-center gap-3 px-2.5 py-2 rounded"
+                          style={{ background: 'var(--surface-container-low)' }}>
+                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                            style={{ background: PRIORITY_HEX[t.priority] ?? '#a9b4b9' }} />
+                          <span className="flex-1 text-sm" style={{ color: 'var(--on-surface)' }}>{t.title}</span>
+                          {startIso && (
+                            <span className="text-[10px] font-mono uppercase tracking-widest" style={{ color: '#0277bd' }}>
+                              starts {new Date(startIso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })}
+                            </span>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
                 )}
               </BriefSection>
 

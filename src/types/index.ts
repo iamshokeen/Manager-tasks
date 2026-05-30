@@ -49,4 +49,9 @@ export interface TaskFilters {
   stakeholderIdIn?: string[]
   dueWindow?: 'overdue' | 'today' | 'week' | 'month' | 'none' | 'any'
   createdWindow?: 'today' | 'week' | 'month' | 'any'
+  // When true, tasks with dueDate strictly after today are included. Default
+  // is false: future-dated tasks are excluded so they don't inflate counts on
+  // dashboard / My Tasks / team / stakeholder views. Calendar / schedules pages
+  // opt in explicitly.
+  includeFuture?: boolean
 }

@@ -7,9 +7,19 @@ export async function generateWeeklyReport() {
   const period = getCurrentWeekPeriod()
   const { startOfWeek } = await import('date-fns')
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const endOfToday = new Date()
+  endOfToday.setHours(23, 59, 59, 999)
 
   const [openTaskCount, completedTasks, overdueCount, teamMembers, metrics, tasksCreated] = await Promise.all([
-    prisma.task.count({ where: { status: { not: 'done' } } }),
+    // "Open" counts only today-or-overdue and undated work so that
+    // recurring-task occurrences materialized for the next 12 months don't
+    // inflate the dashboard.
+    prisma.task.count({
+      where: {
+        status: { not: 'done' },
+        OR: [{ dueDate: null }, { dueDate: { lte: endOfToday } }],
+      },
+    }),
     prisma.task.findMany({
       where: { status: 'done', completedAt: { gte: weekStart } },
       include: { assignee: { select: { name: true } } },

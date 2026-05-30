@@ -22,6 +22,7 @@ export function useTasks(filters: TaskFilters = {}) {
   if (filters.dueWindow && filters.dueWindow !== 'any') params.set('dueWindow', filters.dueWindow)
   if (filters.createdWindow && filters.createdWindow !== 'any') params.set('createdWindow', filters.createdWindow)
   if (filters.sortBy) params.set('sortBy', filters.sortBy)
+  if (filters.includeFuture) params.set('includeFuture', '1')
 
   const query = params.toString()
   const { data, error, mutate, isLoading } = useSWR(`/api/tasks${query ? `?${query}` : ''}`, fetcher)

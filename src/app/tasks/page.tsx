@@ -345,6 +345,8 @@ export default function TasksPage() {
   if (sortBy) filters.sortBy = sortBy
 
   const { tasks, mutate, isLoading } = useTasks(filters)
+  // Calendar tab needs future-dated tasks; list tab uses the default (excluded).
+  const { tasks: calendarTasks } = useTasks({ ...filters, includeFuture: true })
   const { members: teamMembers, mutate: mutateTeam } = useTeam()
   const { departments } = useDepartments()
   const { stakeholders: allStakeholders } = useStakeholders()
@@ -771,7 +773,7 @@ export default function TasksPage() {
       {/* ── Calendar tab ─────────────────────────────────────────────────── */}
       {activeTab === 'calendar' && (
         <TaskCalendarView
-          tasks={tasks as TaskShape[]}
+          tasks={calendarTasks as TaskShape[]}
           onTaskClick={(id) => { setSelectedTaskId(id); setSheetOpen(true) }}
           mutate={mutate}
           myTeamMemberId={myTeamMemberId}

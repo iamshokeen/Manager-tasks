@@ -241,6 +241,15 @@ export default async function MemberReportPrintPage({
         )}
       </Section>
 
+      {/* Upcoming this month — todo tasks whose start date is still ahead */}
+      <Section title={`Upcoming This Month (${report.upcomingThisMonth.length})`} accent="#0277bd">
+        {report.upcomingThisMonth.length === 0 ? (
+          <EmptyLine text="Nothing on the runway for this month." />
+        ) : (
+          <TaskTable rows={report.upcomingThisMonth} />
+        )}
+      </Section>
+
       {/* 6. Comments updated today */}
       <Section title={`Comments Updated Today (${report.commentsToday.length})`}>
         {report.commentsToday.length === 0 ? (

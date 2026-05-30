@@ -8,6 +8,23 @@
 
 ## Changelog
 
+### v2.1 — Counts & comms hygiene
+- **Task counts now exclude future-scheduled work** everywhere except calendar /
+  schedules. Recurring templates that pre-materialize a year of occurrences no
+  longer inflate the dashboard, My Tasks, team, or stakeholder counts. Calendar
+  views opt back in via `includeFuture=1`.
+- **Email diagnostic added to Settings (SA-only)** — shows whether
+  `SMTP_USER` / `SMTP_PASS` / `CRON_SECRET` are set in the deployment, verifies
+  the Gmail SMTP transport without sending, lists active auto-brief recipients,
+  and supports a one-off test send so the daily 18:00 UTC cron can be debugged
+  end-to-end.
+- **Manual brief-send route now surfaces the underlying SMTP error** instead of
+  a generic "Failed to send email" — same change applied to the cron's
+  per-dispatch error log.
+- **In-app DMs (Messages)** — schema, API, and UI shipped. Two-party threads
+  scoped to the manager chain (SA can DM anyone), 5s polling, unread badge in
+  the sidebar. Reachable at `/messages`.
+
 ### v2.0 — Kairos rebrand
 - App renamed from "Lohono Command Center" to **Kairos**
 - AI layer renamed to **Telos** — Telos persona injected into output-facing AI routes
@@ -47,8 +64,8 @@ I became a people manager for the first time in FY27, managing a team of 5 acros
 | ORM | Prisma 7 with `@prisma/adapter-pg` |
 | Deployment | Vercel |
 | Data sync | Google Apps Script → Sheets → API |
-| Email | Resend |
-| Cron | cron-job.org (4 scheduled jobs) |
+| Email | Gmail SMTP via nodemailer (App Password) |
+| Cron | Vercel Crons (daily send-briefs at 18:00 UTC, recurring-tasks at 02:00 UTC) |
 | PWA | @ducanh2912/next-pwa (Workbox) |
 | Telos | Model Context Protocol (MCP) server |
 
@@ -215,7 +232,19 @@ lohono-mcp/
 ```env
 DATABASE_URL=          # Neon PostgreSQL connection string
 DIRECT_URL=            # Neon direct connection (for Prisma migrations)
-RESEND_API_KEY=        # Resend email API key
-CRON_SECRET=           # Shared secret for cron job auth
-NEXT_PUBLIC_APP_URL=   # App base URL (for MCP server)
+JWT_SECRET=            # 32-byte hex secret for the custom JWT auth flow
+ADMIN_EMAIL=           # Bootstrapped SUPER_ADMIN account
+
+# Email — Gmail SMTP via nodemailer
+SMTP_USER=             # Gmail address that sends Kairos briefs
+SMTP_PASS=             # Gmail App Password (16 chars, no spaces)
+REPORT_EMAIL_TO=       # Default recipient for legacy weekly report cron
+
+CRON_SECRET=           # Shared secret Vercel cron sends in Authorization
+NEXT_PUBLIC_APP_URL=   # App base URL (for MCP server + brief shortlinks)
 ```
+
+**Diagnosing email problems:** SUPER_ADMINs can open Settings → Email
+Diagnostic to see whether env vars are set, whether Gmail accepts the
+credentials, who's currently configured to receive auto-briefs, and to fire
+a one-off test send. If briefs aren't going out, start there.

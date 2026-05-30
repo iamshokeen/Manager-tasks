@@ -2,6 +2,7 @@
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import type { TaskFilters, ActivityType } from '@/types'
+import { istDayBounds, istWeekBounds, istMonthBounds } from '@/lib/ist-dates'
 
 // Priority sort: explicit order rather than lexical.
 // 'urgent'/'critical' > 'high' > 'medium' > 'low'
@@ -71,6 +72,23 @@ export async function getTasks(filters: TaskFilters = {}) {
       OR: [
         { stakeholderId: { in: filters.stakeholderIdIn } },
         { stakeholders: { some: { stakeholderId: { in: filters.stakeholderIdIn } } } },
+      ],
+    })
+  }
+
+  // Default: exclude tasks scheduled strictly in the future so they don't
+  // inflate counts on dashboard / My Tasks / team / stakeholder views. The
+  // recurring-tasks cron materializes up to a year of occurrences, which
+  // would otherwise drown every view. Callers that need future tasks
+  // (calendar/schedules) set includeFuture=true; explicit dueWindow choices
+  // also bypass this guard since the caller is asking for that window.
+  const explicitDueWindow =
+    filters.dueWindow !== undefined && filters.dueWindow !== 'any'
+  if (!filters.includeFuture && !explicitDueWindow) {
+    ands.push({
+      OR: [
+        { dueDate: null },
+        { dueDate: { lte: endOfToday() } },
       ],
     })
   }
@@ -187,12 +205,55 @@ export async function getTasks(filters: TaskFilters = {}) {
       project: { select: { id: true, title: true, stage: true } },
       stakeholder: { select: { id: true, name: true } },
       stakeholders: { include: { stakeholder: { select: { id: true, name: true } } } },
+      fromRecurring: { select: { frequency: true } },
       _count: { select: { activities: true } },
     },
     orderBy,
   })
 
-  return postSort ? (postSort(rows as unknown as Array<{ priority: string }>) as unknown as typeof rows) : rows
+  // Recurring-spawned tasks: the cron materializes every occurrence in
+  // the 1-year horizon as a Task row. Without filtering, the Tasks list
+  // and Calendar drown in hundreds of "Update Kairos" rows scheduled
+  // months from now. Show only the ones that are either overdue OR
+  // inside the current cycle for their template's frequency.
+  const filtered = filterRecurringByCycle(rows as unknown as RecurringFilterRow[])
+
+  return postSort ? (postSort(filtered as unknown as Array<{ priority: string }>) as unknown as typeof rows) : (filtered as unknown as typeof rows)
+}
+
+// ─── Recurring cycle filter ──────────────────────────────────────────────────
+
+type RecurringFilterRow = {
+  status: string
+  startDate: Date | null
+  endDate: Date | null
+  dueDate: Date | null
+  fromRecurringId: string | null
+  fromRecurring: { frequency: string } | null
+}
+
+function filterRecurringByCycle<T extends RecurringFilterRow>(rows: T[]): T[] {
+  const now = new Date()
+  const day = istDayBounds(now)
+  const week = istWeekBounds(now)
+  const month = istMonthBounds(now)
+  return rows.filter(t => {
+    // Non-recurring rows pass straight through.
+    if (!t.fromRecurringId) return true
+    const end = t.endDate ?? t.dueDate
+    const start = t.startDate ?? t.dueDate ?? t.endDate
+    // Overdue (not done, end is past today's IST start) — always visible.
+    if (end && end.getTime() < day.start.getTime() && t.status !== 'done') return true
+    // Inside the current cycle for the template's frequency.
+    if (!start) return true // can't bracket — be permissive
+    const freq = t.fromRecurring?.frequency
+    if (freq === 'daily') return start.getTime() <= day.end.getTime() && (end ?? start).getTime() >= day.start.getTime()
+    if (freq === 'weekly') return start.getTime() <= week.end.getTime() && (end ?? start).getTime() >= week.start.getTime()
+    if (freq === 'monthly') return start.getTime() <= month.end.getTime() && (end ?? start).getTime() >= month.start.getTime()
+    // Unknown frequency → fall back to "this month" so we never hide
+    // everything by accident.
+    return start.getTime() <= month.end.getTime() && (end ?? start).getTime() >= month.start.getTime()
+  })
 }
 
 export async function getTask(id: string) {

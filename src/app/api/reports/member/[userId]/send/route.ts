@@ -87,7 +87,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
       })
     } catch (e) {
       console.error('[reports/send/email]', e)
-      return NextResponse.json({ error: 'Failed to send email' }, { status: 502 })
+      // Surface the underlying SMTP error to the caller so the admin can
+      // diagnose missing creds / bad app password / TLS problems instead of
+      // staring at a generic "Failed to send email".
+      const detail = e instanceof Error ? e.message : 'Unknown email error'
+      return NextResponse.json({ error: detail }, { status: 502 })
     }
     return NextResponse.json({ data: { channel: 'email', to } })
   }

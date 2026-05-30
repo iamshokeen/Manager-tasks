@@ -34,6 +34,7 @@ export async function GET(req: Request) {
     dueWindow: (searchParams.get('dueWindow') as TaskFilters['dueWindow']) ?? undefined,
     createdWindow: (searchParams.get('createdWindow') as TaskFilters['createdWindow']) ?? undefined,
     sortBy: (searchParams.get('sortBy') as TaskFilters['sortBy']) ?? undefined,
+    includeFuture: searchParams.get('includeFuture') === '1',
   }
 
   const user = session.user as { id: string; role?: string; teamMemberId?: string }

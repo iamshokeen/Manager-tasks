@@ -2,6 +2,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import useSWR from 'swr'
 import { cn } from '@/lib/utils'
 
 type Role = 'SUPER_ADMIN' | 'MANAGER' | 'SENIOR_IC' | 'DIRECT_REPORT' | 'EXEC_VIEWER' | 'GUEST'
@@ -49,6 +50,10 @@ const BASE_NAV: NavGroup[] = [
   {
     group: 'Reports',
     items: [{ href: '/reports', label: 'Reports', icon: 'summarize' }],
+  },
+  {
+    group: 'Connect',
+    items: [{ href: '/messages', label: 'Messages', icon: 'forum' }],
   },
   {
     group: 'Reference',
@@ -100,10 +105,17 @@ interface SidebarProps {
   userRole?: string | null
 }
 
+const unreadFetcher = (url: string) => fetch(url).then(r => r.json()).then(r => r.data?.count ?? 0)
+
 export function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname()
   const role = (userRole as Role) ?? 'DIRECT_REPORT'
   const navGroups = filterNavForRole(role)
+  // Tiny unread DM count for the Messages badge; refetched every 10s.
+  const { data: unreadCount } = useSWR<number>('/api/messages/unread', unreadFetcher, {
+    refreshInterval: 10_000,
+    revalidateOnFocus: true,
+  })
 
   return (
     <aside

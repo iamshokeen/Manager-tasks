@@ -41,6 +41,9 @@ export default function DashboardPage() {
   const isOperator = ['SUPER_ADMIN', 'MANAGER'].includes(role)
   const canViewKpis = SHOW_REVENUE_KPIS && ['SUPER_ADMIN', 'MANAGER', 'EXEC_VIEWER'].includes(role)
   const { tasks, isLoading: tasksLoading } = useTasks()
+  // Calendar gets its own feed so future-dated tasks aren't excluded from the
+  // 30-day view, while KPI counts above stay clean (today + overdue only).
+  const { tasks: calendarTasks } = useTasks({ includeFuture: true })
   const myName = currentUser?.name ?? undefined
   const { tasks: assignedByMeTasks, isLoading: assignedByMeLoading } = useTasks(
     myName ? { assignedByName: myName } : {}
@@ -425,7 +428,7 @@ export default function DashboardPage() {
 
         {/* ── 3b. Task Calendar (col-12) ── */}
         <div className="col-span-12">
-          <TaskCalendarSection tasks={tasks} members={members as Member[]} />
+          <TaskCalendarSection tasks={calendarTasks} members={members as Member[]} />
         </div>
 
         {/* ── 4. Team Snapshot (col-4) ── */}

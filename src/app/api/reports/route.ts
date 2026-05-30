@@ -114,13 +114,20 @@ export async function GET(req: Request) {
       completedByUser.get(ownerKey)!.push({ id: t.id, title: t.title })
     }
 
-    // Point-in-time open snapshot (in-progress + overdue + active projects)
+    // Point-in-time open snapshot (in-progress + overdue + active projects).
+    // Future-scheduled tasks (recurring materialized > today) are excluded so
+    // counts reflect only today/overdue/undated work.
+    const endOfToday = new Date()
+    endOfToday.setHours(23, 59, 59, 999)
     const openTasks = await prisma.task.findMany({
       where: {
         status: { not: 'done' },
-        OR: [
-          { createdByUserId: { in: visibleIds } },
-          { assignee: { user: { id: { in: visibleIds } } } },
+        AND: [
+          { OR: [{ dueDate: null }, { dueDate: { lte: endOfToday } }] },
+          { OR: [
+            { createdByUserId: { in: visibleIds } },
+            { assignee: { user: { id: { in: visibleIds } } } },
+          ] },
         ],
       },
       select: {

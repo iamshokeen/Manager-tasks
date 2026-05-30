@@ -209,6 +209,9 @@ export function renderMemberReportEmail(report: MemberReport, opts?: { briefUrl?
           ${sectionHeader(`New Tasks Today (${report.tasksCreatedToday.length})`, '#0053db')}
           ${taskTable(report.tasksCreatedToday)}
 
+          ${sectionHeader(`Upcoming This Month (${report.upcomingThisMonth.length})`, '#0277bd')}
+          ${taskTable(report.upcomingThisMonth)}
+
           ${sectionHeader(`Comments Updated Today (${report.commentsToday.length})`)}
           ${
             report.commentsToday.length === 0

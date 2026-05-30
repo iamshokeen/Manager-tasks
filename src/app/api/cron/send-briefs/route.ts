@@ -112,8 +112,9 @@ export async function GET(req: Request) {
           })
           result.email = { ok: true, to }
         } catch (e) {
-          console.error('[cron/send-briefs] email', u.id, e)
-          result.email = { ok: false, error: 'send failed' }
+          const detail = e instanceof Error ? e.message : String(e)
+          console.error('[cron/send-briefs] email', u.id, detail)
+          result.email = { ok: false, error: detail }
         }
       }
     }

@@ -2,11 +2,27 @@
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 
+// See team.ts for the rationale — future-dated recurring occurrences shouldn't
+// inflate per-stakeholder task counts on the CRM page.
+function tasksTodayOrEarlierWhere(): Prisma.TaskWhereInput {
+  const endOfToday = new Date()
+  endOfToday.setHours(23, 59, 59, 999)
+  return { OR: [{ dueDate: null }, { dueDate: { lte: endOfToday } }] }
+}
+
 export async function getStakeholders() {
   return prisma.stakeholder.findMany({
     include: {
-      _count: { select: { tasks: true, projects: true } },
-      tasks: { where: { status: { not: 'done' } }, select: { id: true, title: true, priority: true, dueDate: true } },
+      _count: {
+        select: {
+          tasks: { where: tasksTodayOrEarlierWhere() },
+          projects: true,
+        },
+      },
+      tasks: {
+        where: { status: { not: 'done' }, ...tasksTodayOrEarlierWhere() },
+        select: { id: true, title: true, priority: true, dueDate: true },
+      },
     },
     orderBy: [{ priority: 'asc' }, { name: 'asc' }],
   })

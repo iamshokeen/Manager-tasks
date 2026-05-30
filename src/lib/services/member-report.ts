@@ -77,6 +77,7 @@ export interface MemberReport {
     overdue: number
     followUpsActionedToday: number
     tasksCreatedToday: number
+    upcomingThisMonth: number
   }
   todaysTasks: MemberReportTask[]
   completedToday: MemberReportTask[]
@@ -85,6 +86,8 @@ export interface MemberReport {
   overdue: MemberReportTask[]
   /** Tasks created on the anchor day. */
   tasksCreatedToday: MemberReportTask[]
+  /** Todo tasks whose start date is later today through month-end. */
+  upcomingThisMonth: MemberReportTask[]
   /** Follow-ups whose lastActivityAt falls on the anchor day. */
   followUpsActionedToday: MemberReportFollowUp[]
   /** Task-activity comments authored on the anchor day. */
@@ -245,6 +248,23 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
     orderBy: { createdAt: 'desc' },
   })
 
+  // 6c) Upcoming this month — todo tasks whose start date hasn't arrived
+  // yet but lands inside this calendar month. Excludes recurring spawns
+  // since they have their own cycle filter; this section is for human
+  // planning ahead.
+  const upcomingThisMonth = await prisma.task.findMany({
+    where: {
+      AND: [
+        { OR: orClauses },
+        { status: 'todo' },
+        { startDate: { gt: dayEnd, lte: monthEnd } },
+        { fromRecurringId: null },
+      ],
+    },
+    include: { project: { select: { title: true } } },
+    orderBy: { startDate: 'asc' },
+  })
+
   // 6b) Follow-ups touched on the anchor day. Owner = creator OR linked
   // teamMember matches this user's TeamMember row.
   const followUpOr: import('@prisma/client').Prisma.FollowUpWhereInput[] = [
@@ -340,6 +360,7 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
       overdue: overdue.length,
       followUpsActionedToday: followUpsActioned.length,
       tasksCreatedToday: tasksCreatedToday.length,
+      upcomingThisMonth: upcomingThisMonth.length,
     },
     todaysTasks: todaysTasks.map(pick),
     completedToday: completedToday.map(pick),
@@ -347,6 +368,7 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
     blocked: blocked.map(pick),
     overdue: overdue.map(pick),
     tasksCreatedToday: tasksCreatedToday.map(pick),
+    upcomingThisMonth: upcomingThisMonth.map(pick),
     followUpsActionedToday: followUpsActioned.map(f => ({
       id: f.id,
       title: f.title,

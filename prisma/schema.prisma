@@ -90,6 +90,8 @@ model User {
   createdOneOnOnes     OneOnOne[]        @relation("OneOnOneCreator")
   createdProjects      Project[]         @relation("ProjectCreator")
   createdRecurring     RecurringTaskTemplate[] @relation("RecurringCreator")
+  sentMessages         Message[]         @relation("MessageSender")
+  receivedMessages     Message[]         @relation("MessageRecipient")
 }
 
 // ─── Workspaces ───────────────────────────────────────────────────────────────
@@ -509,6 +511,21 @@ model FollowUpNote {
   content    String   @db.Text
   authorName String?
   createdAt  DateTime @default(now())
+}
+
+// In-app instant messaging — simple two-party text threads.
+model Message {
+  id          String    @id @default(cuid())
+  senderId    String
+  sender      User      @relation("MessageSender",    fields: [senderId],    references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   User      @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  body        String    @db.Text
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([senderId, recipientId, createdAt])
+  @@index([recipientId, readAt])
 }
 
 // Short, one-shot URL slugs that resolve to a PDF brief. Used inside

@@ -703,6 +703,11 @@ export default function SettingsPage() {
           <ReportRecipientsCard />
         </SettingsSection>
 
+        {/* Email Diagnostic — SA-only, shows env + transport health, sends test */}
+        <SettingsSection title="Email Diagnostic" icon="troubleshoot">
+          <EmailDiagnosticCard />
+        </SettingsSection>
+
         {/* Revenue Targets Upload */}
         <SettingsSection title="Revenue Targets (FY27)" icon="upload_file">
           <TargetsUpload />
@@ -801,6 +806,115 @@ export default function SettingsPage() {
         >
           Save Changes
         </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── EmailDiagnosticCard ──────────────────────────────────────────────────────
+//
+// SA-only health check for the auto-brief pipeline. Pulls the GET diagnostic
+// (env flags, SMTP transport verify, configured recipients) and lets the
+// admin fire a one-off test email to confirm SMTP is wired up. Non-SAs see
+// a 403 message instead of the card data.
+
+interface EmailDiag {
+  env: { SMTP_USER: boolean; SMTP_PASS: boolean; CRON_SECRET: boolean; NEXT_PUBLIC_APP_URL: string | null }
+  transport: { ok: true } | { ok: false; error: string }
+  recipients: Array<{ id: string; name: string; to: string | null; schedule: string; channels: string; weekday: number }>
+  recipientCount: number
+}
+
+function EmailDiagnosticCard() {
+  const { data, error, isLoading, mutate } = useSWR<EmailDiag>('/api/admin/email-diag', fetcher)
+  const [testTo, setTestTo] = useState('')
+  const [sending, setSending] = useState(false)
+
+  async function sendTest() {
+    if (!testTo.trim()) {
+      toast.error('Enter a destination email')
+      return
+    }
+    setSending(true)
+    try {
+      const res = await fetch('/api/admin/email-diag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ testTo: testTo.trim() }),
+      })
+      const json = await res.json()
+      if (res.ok) toast.success(`Sent to ${testTo.trim()}`)
+      else toast.error(json.error ?? 'Send failed')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Network error')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  if (error) return <p className="text-sm" style={{ color: 'var(--on-surface-variant)' }}>SA only.</p>
+  if (isLoading || !data) return <p className="text-sm" style={{ color: 'var(--on-surface-variant)' }}>Checking…</p>
+
+  const envOk = data.env.SMTP_USER && data.env.SMTP_PASS && data.env.CRON_SECRET
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="p-3 rounded-lg" style={{ background: 'var(--surface-container)' }}>
+          <div className="font-bold mb-2" style={{ color: 'var(--on-surface)' }}>Environment</div>
+          <div style={{ color: data.env.SMTP_USER ? 'var(--success, #10B981)' : 'var(--error)' }}>SMTP_USER: {data.env.SMTP_USER ? 'set' : 'MISSING'}</div>
+          <div style={{ color: data.env.SMTP_PASS ? 'var(--success, #10B981)' : 'var(--error)' }}>SMTP_PASS: {data.env.SMTP_PASS ? 'set' : 'MISSING'}</div>
+          <div style={{ color: data.env.CRON_SECRET ? 'var(--success, #10B981)' : 'var(--error)' }}>CRON_SECRET: {data.env.CRON_SECRET ? 'set' : 'MISSING'}</div>
+          <div style={{ color: 'var(--on-surface-variant)' }}>APP_URL: {data.env.NEXT_PUBLIC_APP_URL ?? '—'}</div>
+          {!envOk && (
+            <div className="mt-2 text-[11px]" style={{ color: 'var(--error)' }}>
+              Set missing vars in Vercel project env, then redeploy.
+            </div>
+          )}
+        </div>
+        <div className="p-3 rounded-lg" style={{ background: 'var(--surface-container)' }}>
+          <div className="font-bold mb-2" style={{ color: 'var(--on-surface)' }}>SMTP Transport</div>
+          {data.transport.ok ? (
+            <div style={{ color: 'var(--success, #10B981)' }}>OK — Gmail accepts the credentials.</div>
+          ) : (
+            <div>
+              <div style={{ color: 'var(--error)' }}>FAILED</div>
+              <pre className="mt-1 whitespace-pre-wrap text-[11px]" style={{ color: 'var(--on-surface-variant)' }}>{data.transport.error}</pre>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="p-3 rounded-lg" style={{ background: 'var(--surface-container)' }}>
+        <div className="font-bold text-xs mb-2" style={{ color: 'var(--on-surface)' }}>
+          Auto-brief recipients ({data.recipientCount})
+        </div>
+        {data.recipients.length === 0 ? (
+          <p className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>
+            No users have an active email schedule. Set reportSchedule (daily/weekly) and reportChannels (email/both) in profile or Report Recipients to enable.
+          </p>
+        ) : (
+          <ul className="text-xs flex flex-col gap-1" style={{ color: 'var(--on-surface-variant)' }}>
+            {data.recipients.map(r => (
+              <li key={r.id}>
+                <span style={{ color: 'var(--on-surface)' }}>{r.name}</span> → {r.to ?? '(no address)'} · {r.schedule} · {r.channels}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          type="email"
+          placeholder="you@example.com"
+          value={testTo}
+          onChange={e => setTestTo(e.target.value)}
+          className="max-w-xs"
+        />
+        <Button onClick={sendTest} disabled={sending}>
+          {sending ? 'Sending…' : 'Send test email'}
+        </Button>
+        <Button variant="outline" onClick={() => mutate()}>Refresh</Button>
       </div>
     </div>
   )
