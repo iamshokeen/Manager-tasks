@@ -199,10 +199,11 @@ model TeamMember {
 }
 
 model Project {
-  id            String               @id @default(cuid())
-  title         String
-  description   String?              @db.Text
-  department    String
+  id              String               @id @default(cuid())
+  title           String
+  description     String?              @db.Text
+  brainstormNotes String?              @db.Text
+  department      String
   stage         String               @default("planning")
   ownerId       String?
   owner         TeamMember?          @relation(fields: [ownerId], references: [id], onDelete: SetNull)

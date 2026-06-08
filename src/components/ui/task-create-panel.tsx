@@ -71,10 +71,19 @@ interface TaskCreatePanelProps {
   open: boolean
   onClose: () => void
   onCreated: () => void
+  /** Pre-fill and lock the project link. Used by the project detail page. */
+  lockedProjectId?: string
+  /** Default department (e.g., inherited from the parent project). */
+  defaultDepartment?: string
 }
 
-export function TaskCreatePanel({ open, onClose, onCreated }: TaskCreatePanelProps) {
-  const [form, setForm] = useState<TaskCreateForm>(() => ({ ...EMPTY_FORM, dueDate: getTomorrow() }))
+export function TaskCreatePanel({ open, onClose, onCreated, lockedProjectId, defaultDepartment }: TaskCreatePanelProps) {
+  const [form, setForm] = useState<TaskCreateForm>(() => ({
+    ...EMPTY_FORM,
+    dueDate: getTomorrow(),
+    projectId: lockedProjectId ?? '',
+    department: defaultDepartment ?? '',
+  }))
   const [submitting, setSubmitting] = useState(false)
 
   const currentUser = useCurrentUser()
@@ -84,7 +93,12 @@ export function TaskCreatePanel({ open, onClose, onCreated }: TaskCreatePanelPro
   const { projects } = useProjects()
 
   function reset() {
-    setForm({ ...EMPTY_FORM, dueDate: getTomorrow() })
+    setForm({
+      ...EMPTY_FORM,
+      dueDate: getTomorrow(),
+      projectId: lockedProjectId ?? '',
+      department: defaultDepartment ?? '',
+    })
   }
 
   function handleClose() {
@@ -423,22 +437,30 @@ export function TaskCreatePanel({ open, onClose, onCreated }: TaskCreatePanelPro
             {/* Link to Project */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Link to Project <span className="text-muted-foreground font-normal normal-case tracking-normal">(optional)</span>
+                Link to Project {lockedProjectId
+                  ? <span className="text-primary font-normal normal-case tracking-normal">(this project)</span>
+                  : <span className="text-muted-foreground font-normal normal-case tracking-normal">(optional)</span>}
               </label>
-              <Select
-                value={form.projectId}
-                onValueChange={v => setForm(f => ({ ...f, projectId: v ?? '' }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="No project" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No project</SelectItem>
-                  {(projects as Array<{ id: string; title: string }>).map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {lockedProjectId ? (
+                <div className="h-10 px-3 flex items-center text-sm rounded-md bg-[var(--surface-container-high)] border border-border text-foreground">
+                  {(projects as Array<{ id: string; title: string }>).find(p => p.id === lockedProjectId)?.title ?? 'Linked project'}
+                </div>
+              ) : (
+                <Select
+                  value={form.projectId}
+                  onValueChange={v => setForm(f => ({ ...f, projectId: v ?? '' }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="No project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No project</SelectItem>
+                    {(projects as Array<{ id: string; title: string }>).map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {/* Repeat */}

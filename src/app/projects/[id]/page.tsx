@@ -7,10 +7,10 @@ import { toast } from 'sonner'
 import { Plus, Trash2, ArrowLeft } from 'lucide-react'
 
 import { useProject } from '@/hooks/use-projects'
-import { useTeam } from '@/hooks/use-team'
 import { useDepartments } from '@/hooks/use-departments'
 import { ProjectDetailView } from '@/components/ui/project-detail-view'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { TaskCreatePanel } from '@/components/ui/task-create-panel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -28,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { PRIORITIES } from '@/lib/utils'
 
 const STAGE_LABELS: Record<string, string> = {
   planning: 'Planning',
@@ -42,20 +41,6 @@ const STAGE_COLORS: Record<string, string> = {
   active: '#0053db',
   review: '#f59e0b',
   closed: '#10b981',
-}
-
-interface AddTaskForm {
-  title: string
-  priority: string
-  assigneeId: string
-  dueDate: string
-}
-
-const EMPTY_TASK_FORM: AddTaskForm = {
-  title: '',
-  priority: 'medium',
-  assigneeId: '',
-  dueDate: '',
 }
 
 interface EditProjectForm {
@@ -72,7 +57,6 @@ export default function ProjectDetailPage() {
   const id = params.id as string
 
   const { project, mutate, isLoading } = useProject(id)
-  const { members } = useTeam()
   const { departments } = useDepartments()
 
   const [editOpen, setEditOpen] = useState(false)
@@ -85,9 +69,7 @@ export default function ProjectDetailPage() {
   })
   const [editSubmitting, setEditSubmitting] = useState(false)
 
-  const [taskDialogOpen, setTaskDialogOpen] = useState(false)
-  const [taskForm, setTaskForm] = useState<AddTaskForm>(EMPTY_TASK_FORM)
-  const [taskSubmitting, setTaskSubmitting] = useState(false)
+  const [taskPanelOpen, setTaskPanelOpen] = useState(false)
 
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -133,40 +115,6 @@ export default function ProjectDetailPage() {
       toast.error('Failed to update project')
     } finally {
       setEditSubmitting(false)
-    }
-  }
-
-  async function handleAddTask(e: React.FormEvent) {
-    e.preventDefault()
-    if (!taskForm.title.trim()) {
-      toast.error('Title is required')
-      return
-    }
-    setTaskSubmitting(true)
-    try {
-      const body: Record<string, unknown> = {
-        title: taskForm.title.trim(),
-        priority: taskForm.priority,
-        projectId: id,
-        department: project?.department ?? 'Program Management',
-      }
-      if (taskForm.assigneeId) body.assigneeId = taskForm.assigneeId
-      if (taskForm.dueDate) body.dueDate = new Date(taskForm.dueDate).toISOString()
-
-      const res = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) throw new Error('Failed to create task')
-      await mutate()
-      setTaskDialogOpen(false)
-      setTaskForm(EMPTY_TASK_FORM)
-      toast.success('Task added')
-    } catch {
-      toast.error('Failed to add task')
-    } finally {
-      setTaskSubmitting(false)
     }
   }
 
@@ -275,7 +223,7 @@ export default function ProjectDetailPage() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setTaskDialogOpen(true)}
+            onClick={() => setTaskPanelOpen(true)}
             className="gap-1.5"
             style={{
               background: 'var(--surface-container-high)',
@@ -313,6 +261,7 @@ export default function ProjectDetailPage() {
         project={project}
         onEdit={openEditDialog}
         onTasksGenerated={() => mutate()}
+        onAddTask={() => setTaskPanelOpen(true)}
       />
 
       {/* Edit Project Dialog */}
@@ -394,77 +343,14 @@ export default function ProjectDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Task Dialog */}
-      <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-md">
-          <DialogHeader>
-            <DialogTitle>Drop a Task</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleAddTask} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Title *</label>
-              <Input
-                placeholder="Task title"
-                value={taskForm.title}
-                onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Priority</label>
-                <Select
-                  value={taskForm.priority}
-                  onValueChange={v => setTaskForm(f => ({ ...f, priority: v ?? 'medium' }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRIORITIES.map(p => (
-                      <SelectItem key={p} value={p} className="capitalize">
-                        {p.charAt(0).toUpperCase() + p.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Assignee</label>
-                <Select
-                  value={taskForm.assigneeId}
-                  onValueChange={v => setTaskForm(f => ({ ...f, assigneeId: v ?? '' }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Unassigned" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(members as Array<{ id: string; name: string }>).map(m => (
-                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Due Date</label>
-              <Input
-                type="date"
-                value={taskForm.dueDate}
-                onChange={e => setTaskForm(f => ({ ...f, dueDate: e.target.value }))}
-              />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setTaskDialogOpen(false)} disabled={taskSubmitting}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={taskSubmitting}>
-                {taskSubmitting ? 'Adding…' : 'Drop a Task'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Task creator — full-featured panel, projectId pre-locked */}
+      <TaskCreatePanel
+        open={taskPanelOpen}
+        onClose={() => setTaskPanelOpen(false)}
+        onCreated={() => mutate()}
+        lockedProjectId={project.id}
+        defaultDepartment={project.department}
+      />
 
       {/* Delete Confirm */}
       <ConfirmDialog
