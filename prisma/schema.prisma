@@ -92,6 +92,7 @@ model User {
   createdRecurring     RecurringTaskTemplate[] @relation("RecurringCreator")
   sentMessages         Message[]         @relation("MessageSender")
   receivedMessages     Message[]         @relation("MessageRecipient")
+  uploadedAttachments  Attachment[]      @relation("AttachmentUploader")
 }
 
 // ─── Workspaces ───────────────────────────────────────────────────────────────
@@ -216,6 +217,7 @@ model Project {
   tasks         Task[]
   followUps     FollowUp[]
   recurringTasks RecurringTaskTemplate[] @relation("RecurringProject")
+  attachments   Attachment[]         @relation("ProjectAttachments")
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 }
@@ -251,6 +253,7 @@ model Task {
   fromRecurringId String?
   fromRecurring  RecurringTaskTemplate? @relation("FromRecurring", fields: [fromRecurringId], references: [id], onDelete: SetNull)
   followUps      FollowUp[]
+  attachments    Attachment[]    @relation("TaskAttachments")
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -524,9 +527,36 @@ model Message {
   body        String    @db.Text
   readAt      DateTime?
   createdAt   DateTime  @default(now())
+  attachments Attachment[] @relation("MessageAttachments")
 
   @@index([senderId, recipientId, createdAt])
   @@index([recipientId, readAt])
+}
+
+// File attachments uploaded by users. Stored in Vercel Blob; the row
+// holds the blob URL plus enough metadata to render a download chip.
+// Polymorphic: exactly one of taskId/projectId/messageId is set.
+model Attachment {
+  id         String   @id @default(cuid())
+  filename   String
+  mimeType   String
+  size       Int
+  url        String   @db.Text
+  uploaderId String?
+  uploader   User?    @relation("AttachmentUploader", fields: [uploaderId], references: [id], onDelete: SetNull)
+
+  taskId    String?
+  task      Task?    @relation("TaskAttachments", fields: [taskId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation("ProjectAttachments", fields: [projectId], references: [id], onDelete: Cascade)
+  messageId String?
+  message   Message? @relation("MessageAttachments", fields: [messageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@index([projectId])
+  @@index([messageId])
 }
 
 // Short, one-shot URL slugs that resolve to a PDF brief. Used inside

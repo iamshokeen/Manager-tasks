@@ -201,6 +201,51 @@ export async function getVisibleUserIds(viewerUserId: string, viewerRole: string
 }
 
 /**
+ * Walks up the manager chain from `userId`, returning the ancestor user IDs
+ * (NOT including the user themselves). Capped at 12 hops to defend against
+ * cycles. Used by messaging so a report can DM their manager(s).
+ */
+export async function getAncestorUserIds(userId: string): Promise<Set<string>> {
+  const result = new Set<string>()
+  let cursor: string | null = userId
+  for (let depth = 0; depth < 12 && cursor; depth++) {
+    const u: { managerId: string | null } | null = await prisma.user.findUnique({
+      where: { id: cursor },
+      select: { managerId: true },
+    })
+    const next: string | null = u?.managerId ?? null
+    if (!next || result.has(next)) break
+    result.add(next)
+    cursor = next
+  }
+  return result
+}
+
+/**
+ * Returns the set of userIds the caller is allowed to DM. SA → everyone
+ * active. Everyone else → the manager chain in BOTH directions (their
+ * own reports and sub-reports, plus their managers and managers'
+ * managers). Excludes the caller themselves.
+ *
+ * This is intentionally looser than `getVisibleUserIds` (which is
+ * downward-only) because messaging is a two-way primitive — a report
+ * needs to be able to reach their manager.
+ */
+export async function getMessageableUserIds(viewerUserId: string, viewerRole: string): Promise<Set<string>> {
+  if (viewerRole === 'SUPER_ADMIN') {
+    const all = await prisma.user.findMany({ where: { isActive: true }, select: { id: true } })
+    return new Set(all.map((u) => u.id).filter((id) => id !== viewerUserId))
+  }
+  const [down, up] = await Promise.all([
+    getDescendantUserIds(viewerUserId),
+    getAncestorUserIds(viewerUserId),
+  ])
+  const out = new Set<string>([...down, ...up])
+  out.delete(viewerUserId)
+  return out
+}
+
+/**
  * True iff actor can manage target (target sits at or below actor in the chain).
  * SA always true.
  */

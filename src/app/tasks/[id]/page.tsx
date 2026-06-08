@@ -45,6 +45,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { TaskComments } from '@/components/ui/task-comments'
+import { AttachmentSection } from '@/components/ui/attachment-section'
 
 import { cn, PRIORITIES, STATUS_LABELS, TASK_STATUSES, formatDate, formatRelative, isOverdue, isDueToday } from '@/lib/utils'
 import type { ActivityType, Priority, TaskStatus } from '@/types'
@@ -472,6 +473,11 @@ export default function TaskDetailPage() {
               <Trash2 className="h-4 w-4" />
               Delete Task
             </Button>
+          </div>
+
+          {/* Attachments */}
+          <div className="bg-card border border-border rounded-lg p-4">
+            <AttachmentSection taskId={t.id} />
           </div>
 
           {/* Comments */}

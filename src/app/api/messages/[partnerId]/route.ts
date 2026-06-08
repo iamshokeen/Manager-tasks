@@ -22,7 +22,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ partnerI
       ],
     },
     orderBy: { createdAt: 'asc' },
-    select: { id: true, senderId: true, recipientId: true, body: true, readAt: true, createdAt: true },
+    select: {
+      id: true, senderId: true, recipientId: true, body: true, readAt: true, createdAt: true,
+      attachments: {
+        select: { id: true, filename: true, mimeType: true, size: true, url: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      },
+    },
   })
 
   const partner = await prisma.user.findUnique({

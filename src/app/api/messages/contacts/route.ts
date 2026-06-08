@@ -5,7 +5,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
-import { getVisibleUserIds } from '@/lib/rbac'
+import { getMessageableUserIds } from '@/lib/rbac'
 
 export async function GET() {
   const session = await getSession()
@@ -14,8 +14,8 @@ export async function GET() {
 
   let where = {}
   if (me.role !== 'SUPER_ADMIN') {
-    const visible = await getVisibleUserIds(me.id, me.role ?? '')
-    where = { id: { in: Array.from(visible).filter(id => id !== me.id), not: me.id } }
+    const visible = await getMessageableUserIds(me.id, me.role ?? '')
+    where = { id: { in: Array.from(visible) }, isActive: true }
   } else {
     where = { isActive: true, NOT: { id: me.id } }
   }

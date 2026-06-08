@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/ui/status-badge'
 import { PriorityBadge } from '@/components/ui/priority-badge'
 import { ProjectTaskGenerator } from '@/components/ui/project-task-generator'
 import { RichTextView } from '@/components/ui/rich-text-view'
+import { AttachmentSection } from '@/components/ui/attachment-section'
 import { useDepartments } from '@/hooks/use-departments'
 import { formatDate } from '@/lib/utils'
 
@@ -268,6 +269,16 @@ export function ProjectDetailView({
           <SummaryCard summary={aiSummary} onDismiss={() => setAiSummary(null)} />
         </motion.div>
       )}
+
+      {/* Attachments */}
+      <motion.div variants={itemVariants}>
+        <div
+          className="rounded-xl p-5"
+          style={{ background: 'var(--surface-container-lowest)', boxShadow: '0 8px 30px rgb(42,52,57,0.04)' }}
+        >
+          <AttachmentSection projectId={project.id} />
+        </div>
+      </motion.div>
 
       {/* Bento Grid */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-12 gap-6">

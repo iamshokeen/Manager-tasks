@@ -7,7 +7,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
-import { getVisibleUserIds } from '@/lib/rbac'
+import { getMessageableUserIds } from '@/lib/rbac'
 
 interface ConversationRow {
   partnerId: string
@@ -96,11 +96,11 @@ export async function POST(req: Request) {
   if (text.length > 4000) return NextResponse.json({ error: 'body too long' }, { status: 400 })
   if (recipientId === me.id) return NextResponse.json({ error: 'cannot message yourself' }, { status: 400 })
 
-  // Visibility — manager chain. SA can DM anyone; everyone else can DM
-  // the people they can see in reports (i.e. their chain).
+  // Messaging chain is bidirectional — a report can DM their manager and
+  // vice versa. SA can DM anyone.
   if (me.role !== 'SUPER_ADMIN') {
-    const visible = await getVisibleUserIds(me.id, me.role ?? '')
-    if (!visible.has(recipientId)) return NextResponse.json({ error: 'Recipient not in your chain' }, { status: 403 })
+    const messageable = await getMessageableUserIds(me.id, me.role ?? '')
+    if (!messageable.has(recipientId)) return NextResponse.json({ error: 'Recipient not in your chain' }, { status: 403 })
   }
 
   const msg = await prisma.message.create({

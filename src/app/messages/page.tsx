@@ -16,8 +16,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { MemberAvatar } from '@/components/ui/member-avatar'
 import { toast } from 'sonner'
 import {
-  MessageSquare, Send, Search, ArrowLeft, RefreshCw,
+  MessageSquare, Send, Search, ArrowLeft, RefreshCw, Paperclip, X,
 } from 'lucide-react'
+import { ACCEPT_ATTR, ALLOWED_MIME_TYPES, MAX_UPLOAD_BYTES, formatBytes } from '@/lib/attachments'
 
 interface Conversation {
   partnerId: string
@@ -30,6 +31,14 @@ interface Conversation {
   unread: number
 }
 
+interface MessageAttachment {
+  id: string
+  filename: string
+  mimeType: string
+  size: number
+  url: string
+}
+
 interface Message {
   id: string
   senderId: string
@@ -37,6 +46,7 @@ interface Message {
   body: string
   readAt: string | null
   createdAt: string
+  attachments?: MessageAttachment[]
 }
 
 interface ThreadResponse {
@@ -94,6 +104,9 @@ export default function MessagesPage() {
   )
 
   const composerRef = useRef<HTMLTextAreaElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [sending, setSending] = useState(false)
   const scrollerRef = useRef<HTMLDivElement | null>(null)
 
   // Mark thread read when it loads or new messages arrive while open.
@@ -114,28 +127,76 @@ export default function MessagesPage() {
     el.scrollTop = el.scrollHeight
   }, [thread?.messages?.length])
 
+  function queueFiles(files: FileList | File[]) {
+    const out: File[] = []
+    for (const f of Array.from(files)) {
+      if (f.size > MAX_UPLOAD_BYTES) {
+        toast.error(`${f.name}: max ${MAX_UPLOAD_BYTES / (1024 * 1024)} MB`)
+        continue
+      }
+      if (!ALLOWED_MIME_TYPES.has(f.type)) {
+        toast.error(`${f.name}: unsupported type`)
+        continue
+      }
+      out.push(f)
+    }
+    if (out.length > 0) setPendingFiles(prev => [...prev, ...out])
+  }
+
   async function sendMessage() {
     if (!activePartner) return
     const body = composing.trim()
-    if (!body) return
+    const files = pendingFiles
+    // Must have either text or at least one file.
+    if (!body && files.length === 0) return
+    setSending(true)
     setComposing('')
+    setPendingFiles([])
     try {
+      // Message body cannot be empty server-side; fall back to a single
+      // bullet so a file-only message still goes through. The attachments
+      // carry the actual content.
+      const placeholder = files.length > 0
+        ? (files.length === 1 ? files[0].name : `${files.length} files attached`)
+        : ''
       const res = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipientId: activePartner, body }),
+        body: JSON.stringify({ recipientId: activePartner, body: body || placeholder }),
       })
       if (!res.ok) {
         const e = await res.json().catch(() => ({}))
         toast.error(e?.error ?? 'Failed to send')
         setComposing(body) // restore on failure
+        setPendingFiles(files)
         return
+      }
+      const data = await res.json()
+      const newMessageId: string | undefined = data?.data?.id
+      if (newMessageId && files.length > 0) {
+        for (const file of files) {
+          const fd = new FormData()
+          fd.set('file', file)
+          fd.set('messageId', newMessageId)
+          try {
+            const up = await fetch('/api/attachments', { method: 'POST', body: fd })
+            if (!up.ok) {
+              const e = await up.json().catch(() => ({}))
+              toast.error(`${file.name}: ${e?.error ?? 'upload failed'}`)
+            }
+          } catch {
+            toast.error(`${file.name}: upload failed`)
+          }
+        }
       }
       mutateThread()
       mutateConvos()
     } catch {
       toast.error('Network error')
       setComposing(body)
+      setPendingFiles(files)
+    } finally {
+      setSending(false)
     }
   }
 
@@ -277,6 +338,7 @@ export default function MessagesPage() {
                 )}
                 {thread?.messages.map(m => {
                   const fromMe = m.senderId === meId
+                  const atts = m.attachments ?? []
                   return (
                     <div key={m.id} className={`flex ${fromMe ? 'justify-end' : 'justify-start'}`}>
                       <div
@@ -289,6 +351,24 @@ export default function MessagesPage() {
                         }}
                       >
                         <div className="text-sm whitespace-pre-wrap break-words">{m.body}</div>
+                        {atts.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {atts.map(a => (
+                              <a
+                                key={a.id}
+                                href={a.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-[11px] underline-offset-2 hover:underline"
+                                style={{ opacity: 0.9 }}
+                              >
+                                <Paperclip className="h-3 w-3 flex-shrink-0" />
+                                <span className="truncate">{a.filename}</span>
+                                <span style={{ opacity: 0.7 }}>· {formatBytes(a.size)}</span>
+                              </a>
+                            ))}
+                          </div>
+                        )}
                         <div className="text-[10px] font-mono mt-1" style={{ opacity: 0.7 }}>
                           {fmtFullTime(m.createdAt)}
                         </div>
@@ -299,30 +379,77 @@ export default function MessagesPage() {
               </div>
 
               {/* Composer */}
-              <div className="flex items-end gap-2 p-3"
-                style={{ borderTop: '1px solid var(--surface-container)' }}>
-                <Textarea
-                  ref={composerRef}
-                  value={composing}
-                  onChange={e => setComposing(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      sendMessage()
-                    }
-                  }}
-                  placeholder="Type a message — Enter to send, Shift+Enter for new line"
-                  rows={1}
-                  className="flex-1 resize-none text-sm min-h-9 max-h-32"
-                />
-                <Button
-                  size="sm"
-                  onClick={sendMessage}
-                  disabled={!composing.trim()}
-                  className="gap-1.5"
-                >
-                  <Send className="h-3.5 w-3.5" /> Send
-                </Button>
+              <div
+                className="flex flex-col gap-2 p-3"
+                style={{ borderTop: '1px solid var(--surface-container)' }}
+              >
+                {pendingFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {pendingFiles.map((f, i) => (
+                      <span
+                        key={`${f.name}-${i}`}
+                        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--surface-container-high)] text-[11px] text-foreground"
+                      >
+                        <Paperclip className="h-3 w-3" />
+                        <span className="max-w-[200px] truncate">{f.name}</span>
+                        <span className="text-muted-foreground">{formatBytes(f.size)}</span>
+                        <button
+                          type="button"
+                          onClick={() => setPendingFiles(prev => prev.filter((_, idx) => idx !== i))}
+                          className="text-muted-foreground hover:text-destructive"
+                          title="Remove"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--surface-container-high)] transition-all"
+                    title="Attach file"
+                    disabled={sending}
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept={ACCEPT_ATTR}
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files) queueFiles(e.target.files)
+                      e.target.value = ''
+                    }}
+                  />
+                  <Textarea
+                    ref={composerRef}
+                    value={composing}
+                    onChange={e => setComposing(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        sendMessage()
+                      }
+                    }}
+                    placeholder="Type a message — Enter to send, Shift+Enter for new line"
+                    rows={1}
+                    className="flex-1 resize-none text-sm min-h-9 max-h-32"
+                    disabled={sending}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={sendMessage}
+                    disabled={sending || (!composing.trim() && pendingFiles.length === 0)}
+                    className="gap-1.5"
+                  >
+                    <Send className="h-3.5 w-3.5" /> {sending ? 'Sending…' : 'Send'}
+                  </Button>
+                </div>
               </div>
             </>
           )}
