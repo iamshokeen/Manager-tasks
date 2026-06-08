@@ -101,8 +101,9 @@ function KanbanCard({
 }) {
   const isUrgent = task.priority === 'urgent'
   return (
-    <div
-      className="p-4 rounded-xl cursor-grab group transition-all"
+    <Link
+      href={`/tasks/${task.id}`}
+      className="block p-4 rounded-xl group transition-all hover:shadow-md hover:-translate-y-0.5"
       style={{
         background: isDone ? 'rgba(240,244,247,0.5)' : 'var(--surface-container-lowest)',
         boxShadow: isDone ? 'none' : '0 1px 4px rgba(42,52,57,0.06)',
@@ -156,7 +157,7 @@ function KanbanCard({
           <span />
         )}
       </div>
-    </div>
+    </Link>
   )
 }
 
@@ -583,7 +584,7 @@ export function ProjectDetailView({
                   {project.tasks.map((task, i) => (
                     <tr
                       key={task.id}
-                      className="transition-colors"
+                      className="transition-colors hover:bg-[var(--surface-container-low)]"
                       style={{
                         borderBottom: i < project.tasks.length - 1 ? '1px solid var(--surface-container)' : undefined,
                       }}

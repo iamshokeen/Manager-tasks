@@ -286,7 +286,33 @@ export async function getTask(id: string) {
 export async function createTask(
   data: Prisma.TaskCreateInput & { stakeholderIds?: string[] }
 ) {
-  const { stakeholderIds, ...rest } = data as Record<string, unknown> & { stakeholderIds?: string[] }
+  const { stakeholderIds, ...rest } = data as Record<string, unknown> & {
+    stakeholderIds?: string[]
+    startDate?: Date | string | null
+    endDate?: Date | string | null
+    dueDate?: Date | string | null
+  }
+
+  // Normalize date fields so the calendar/report snapshot queries (which
+  // OR over [start/end overlap] and [dueDate within window]) always match
+  // a task that has any date at all. If a caller (e.g. AI generation)
+  // supplies only dueDate, mirror it into start/end. If they only supply
+  // start or end, mirror that too so the pair is always consistent.
+  const startDate = rest.startDate as Date | string | null | undefined
+  const endDate = rest.endDate as Date | string | null | undefined
+  const dueDate = rest.dueDate as Date | string | null | undefined
+  const hasStart = startDate !== undefined && startDate !== null
+  const hasEnd = endDate !== undefined && endDate !== null
+  const hasDue = dueDate !== undefined && dueDate !== null
+  if (!hasStart && !hasEnd && hasDue) {
+    rest.startDate = dueDate
+    rest.endDate = dueDate
+  } else if (hasStart && !hasEnd) {
+    rest.endDate = startDate
+  } else if (!hasStart && hasEnd) {
+    rest.startDate = endDate
+  }
+
   const taskData = rest as Prisma.TaskCreateInput
 
   const task = await prisma.task.create({ data: taskData })

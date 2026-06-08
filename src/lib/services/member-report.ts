@@ -283,12 +283,22 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
   })
 
   // 7) Week snapshot tasks (anything intersecting the week).
+  //
+  // A task counts as "in the week" if ANY of its date fields falls in the
+  // window. We OR over every partial-date shape because legacy and AI-
+  // generated tasks frequently only have one of start/end/due populated.
   const weekTasks = await prisma.task.findMany({
     where: {
       OR: orClauses,
       AND: [{
         OR: [
+          // both start & end set: full interval overlap
           { AND: [{ startDate: { lte: weekEnd } }, { endDate: { gte: weekStart } }] },
+          // only start set, falls in week
+          { AND: [{ startDate: { gte: weekStart, lte: weekEnd } }, { endDate: null }] },
+          // only end set, falls in week
+          { AND: [{ startDate: null }, { endDate: { gte: weekStart, lte: weekEnd } }] },
+          // only dueDate set
           { AND: [{ startDate: null }, { endDate: null }, { dueDate: { gte: weekStart, lte: weekEnd } }] },
         ],
       }],
@@ -310,12 +320,16 @@ export async function getMemberReport(userId: string, anchor: Date = new Date())
   })
 
   // 8) Month snapshot tasks (anything intersecting the calendar month).
+  // Same partial-date OR shape as the week query so AI-generated and
+  // legacy tasks don't fall through the cracks.
   const monthTasks = await prisma.task.findMany({
     where: {
       OR: orClauses,
       AND: [{
         OR: [
           { AND: [{ startDate: { lte: monthEnd } }, { endDate: { gte: monthStart } }] },
+          { AND: [{ startDate: { gte: monthStart, lte: monthEnd } }, { endDate: null }] },
+          { AND: [{ startDate: null }, { endDate: { gte: monthStart, lte: monthEnd } }] },
           { AND: [{ startDate: null }, { endDate: null }, { dueDate: { gte: monthStart, lte: monthEnd } }] },
         ],
       }],

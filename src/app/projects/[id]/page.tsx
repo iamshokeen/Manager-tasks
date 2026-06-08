@@ -7,27 +7,11 @@ import { toast } from 'sonner'
 import { Plus, Trash2, ArrowLeft } from 'lucide-react'
 
 import { useProject } from '@/hooks/use-projects'
-import { useDepartments } from '@/hooks/use-departments'
 import { ProjectDetailView } from '@/components/ui/project-detail-view'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { TaskCreatePanel } from '@/components/ui/task-create-panel'
+import { ProjectFormPanel } from '@/components/ui/project-form-panel'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { RichTextEditor } from '@/components/ui/rich-text-editor'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 
 const STAGE_LABELS: Record<string, string> = {
   planning: 'Planning',
@@ -43,13 +27,7 @@ const STAGE_COLORS: Record<string, string> = {
   closed: '#10b981',
 }
 
-interface EditProjectForm {
-  title: string
-  description: string
-  stage: string
-  department: string
-  dueDate: string
-}
+type StageKey = 'planning' | 'active' | 'review' | 'closed'
 
 export default function ProjectDetailPage() {
   const params = useParams()
@@ -57,18 +35,8 @@ export default function ProjectDetailPage() {
   const id = params.id as string
 
   const { project, mutate, isLoading } = useProject(id)
-  const { departments } = useDepartments()
 
   const [editOpen, setEditOpen] = useState(false)
-  const [editForm, setEditForm] = useState<EditProjectForm>({
-    title: '',
-    description: '',
-    stage: 'planning',
-    department: '',
-    dueDate: '',
-  })
-  const [editSubmitting, setEditSubmitting] = useState(false)
-
   const [taskPanelOpen, setTaskPanelOpen] = useState(false)
 
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -76,46 +44,7 @@ export default function ProjectDetailPage() {
 
   function openEditDialog() {
     if (!project) return
-    setEditForm({
-      title: project.title,
-      description: project.description ?? '',
-      stage: project.stage,
-      department: project.department ?? '',
-      dueDate: project.dueDate ? project.dueDate.split('T')[0] : '',
-    })
     setEditOpen(true)
-  }
-
-  async function handleEditSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!editForm.title.trim()) {
-      toast.error('Title is required')
-      return
-    }
-    setEditSubmitting(true)
-    try {
-      const body: Record<string, unknown> = {
-        title: editForm.title.trim(),
-        stage: editForm.stage,
-      }
-      if (editForm.department) body.department = editForm.department
-      if (editForm.description) body.description = editForm.description
-      if (editForm.dueDate) body.dueDate = new Date(editForm.dueDate).toISOString()
-
-      const res = await fetch(`/api/projects/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) throw new Error('Failed to update project')
-      await mutate()
-      setEditOpen(false)
-      toast.success('Project updated')
-    } catch {
-      toast.error('Failed to update project')
-    } finally {
-      setEditSubmitting(false)
-    }
   }
 
   async function handleDelete() {
@@ -264,83 +193,22 @@ export default function ProjectDetailPage() {
         onAddTask={() => setTaskPanelOpen(true)}
       />
 
-      {/* Edit Project Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="bg-card border-border max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit Project</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Title *</label>
-              <Input
-                placeholder="Project title"
-                value={editForm.title}
-                onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Stage</label>
-                <Select
-                  value={editForm.stage}
-                  onValueChange={v => setEditForm(f => ({ ...f, stage: v ?? 'planning' }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(STAGE_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Department</label>
-                <Select
-                  value={editForm.department}
-                  onValueChange={v => setEditForm(f => ({ ...f, department: v ?? '' }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map(d => (
-                      <SelectItem key={d} value={d}>{d}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Due Date</label>
-              <Input
-                type="date"
-                value={editForm.dueDate}
-                onChange={e => setEditForm(f => ({ ...f, dueDate: e.target.value }))}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Description</label>
-              <RichTextEditor
-                content={editForm.description}
-                onChange={html => setEditForm(f => ({ ...f, description: html }))}
-                placeholder="Project description…"
-              />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setEditOpen(false)} disabled={editSubmitting}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={editSubmitting}>
-                {editSubmitting ? 'Saving…' : 'Save Changes'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Project slide-over panel */}
+      <ProjectFormPanel
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        projectId={id}
+        initial={{
+          title: project.title,
+          description: project.description ?? '',
+          stage: project.stage as StageKey,
+          department: project.department ?? '',
+          ownerId: project.owner?.id ?? '',
+          stakeholderIds: (project as { stakeholders?: Array<{ stakeholder: { id: string } }> }).stakeholders?.map(s => s.stakeholder.id) ?? [],
+          dueDate: project.dueDate ? project.dueDate.split('T')[0] : '',
+        }}
+        onSaved={() => mutate()}
+      />
 
       {/* Task creator — full-featured panel, projectId pre-locked */}
       <TaskCreatePanel

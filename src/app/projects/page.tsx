@@ -2,37 +2,19 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Layers, Calendar, Archive, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { Plus, Layers, Calendar, Archive, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useProjects } from '@/hooks/use-projects'
-import { useTeam } from '@/hooks/use-team'
-import { useStakeholders } from '@/hooks/use-stakeholders'
-import { useDepartments } from '@/hooks/use-departments'
 import { useCurrentUser } from '@/hooks/use-current-user'
 import { PageHeader } from '@/components/ui/page-header'
 import { DepartmentBadge } from '@/components/ui/department-badge'
 import { MemberAvatar } from '@/components/ui/member-avatar'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { ProjectFormPanel } from '@/components/ui/project-form-panel'
 
-import { cn, formatDate } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 
 const STAGES = [
   { key: 'planning', label: 'Planning', color: '#717c82' },
@@ -53,26 +35,6 @@ interface ProjectData {
   stakeholder?: { id: string; name: string } | null
   stakeholders?: Array<{ stakeholder: { id: string; name: string } }>
   tasks?: Array<{ id: string; status: string }>
-}
-
-interface CreateProjectForm {
-  title: string
-  department: string
-  stage: Stage
-  ownerId: string
-  stakeholderIds: string[]
-  dueDate: string
-  description: string
-}
-
-const EMPTY_FORM: CreateProjectForm = {
-  title: '',
-  department: '',
-  stage: 'planning',
-  ownerId: '',
-  stakeholderIds: [],
-  dueDate: '',
-  description: '',
 }
 
 function ProjectCard({ project, onClick }: { project: ProjectData; onClick: () => void }) {
@@ -195,66 +157,22 @@ function ProjectCard({ project, onClick }: { project: ProjectData; onClick: () =
 
 export default function ProjectsPage() {
   const router = useRouter()
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [defaultStage, setDefaultStage] = useState<Stage>('planning')
-  const [form, setForm] = useState<CreateProjectForm>(EMPTY_FORM)
-  const [submitting, setSubmitting] = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [panelInitial, setPanelInitial] = useState<{ stage: Stage }>({ stage: 'planning' })
   const [archiveOpen, setArchiveOpen] = useState(false)
   const [reopening, setReopening] = useState<string | null>(null)
 
   const { projects, mutate, isLoading } = useProjects()
-  const { members } = useTeam()
-  const { stakeholders } = useStakeholders()
-  const { departments } = useDepartments()
   const me = useCurrentUser()
   const canCreateProject = me?.role === 'SUPER_ADMIN' || me?.role === 'MANAGER'
 
-  function openCreateDialog(stage: Stage) {
+  function openCreatePanel(stage: Stage) {
     if (!canCreateProject) {
       toast.error('Only Super Admin and Manager can create projects')
       return
     }
-    setDefaultStage(stage)
-    setForm({ ...EMPTY_FORM, stage })
-    setDialogOpen(true)
-  }
-
-  // suppress unused warning
-  void defaultStage
-
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.title.trim()) {
-      toast.error('Title is required')
-      return
-    }
-    setSubmitting(true)
-    try {
-      const body: Record<string, unknown> = {
-        title: form.title.trim(),
-        stage: form.stage,
-      }
-      if (form.department) body.department = form.department
-      if (form.ownerId && form.ownerId !== '__self__') body.ownerId = form.ownerId
-      if (form.stakeholderIds.length > 0) body.stakeholderIds = form.stakeholderIds
-      if (form.dueDate) body.dueDate = new Date(form.dueDate).toISOString()
-      if (form.description) body.description = form.description
-
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) throw new Error('Failed to create project')
-      await mutate()
-      setDialogOpen(false)
-      setForm(EMPTY_FORM)
-      toast.success('Project created')
-    } catch {
-      toast.error('Failed to create project')
-    } finally {
-      setSubmitting(false)
-    }
+    setPanelInitial({ stage })
+    setPanelOpen(true)
   }
 
   const projectsByStage: Record<Stage, ProjectData[]> = {
@@ -328,7 +246,7 @@ export default function ProjectsPage() {
                 </div>
                 {canCreateProject && (
                   <button
-                    onClick={() => openCreateDialog(col.key)}
+                    onClick={() => openCreatePanel(col.key)}
                     className="transition-colors"
                     style={{ color: 'var(--on-surface-variant)' }}
                     title={`New project in ${col.label}`}
@@ -423,156 +341,13 @@ export default function ProjectsPage() {
         )}
       </div>
 
-      {/* Create Project Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-card max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Start a Project</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreate} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Title *</label>
-              <Input
-                placeholder="Project title"
-                value={form.title}
-                onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Department</label>
-                <Select
-                  value={form.department}
-                  onValueChange={v => setForm(f => ({ ...f, department: v ?? '' }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map(d => (
-                      <SelectItem key={d} value={d}>{d}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Stage</label>
-                <Select
-                  value={form.stage}
-                  onValueChange={v => setForm(f => ({ ...f, stage: (v ?? 'planning') as Stage }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STAGES.map(s => (
-                      <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 items-start">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Assigned To / Owner</label>
-                <Select
-                  value={form.ownerId}
-                  onValueChange={v => setForm(f => ({ ...f, ownerId: v ?? '' }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Unassigned" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__self__">— Me (Saksham) —</SelectItem>
-                    {(members as Array<{ id: string; name: string }>).map(m => (
-                      <SelectItem key={`${m.id}-${m.name}`} value={m.id}>{m.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1.5 col-span-2">
-                <label className="text-xs font-medium text-muted-foreground">Stakeholders</label>
-                <div
-                  className="min-h-[44px] p-2 rounded-lg border space-y-2"
-                  style={{ background: 'var(--surface-container-high)', borderColor: 'var(--border, rgba(169,180,185,0.3))' }}
-                >
-                  {form.stakeholderIds.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {(stakeholders as Array<{ id: string; name: string }>)
-                        .filter(s => form.stakeholderIds.includes(s.id))
-                        .map(s => (
-                          <span key={s.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[11px] text-purple-300">
-                            {s.name}
-                            <button
-                              type="button"
-                              onClick={() => setForm(f => ({ ...f, stakeholderIds: f.stakeholderIds.filter(id => id !== s.id) }))}
-                              className="hover:text-red-400 transition-colors cursor-pointer"
-                            >
-                              <X className="h-2.5 w-2.5" />
-                            </button>
-                          </span>
-                        ))}
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-1.5">
-                    {(stakeholders as Array<{ id: string; name: string }>)
-                      .filter(s => !form.stakeholderIds.includes(s.id))
-                      .map(s => (
-                        <button
-                          key={s.id}
-                          type="button"
-                          onClick={() => setForm(f => ({ ...f, stakeholderIds: [...f.stakeholderIds, s.id] }))}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-dashed border-border text-[11px] text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all cursor-pointer"
-                        >
-                          <Plus className="h-2.5 w-2.5" /> {s.name}
-                        </button>
-                      ))}
-                  </div>
-                  {stakeholders.length === 0 && (
-                    <p className="text-xs text-muted-foreground">No stakeholders yet.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Due Date</label>
-              <Input
-                type="date"
-                value={form.dueDate}
-                onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Description</label>
-              <Textarea
-                placeholder="Project description…"
-                rows={3}
-                value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              />
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setDialogOpen(false)}
-                disabled={submitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? 'Creating…' : 'Create Project'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Create Project slide-over panel */}
+      <ProjectFormPanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        initial={{ stage: panelInitial.stage }}
+        onSaved={() => mutate()}
+      />
     </div>
   )
 }

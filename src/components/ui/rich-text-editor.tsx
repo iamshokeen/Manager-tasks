@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -104,6 +105,17 @@ export function RichTextEditor({
       onChange(editor.getHTML())
     },
   })
+
+  // Sync external content changes into the editor (e.g. when the parent
+  // swaps to a different task and feeds in a new description). Skip if the
+  // editor is focused so we don't clobber what the user is typing.
+  useEffect(() => {
+    if (!editor) return
+    const current = editor.getHTML()
+    if (current === content) return
+    if (editor.isFocused) return
+    editor.commands.setContent(content || '', { emitUpdate: false })
+  }, [editor, content])
 
   if (!editable) {
     return (
