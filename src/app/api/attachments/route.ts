@@ -73,11 +73,16 @@ export async function POST(req: Request) {
     putRes = await put(pathname, blob, {
       access: 'public',
       contentType: blob.type,
-      addRandomSuffix: false,
+      // addRandomSuffix removed — let the SDK default win so newer @vercel/blob
+      // versions that require it for duplicate-safety don't blow up here.
     })
   } catch (e) {
     console.error('[upload] blob put failed', e)
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+    const reason = e instanceof Error ? e.message : String(e)
+    // Surface the real reason to the client so DevTools shows the actual
+    // error (token missing, store unreachable, etc.) instead of a generic
+    // "Upload failed". Internal-only app, no PII concerns.
+    return NextResponse.json({ error: `Blob upload failed: ${reason}` }, { status: 500 })
   }
 
   const row = await prisma.attachment.create({
