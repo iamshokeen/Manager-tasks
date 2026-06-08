@@ -28,6 +28,8 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { RichTextView } from '@/components/ui/rich-text-view'
 import {
   Dialog,
   DialogContent,
@@ -152,11 +154,19 @@ export default function TaskDetailPage() {
     toast.success('Title updated')
   }
 
-  async function handleDescBlur() {
-    setEditingDesc(false)
-    if (descValue === (task?.description ?? '')) return
+  async function handleDescSave() {
+    if (descValue === (task?.description ?? '')) {
+      setEditingDesc(false)
+      return
+    }
     await patchTask({ description: descValue })
+    setEditingDesc(false)
     toast.success('Description updated')
+  }
+
+  function handleDescCancel() {
+    setDescValue(task?.description ?? '')
+    setEditingDesc(false)
   }
 
   async function handleStatusChange(status: string | null) {
@@ -399,20 +409,31 @@ export default function TaskDetailPage() {
               )}
             </div>
             {editingDesc ? (
-              <Textarea
-                value={descValue}
-                onChange={e => setDescValue(e.target.value)}
-                onBlur={handleDescBlur}
-                rows={4}
-                autoFocus
-                placeholder="Add a description…"
-              />
+              <div className="flex flex-col gap-2">
+                <RichTextEditor
+                  content={descValue}
+                  onChange={setDescValue}
+                  placeholder="Add a description…"
+                />
+                <div className="flex items-center justify-end gap-2">
+                  <Button type="button" size="sm" variant="ghost" onClick={handleDescCancel}>Cancel</Button>
+                  <Button type="button" size="sm" onClick={handleDescSave}>Save</Button>
+                </div>
+              </div>
+            ) : t.description ? (
+              <div
+                onClick={() => setEditingDesc(true)}
+                className="cursor-text min-h-[40px]"
+                title="Click to edit"
+              >
+                <RichTextView html={t.description} clampLines={6} />
+              </div>
             ) : (
               <p
                 onClick={() => setEditingDesc(true)}
-                className="text-sm text-foreground cursor-text min-h-[40px] whitespace-pre-wrap"
+                className="text-sm cursor-text min-h-[40px] text-muted-foreground"
               >
-                {t.description || <span className="text-muted-foreground">No description — click to add</span>}
+                No description — click to add
               </p>
             )}
           </div>

@@ -13,7 +13,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { TaskCreatePanel } from '@/components/ui/task-create-panel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import {
   Dialog,
   DialogContent,
@@ -324,11 +324,10 @@ export default function ProjectDetailPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-muted-foreground">Description</label>
-              <Textarea
+              <RichTextEditor
+                content={editForm.description}
+                onChange={html => setEditForm(f => ({ ...f, description: html }))}
                 placeholder="Project description…"
-                rows={3}
-                value={editForm.description}
-                onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
               />
             </div>
             <DialogFooter>

@@ -10,6 +10,7 @@ import { MemberAvatar } from '@/components/ui/member-avatar'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { PriorityBadge } from '@/components/ui/priority-badge'
 import { ProjectTaskGenerator } from '@/components/ui/project-task-generator'
+import { RichTextView } from '@/components/ui/rich-text-view'
 import { useDepartments } from '@/hooks/use-departments'
 import { formatDate } from '@/lib/utils'
 
@@ -233,9 +234,9 @@ export function ProjectDetailView({
             {project.title}
           </h1>
           {project.description && (
-            <p className="text-sm leading-relaxed max-w-2xl" style={{ color: 'var(--on-surface-variant)' }}>
-              {project.description}
-            </p>
+            <div className="max-w-2xl text-sm" style={{ color: 'var(--on-surface-variant)' }}>
+              <RichTextView html={project.description} clampLines={6} />
+            </div>
           )}
         </div>
         <div className="flex items-center gap-3 shrink-0">
