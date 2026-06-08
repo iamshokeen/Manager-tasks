@@ -19,6 +19,10 @@ export const ALLOWED_MIME_TYPES: ReadonlySet<string> = new Set([
   // Plain & CSV
   'text/plain',
   'text/csv',
+  // HTML — used by Project Flow embed, rendered in a sandboxed iframe.
+  // Self-contained HTML files only; uploaded JS runs but is isolated
+  // from the host app (no same-origin, no top-nav, no form submission).
+  'text/html',
   // Images
   'image/png',
   'image/jpeg',
@@ -31,7 +35,16 @@ export const ALLOWED_MIME_TYPES: ReadonlySet<string> = new Set([
  * Browser-friendly accept string for the file picker.
  */
 export const ACCEPT_ATTR =
-  '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg,.gif,.webp,.svg'
+  '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.html,.htm,.png,.jpg,.jpeg,.gif,.webp,.svg'
+
+/** True if the attachment's MIME type is text/html — used by ProjectFlowEmbed. */
+export function isHtmlAttachment(a: { mimeType: string; filename: string }): boolean {
+  if (a.mimeType === 'text/html') return true
+  // Some browsers occasionally send '' or 'application/octet-stream' for
+  // .html files (e.g. when dragged from a custom file source). Fall back
+  // to the extension so the user isn't blocked.
+  return /\.html?$/i.test(a.filename)
+}
 
 export interface AttachmentRow {
   id: string

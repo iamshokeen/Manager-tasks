@@ -12,6 +12,7 @@ import { PriorityBadge } from '@/components/ui/priority-badge'
 import { ProjectTaskGenerator } from '@/components/ui/project-task-generator'
 import { RichTextView } from '@/components/ui/rich-text-view'
 import { AttachmentSection } from '@/components/ui/attachment-section'
+import { ProjectFlowEmbed } from '@/components/ui/project-flow-embed'
 import { useDepartments } from '@/hooks/use-departments'
 import { formatDate } from '@/lib/utils'
 
@@ -270,13 +271,18 @@ export function ProjectDetailView({
         </motion.div>
       )}
 
+      {/* Project Flow — only renders when an .html flowchart is attached */}
+      <motion.div variants={itemVariants}>
+        <ProjectFlowEmbed projectId={project.id} />
+      </motion.div>
+
       {/* Attachments */}
       <motion.div variants={itemVariants}>
         <div
           className="rounded-xl p-5"
           style={{ background: 'var(--surface-container-lowest)', boxShadow: '0 8px 30px rgb(42,52,57,0.04)' }}
         >
-          <AttachmentSection projectId={project.id} />
+          <AttachmentSection projectId={project.id} label="Attachments & Flowcharts (.html)" />
         </div>
       </motion.div>
 
