@@ -53,6 +53,11 @@ export function ProjectFlowEmbed({ projectId, className }: ProjectFlowEmbedProps
     (selectedId && htmlFlows.find(f => f.id === selectedId)) ||
     htmlFlows[htmlFlows.length - 1]
 
+  // Same-origin proxy strips Vercel Blob's `Content-Disposition: attachment`
+  // (which would force a download) and re-serves with `inline` so the
+  // iframe actually renders the flowchart.
+  const inlineUrl = `/api/attachments/${active.id}/raw`
+
   return (
     <div
       ref={containerRef}
@@ -85,7 +90,7 @@ export function ProjectFlowEmbed({ projectId, className }: ProjectFlowEmbedProps
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
             <a
-              href={active.url}
+              href={inlineUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="h-7 w-7 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-[var(--surface-container-high)] transition-all"
@@ -132,7 +137,7 @@ export function ProjectFlowEmbed({ projectId, className }: ProjectFlowEmbedProps
         {/* Sandboxed iframe */}
         <iframe
           key={active.id}
-          src={active.url}
+          src={inlineUrl}
           title={active.filename}
           sandbox={IFRAME_SANDBOX}
           referrerPolicy="no-referrer"
