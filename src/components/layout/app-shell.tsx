@@ -7,6 +7,7 @@ import { MobileNav } from './mobile-nav'
 import { CommandPalette } from '../ui/command-palette'
 import { OnboardingModal, OnboardingController } from '../ui/onboarding-modal'
 import { FloatingTourBanner } from '../ui/floating-tour-banner'
+import { QuickCapture } from '../ui/quick-capture'
 import { OnboardingProvider } from '@/context/onboarding-context'
 import { getSessionRole } from '@/lib/auth'
 
@@ -22,6 +23,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <MobileNav userRole={role} />
         <Topbar />
         <CommandPalette />
+        <QuickCapture />
         <OnboardingController />
         <OnboardingModal />
         <Suspense>
