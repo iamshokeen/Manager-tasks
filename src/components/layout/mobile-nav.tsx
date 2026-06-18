@@ -21,19 +21,23 @@ type Role = 'SUPER_ADMIN' | 'MANAGER' | 'SENIOR_IC' | 'DIRECT_REPORT' | 'EXEC_VI
 interface NavItem { href: string; label: string; icon: string }
 interface NavGroup { group: string; items: NavItem[] }
 
+// Mirrors sidebar.tsx grouping. Keep these two in sync so the mobile drawer
+// reads identically to the desktop rail.
 const BASE_NAV: NavGroup[] = [
-  { group: 'Overview', items: [{ href: '/', label: 'Dashboard', icon: 'dashboard' }] },
+  {
+    group: 'Today',
+    items: [
+      { href: '/',          label: 'Dashboard', icon: 'dashboard' },
+      { href: '/my-tasks',  label: 'My Tasks',  icon: 'task_alt' },
+    ],
+  },
   {
     group: 'Work',
     items: [
-      { href: '/projects',       label: 'Projects',     icon: 'folder' },
-      { href: '/tasks',          label: 'Tasks',        icon: 'checklist' },
-      { href: '/my-tasks',       label: 'My Tasks',     icon: 'task_alt' },
-      { href: '/schedules',      label: 'Schedules',    icon: 'event_repeat' },
-      { href: '/email-to-tasks', label: 'Email → Tasks', icon: 'forward_to_inbox' },
-      { href: '/cadence',        label: 'Rounds',       icon: 'repeat' },
-      { href: '/notes',          label: 'Notes',        icon: 'sticky_note_2' },
-      { href: '/follow-ups',     label: 'Open Loops',   icon: 'track_changes' },
+      { href: '/tasks',      label: 'Tasks',      icon: 'checklist' },
+      { href: '/projects',   label: 'Projects',   icon: 'folder' },
+      { href: '/follow-ups', label: 'Open Loops', icon: 'track_changes' },
+      { href: '/notes',      label: 'Notes',      icon: 'sticky_note_2' },
     ],
   },
   {
@@ -42,10 +46,18 @@ const BASE_NAV: NavGroup[] = [
       { href: '/team',         label: 'Your People', icon: 'group' },
       { href: '/one-on-ones',  label: '1:1s',        icon: 'forum' },
       { href: '/stakeholders', label: 'The Table',   icon: 'handshake' },
+      { href: '/messages',     label: 'Messages',    icon: 'chat' },
     ],
   },
-  { group: 'Reports', items: [{ href: '/reports', label: 'Reports', icon: 'summarize' }] },
-  { group: 'Connect', items: [{ href: '/messages', label: 'Messages', icon: 'forum' }] },
+  {
+    group: 'Operations',
+    items: [
+      { href: '/cadence',        label: 'Rounds',         icon: 'repeat' },
+      { href: '/schedules',      label: 'Schedules',      icon: 'event_repeat' },
+      { href: '/email-to-tasks', label: 'Email → Tasks',  icon: 'forward_to_inbox' },
+      { href: '/reports',        label: 'Reports',        icon: 'summarize' },
+    ],
+  },
   {
     group: 'Reference',
     items: [

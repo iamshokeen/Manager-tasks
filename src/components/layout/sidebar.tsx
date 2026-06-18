@@ -10,22 +10,26 @@ type Role = 'SUPER_ADMIN' | 'MANAGER' | 'SENIOR_IC' | 'DIRECT_REPORT' | 'EXEC_VI
 interface NavItem { href: string; label: string; icon: string }
 interface NavGroup { group: string; items: NavItem[] }
 
+// Sidebar groups are organized by the operator's cadence, not by the
+// underlying data model. "Today" surfaces the two pages opened on every
+// session start; "Work" holds the daily-edit surfaces; "People" gathers
+// every human-facing route (including DMs); "Operations" tucks the
+// less-frequent scheduling/automation tools out of the main flow.
 const BASE_NAV: NavGroup[] = [
   {
-    group: 'Overview',
-    items: [{ href: '/', label: 'Dashboard', icon: 'dashboard' }],
+    group: 'Today',
+    items: [
+      { href: '/',          label: 'Dashboard', icon: 'dashboard' },
+      { href: '/my-tasks',  label: 'My Tasks',  icon: 'task_alt' },
+    ],
   },
   {
     group: 'Work',
     items: [
-      { href: '/projects',       label: 'Projects',       icon: 'folder' },
-      { href: '/tasks',          label: 'Tasks',           icon: 'checklist' },
-      { href: '/my-tasks',       label: 'My Tasks',        icon: 'task_alt' },
-      { href: '/schedules',      label: 'Schedules',       icon: 'event_repeat' },
-      { href: '/email-to-tasks', label: 'Email → Tasks',   icon: 'forward_to_inbox' },
-      { href: '/cadence',        label: 'Rounds',          icon: 'repeat' },
-      { href: '/notes',          label: 'Notes',           icon: 'sticky_note_2' },
-      { href: '/follow-ups',     label: 'Open Loops',      icon: 'track_changes' },
+      { href: '/tasks',      label: 'Tasks',      icon: 'checklist' },
+      { href: '/projects',   label: 'Projects',   icon: 'folder' },
+      { href: '/follow-ups', label: 'Open Loops', icon: 'track_changes' },
+      { href: '/notes',      label: 'Notes',      icon: 'sticky_note_2' },
     ],
   },
   {
@@ -34,6 +38,7 @@ const BASE_NAV: NavGroup[] = [
       { href: '/team',         label: 'Your People', icon: 'group' },
       { href: '/one-on-ones',  label: '1:1s',        icon: 'forum' },
       { href: '/stakeholders', label: 'The Table',   icon: 'handshake' },
+      { href: '/messages',     label: 'Messages',    icon: 'chat' },
     ],
   },
   // Revenue group (Metrics / Channel Pulse / Check-in GMV) is hidden from the
@@ -48,12 +53,13 @@ const BASE_NAV: NavGroup[] = [
   //   ],
   // },
   {
-    group: 'Reports',
-    items: [{ href: '/reports', label: 'Reports', icon: 'summarize' }],
-  },
-  {
-    group: 'Connect',
-    items: [{ href: '/messages', label: 'Messages', icon: 'forum' }],
+    group: 'Operations',
+    items: [
+      { href: '/cadence',        label: 'Rounds',         icon: 'repeat' },
+      { href: '/schedules',      label: 'Schedules',      icon: 'event_repeat' },
+      { href: '/email-to-tasks', label: 'Email → Tasks',  icon: 'forward_to_inbox' },
+      { href: '/reports',        label: 'Reports',        icon: 'summarize' },
+    ],
   },
   {
     group: 'Reference',
@@ -195,7 +201,19 @@ export function Sidebar({ userRole }: SidebarProps) {
                   >
                     {icon}
                   </span>
-                  <span className="whitespace-nowrap font-['Inter']">{label}</span>
+                  <span className="whitespace-nowrap font-['Inter'] flex-1">{label}</span>
+                  {href === '/messages' && unreadCount && unreadCount > 0 ? (
+                    <span
+                      className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-bold flex-shrink-0"
+                      style={{
+                        background: 'var(--primary)',
+                        color: 'var(--on-primary, var(--primary-foreground))',
+                      }}
+                      aria-label={`${unreadCount} unread`}
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  ) : null}
                 </Link>
               )
             })}

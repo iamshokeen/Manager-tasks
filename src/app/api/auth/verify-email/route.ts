@@ -94,7 +94,7 @@ export async function POST(req: Request) {
 
     // Notify admin
     const adminEmail = process.env.ADMIN_EMAIL
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://lohono.com'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://kairos.vercel.app'
 
     if (adminEmail) {
       try {

@@ -173,7 +173,7 @@ export function ProjectDetailView({
   const [aiSummary, setAiSummary] = useState<string | null>(null)
   const [loadingSummary, setLoadingSummary] = useState(false)
   const [generatorOpen, setGeneratorOpen] = useState(false)
-  const [view, setView] = useState<'board' | 'list' | 'timeline'>('board')
+  const [view, setView] = useState<'board' | 'list'>('board')
 
   // Computed stats
   const totalTasks = project.tasks.length
@@ -480,7 +480,7 @@ export function ProjectDetailView({
               Project Workflow
             </h2>
             <div className="flex items-center rounded-lg p-1" style={{ background: 'var(--surface-container-high)' }}>
-              {(['Board', 'List', 'Timeline'] as const).map(v => (
+              {(['Board', 'List'] as const).map(v => (
                 <button
                   key={v}
                   onClick={() => setView(v.toLowerCase() as typeof view)}
@@ -642,16 +642,6 @@ export function ProjectDetailView({
           </div>
         )}
 
-        {/* Timeline view */}
-        {view === 'timeline' && (
-          <div
-            className="flex items-center justify-center py-16 rounded-xl text-sm"
-            style={{ color: 'var(--on-surface-variant)', border: '1px dashed var(--outline-variant)' }}
-          >
-            <span className="material-symbols-outlined mr-2" style={{ color: 'var(--outline)' }}>timeline</span>
-            Timeline view coming soon
-          </div>
-        )}
       </motion.div>
     </motion.div>
 

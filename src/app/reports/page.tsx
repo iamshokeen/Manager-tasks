@@ -5,7 +5,7 @@
 // Left rail: roster of visible team members + bulk dispatch controls.
 // Right pane: live JSON-driven preview of the selected member's daily brief
 // (mirrors the /reports/print/[userId] layout), with per-member buttons to
-// Download PDF, plus stubbed Email / WhatsApp dispatch (wiring later).
+// Download PDF, send by Email, or hand off to WhatsApp via a wa.me deeplink.
 //
 
 import useSWR from 'swr'

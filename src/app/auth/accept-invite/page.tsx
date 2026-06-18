@@ -123,7 +123,7 @@ function AcceptInviteContent() {
       <div className="bg-white rounded-xl shadow-sm p-8 max-w-md w-full">
         <div className="text-center mb-4">
           <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 mx-auto mb-4">
-            <span className="text-white text-xl font-bold tracking-tight">L</span>
+            <span className="text-white text-xl font-bold tracking-tight">K</span>
           </div>
           <p className="text-sm text-[var(--outline)]">Validating your invitation…</p>
         </div>
@@ -187,7 +187,7 @@ function AcceptInviteContent() {
       {/* Logo + Heading */}
       <div className="flex flex-col items-center mb-8 gap-3">
         <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-          <span className="text-white text-xl font-bold tracking-tight">L</span>
+          <span className="text-white text-xl font-bold tracking-tight">K</span>
         </div>
         <div className="text-center">
           <h1 className="text-xl font-semibold text-foreground tracking-tight">
@@ -295,7 +295,7 @@ export default function AcceptInvitePage() {
     <Suspense fallback={
       <div className="bg-white rounded-xl shadow-sm p-8 max-w-md w-full text-center">
         <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 mx-auto mb-4">
-          <span className="text-white text-xl font-bold tracking-tight">L</span>
+          <span className="text-white text-xl font-bold tracking-tight">K</span>
         </div>
         <p className="text-sm text-[var(--outline)]">Loading invitation…</p>
         <div className="flex items-center justify-center py-6">

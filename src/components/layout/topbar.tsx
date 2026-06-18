@@ -147,21 +147,6 @@ export function Topbar() {
         </button>
 
         <button
-          className="hidden sm:flex w-10 h-10 lg:w-8 lg:h-8 items-center justify-center rounded-lg transition-all duration-200 cursor-pointer"
-          style={{ color: 'var(--outline)' }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.color = 'var(--primary)'
-            ;(e.currentTarget as HTMLElement).style.background = 'rgba(0,83,219,0.06)'
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.color = 'var(--outline)'
-            ;(e.currentTarget as HTMLElement).style.background = ''
-          }}
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>notifications</span>
-        </button>
-
-        <button
           onClick={() => window.print()}
           className="hidden md:flex print:hidden items-center gap-1 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer"
           title="Download as PDF"

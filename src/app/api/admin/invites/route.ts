@@ -7,7 +7,10 @@ import { sendEmail } from '@/lib/mailer'
 import { WorkspaceInvite } from '../../../../../emails/workspace-invite'
 import type { Role } from '@prisma/client'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://kairos-git-main-sakshamshokeen-5950s-projects.vercel.app'
+// Fallback only kicks in if NEXT_PUBLIC_APP_URL is missing in the env.
+// Production canonical URL — both manager-tasks.vercel.app and kairos.vercel.app
+// serve the app; we ship the K-branded one in invite emails.
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://kairos.vercel.app'
 
 // ─── GET: list all invites ────────────────────────────────────────────────────
 

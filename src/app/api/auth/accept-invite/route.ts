@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid or expired invitation.' }, { status: 404 })
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://lohono.com'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://kairos.vercel.app'
 
     // Check if user with invite.email already exists
     const existingUser = await prisma.user.findUnique({ where: { email: invite.email } })
