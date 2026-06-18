@@ -70,8 +70,18 @@ export function QuickCapture() {
         setOpen(false)
       }
     }
+    // Cross-component triggers (the command palette dispatches these).
+    function onOpenNote() { openIn('note') }
+    function onOpenLoop() { openIn('loop') }
+
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('kairos:open-note', onOpenNote)
+    window.addEventListener('kairos:open-loop', onOpenLoop)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('kairos:open-note', onOpenNote)
+      window.removeEventListener('kairos:open-loop', onOpenLoop)
+    }
   }, [open, openIn])
 
   // Autofocus first field when opened or mode changes

@@ -5,6 +5,7 @@ import { Topbar } from './topbar'
 import { MobileBottomNav } from './mobile-bottom-nav'
 import { MobileNav } from './mobile-nav'
 import { CommandPalette } from '../ui/command-palette'
+import { KeyboardShortcuts } from '../ui/keyboard-shortcuts'
 import { OnboardingModal, OnboardingController } from '../ui/onboarding-modal'
 import { FloatingTourBanner } from '../ui/floating-tour-banner'
 import { QuickCapture } from '../ui/quick-capture'
@@ -23,6 +24,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <MobileNav userRole={role} />
         <Topbar />
         <CommandPalette />
+        <KeyboardShortcuts />
         <QuickCapture />
         <OnboardingController />
         <OnboardingModal />
